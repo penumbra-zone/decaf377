@@ -1,0 +1,22 @@
+[package]
+name = "decaf377"
+version = "0.1.0"
+authors = ["Henry de Valence <hdevalence@hdevalence.ca>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+thiserror = "1"
+tracing = "0.1"
+tracing-subscriber = "0.2"
+ark-relations = { version = "0.2" }
+ark-r1cs-std = { version = "0.2" }
+ark-std = { version = "0.2" }
+ark-ec = { version = "0.2" }
+ark-ff = { version = "0.2" }
+ark-serialize = { version = "0.2" }
+ark-ed-on-bls12-377 = {version = "0.2", features = ["r1cs"]}
+
+[dev-dependencies]
+proptest = "1.0.0"
