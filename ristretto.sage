@@ -734,7 +734,7 @@ class IsoEd25519Point(Decaf_1_1_Point):
 
 class TestFailedException(Exception): pass
 
-def test(cls,n):
+def test(cls,n, printMultiples=False):
     print ("Testing curve %s" % cls.__name__)
     
     specials = [1]
@@ -757,9 +757,14 @@ def test(cls,n):
         
     
     P = cls.base()
+    if not printMultiples:
+        print(binascii.hexlify(P.encode()))
+    else:
+        for i in range(n):
+            Q = P*i
+            print(binascii.hexlify(Q.encode()))
     Q = cls()
     for i in range(n):
-        #print binascii.hexlify(Q.encode())
         QE = Q.encode()
         QQ = cls.decode(QE)
         if QQ != Q: raise TestFailedException("Round trip %s != %s" % (str(QQ),str(Q)))
@@ -857,18 +862,18 @@ def testDoubleAndEncode(cls,n):
         u = cls.elligator(r1) + cls.elligator(r2)
         assert u.doubleAndEncode() == u.torque().doubleAndEncode()
 
-testDoubleAndEncode(Ed25519Point,100)
-testDoubleAndEncode(NegEd25519Point,100)
-testDoubleAndEncode(IsoEd25519Point,100)
-testDoubleAndEncode(IsoEd448Point,100)
-testDoubleAndEncode(Ed448RistrettoPoint,100)
-testDoubleAndEncode(TwistedEd448GoldilocksPoint,100)
+#testDoubleAndEncode(Ed25519Point,100)
+#testDoubleAndEncode(NegEd25519Point,100)
+#testDoubleAndEncode(IsoEd25519Point,100)
+#testDoubleAndEncode(IsoEd448Point,100)
+#testDoubleAndEncode(Ed448RistrettoPoint,100)
+#testDoubleAndEncode(TwistedEd448GoldilocksPoint,100)
 #test(Ed25519Point,100)
 #test(NegEd25519Point,100)
 #test(IsoEd25519Point,100)
-#test(IsoEd448Point,100)
-#test(TwistedEd448GoldilocksPoint,100)
-#test(Ed448GoldilocksPoint,100)
+test(IsoEd448Point,100)
+test(TwistedEd448GoldilocksPoint,100)
+test(Ed448GoldilocksPoint,100)
 #testElligator(Ed25519Point,100)
 #testElligator(NegEd25519Point,100)
 #testElligator(IsoEd25519Point,100)
@@ -877,3 +882,5 @@ testDoubleAndEncode(TwistedEd448GoldilocksPoint,100)
 #testElligator(TwistedEd448GoldilocksPoint,100)
 gangtest([IsoEd448Point,TwistedEd448GoldilocksPoint,Ed448GoldilocksPoint],100)
 gangtest([Ed25519Point,IsoEd25519Point],100)
+
+test(IsoEd448Point,16,True)
