@@ -686,6 +686,21 @@ class Ed448RistrettoPoint(RistrettoPoint):
  224580040295924300187604334099896036246789641632564134246125461686950415467406032909029192869357953282578032075146446173674602635247710, 298819210078481492676017930443930673437544040154080242095928241372331506189835876003536878655418784733982303233503462500531545062832660
         )
             
+class Decaf377Point(Decaf_1_1_Point):
+    F = GF(8444461749428370424248824938781546531375899335154063827935233455917409239041)
+    d = F(3021)
+    a = F(-1)
+    # This has to be chosen together with the specification
+    # of a square root algorithm, and is subject to change.
+    qnr = F(2841681278031794617739547238867782961338435681360110683443920362658525667816)
+    cofactor = 4
+    encLen = 32
+    isoMagic = F(1)
+
+    @classmethod
+    def base(cls):
+        return cls.decodeSpec(cls.gfToBytes(cls.F(8))) # Least s which decodes to a point
+
 class TwistedEd448GoldilocksPoint(Decaf_1_1_Point):
     F = GF(2^448-2^224-1)
     d = F(-39082)
@@ -871,16 +886,20 @@ def testDoubleAndEncode(cls,n):
 #test(Ed25519Point,100)
 #test(NegEd25519Point,100)
 #test(IsoEd25519Point,100)
-test(IsoEd448Point,100)
-test(TwistedEd448GoldilocksPoint,100)
-test(Ed448GoldilocksPoint,100)
+#test(IsoEd448Point,100)
+#test(TwistedEd448GoldilocksPoint,100)
+#test(Ed448GoldilocksPoint,100)
 #testElligator(Ed25519Point,100)
 #testElligator(NegEd25519Point,100)
 #testElligator(IsoEd25519Point,100)
 #testElligator(IsoEd448Point,100)
 #testElligator(Ed448GoldilocksPoint,100)
 #testElligator(TwistedEd448GoldilocksPoint,100)
-gangtest([IsoEd448Point,TwistedEd448GoldilocksPoint,Ed448GoldilocksPoint],100)
-gangtest([Ed25519Point,IsoEd25519Point],100)
+#gangtest([IsoEd448Point,TwistedEd448GoldilocksPoint,Ed448GoldilocksPoint],100)
+#gangtest([Ed25519Point,IsoEd25519Point],100)
 
-test(IsoEd448Point,16,True)
+test(Decaf377Point, 100)
+testDoubleAndEncode(Decaf377Point, 100)
+testElligator(Decaf377Point, 100)
+
+test(Decaf377Point,16,True)

@@ -5,7 +5,7 @@ use ark_ed_on_bls12_377::{EdwardsParameters, EdwardsProjective, Fq};
 use ark_ff::{Field, One, Zero};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 
-use crate::{invsqrt::InvSqrt, sign::Sign, EncodingError};
+use crate::{invsqrt::SqrtRatioZeta, sign::Sign, EncodingError};
 
 use ark_ec::models::twisted_edwards_extended::GroupProjective;
 
@@ -21,74 +21,85 @@ impl<P: TEModelParameters> OnCurve for GroupProjective<P> {
         let ZZ = self.z.square();
         let TT = self.t.square();
 
-        let on_curve = (YY - XX) == (ZZ + P::COEFF_D * TT);
+        let on_curve = (YY + P::COEFF_A * XX) == (ZZ + P::COEFF_D * TT);
         let on_segre_embedding = self.t * self.z == self.x * self.y;
 
         on_curve && on_segre_embedding
     }
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
-pub struct Decaf377Bytes(pub [u8; 32]);
+#[derive(Copy, Clone, Default, Eq, PartialEq, Debug)]
+pub struct Encoding(pub [u8; 32]);
 
 #[derive(Copy, Clone, Debug)]
-pub struct Decaf377 {
+pub struct Element {
     inner: EdwardsProjective,
 }
 
-impl Decaf377 {
+impl Default for Element {
+    fn default() -> Self {
+        Element {
+            inner: EdwardsProjective::zero(),
+        }
+    }
+}
+
+impl PartialEq for Element {
+    fn eq(&self, other: &Element) -> bool {
+        self.inner.x * other.inner.y == self.inner.y * other.inner.x
+    }
+}
+
+impl Eq for Element {}
+
+impl Element {
     #[allow(non_snake_case)]
-    pub fn compress(&self) -> Decaf377Bytes {
+    pub fn compress(&self) -> Encoding {
         // This isn't a constant, only because traits don't have const methods
         // yet and subtraction is only implemented as part of the Sub trait.
-        let D = EdwardsParameters::COEFF_D;
         let A_MINUS_D = EdwardsParameters::COEFF_A - EdwardsParameters::COEFF_D;
         let p = &self.inner;
 
-        // 1. r <- 1 / \sqrt { (a -d ) (Z  + Y) (Z - Y)}
-        let Z_plus_Y = p.z + &p.y;
-        let Z_minus_Y = p.z - &p.y;
-        let mut r = (A_MINUS_D * Z_plus_Y * Z_minus_Y)
-            .invsqrt()
-            .expect("input is square");
+        // 1.
+        let u_1 = (p.x + p.t) * (p.x - p.t);
 
-        // 2. u <- (a - d) r
-        let u = A_MINUS_D * r;
+        // 2. division by 0 occurs on the identity point, but since
+        // sqrt_ratio_zeta outputs v=0 it computes the right encoding anyway
+        let (_always_square, v) =
+            Fq::sqrt_ratio_zeta(&Fq::one(), &(u_1 * A_MINUS_D * p.x.square()));
 
-        // 3. r <- -r if -2uZ is negative
-        let check = (Fq::zero() - (u + u)) * &p.z;
-        if check.is_negative() {
-            r = -r;
-        }
+        // 3.
+        let u_2 = (v * u_1).abs();
 
-        // 4. s <- | u ( r ( aZX - dYT) + Y) / a|
-        // Since a = -1, this is
-        //   |u ( r ( -ZX - dYT) + Y) / -1 |
-        // = |-u(Y - r(ZX + dYT))|
-        let s = (-u * (p.y - r * (p.z * p.x + D * p.y * p.t))).abs();
+        // 4.
+        let u_3 = u_2 * p.z - p.t;
 
+        // 5.
+        let s = (A_MINUS_D * v * u_3 * p.x).abs();
+
+        // Encode.
         let mut bytes = [0u8; 32];
         debug_assert_eq!(s.serialized_size(), 32);
         s.serialize(&mut bytes[..])
             .expect("serialization into array should be infallible");
 
-        Decaf377Bytes(bytes)
+        Encoding(bytes)
     }
 }
 
-impl From<&Decaf377> for Decaf377Bytes {
-    fn from(point: &Decaf377) -> Self {
+impl From<&Element> for Encoding {
+    fn from(point: &Element) -> Self {
         point.compress()
     }
 }
 
-impl From<Decaf377> for Decaf377Bytes {
-    fn from(point: Decaf377) -> Self {
+impl From<Element> for Encoding {
+    fn from(point: Element) -> Self {
         point.compress()
     }
 }
 
-impl CanonicalSerialize for Decaf377Bytes {
+impl CanonicalSerialize for Encoding {
     fn serialized_size(&self) -> usize {
         32
     }
@@ -102,7 +113,7 @@ impl CanonicalSerialize for Decaf377Bytes {
     }
 }
 
-impl CanonicalSerialize for Decaf377 {
+impl CanonicalSerialize for Element {
     fn serialized_size(&self) -> usize {
         32
     }
@@ -115,81 +126,72 @@ impl CanonicalSerialize for Decaf377 {
     }
 }
 
-impl Decaf377Bytes {
+impl Encoding {
     #[allow(non_snake_case)]
-    pub fn decompress(&self) -> Result<Decaf377, EncodingError> {
+    pub fn decompress(&self) -> Result<Element, EncodingError> {
         // This isn't a constant, only because traits don't have const methods
         // yet and multiplication is only implemented as part of the Mul trait.
         let D4: Fq = EdwardsParameters::COEFF_D * Fq::from(4u32);
         let TWO = Fq::one() + Fq::one();
 
-        // 1. Reject unless s is canonically encoded and nonnegative.
+        // 1/2. Reject unless s is canonically encoded and nonnegative.
         let s = Fq::deserialize(&self.0[..]).map_err(|_| EncodingError::InvalidEncoding)?;
-        if !s.is_nonnegative() {
+        if s.is_negative() {
             return Err(EncodingError::InvalidEncoding);
         }
 
-        // 2. X <- 2s
-        let X = s + s;
-
-        // 3. Z <- 1 + as^2 = 1 - s^2
+        // 3. u_1 <- 1 - s^2
         let ss = s.square();
-        let Z = Fq::one() - ss;
+        let u_1 = Fq::one() - ss;
 
-        // 4. u <- Z^2 - 4d s^2
-        let ZZ = Z.square();
-        let u = ZZ - D4 * ss;
+        // 4. u_2 <- u_1^2 - 4d s^2
+        let u_2 = u_1.square() - D4 * ss;
 
-        // 5. v <- 1 / \sqrt { u s^2} if u s^2 is square and nonzero, 0 if zero, reject if nonsquare.
-        let uss: Fq = u * ss;
-        let mut v = uss.invsqrt().ok_or(EncodingError::InvalidEncoding)?;
-        debug_assert_eq!(v * v * uss, Fq::one(), "invsqrt should be invsqrt");
+        // 5. sqrt
+        let (was_square, mut v) = Fq::sqrt_ratio_zeta(&Fq::one(), &(u_2 * u_1.square()));
+        if !was_square {
+            return Err(EncodingError::InvalidEncoding);
+        }
 
-        // 6. v <- -v if uv is negative
-        let uv: Fq = u * v;
-        if uv.is_negative() {
+        // 6. sign check
+        let two_s_u_1 = TWO * s * u_1;
+        let check = two_s_u_1 * v;
+        if check.is_negative() {
             v = -v;
         }
 
-        // 7/8. w <- vs(2-Z) ;  w <- w + 1 if s = 0
-        let w = if s.is_zero() {
-            Fq::one()
-        } else {
-            v * s * (TWO - Z)
-        };
-
-        // 9. Y <- wZ
-        let Y = w * Z;
-
-        // 10. T <- wX
-        let T = w * X;
+        // 7. coordinates
+        let x = two_s_u_1 * v.square() * u_2;
+        let y = (Fq::one() + ss) * v * u_1;
+        let z = Fq::one();
+        let t = x * y;
 
         debug_assert!(
-            EdwardsProjective::new(X, Y, Z, T).is_on_curve(),
+            EdwardsProjective::new(x, y, t, z).is_on_curve(),
             "resulting point must be on the curve",
         );
 
-        Ok(Decaf377 {
-            inner: EdwardsProjective::new(X, Y, Z, T),
+        Ok(Element {
+            inner: EdwardsProjective::new(x, y, t, z),
         })
     }
 }
 
-impl TryFrom<&Decaf377Bytes> for Decaf377 {
+impl TryFrom<&Encoding> for Element {
     type Error = EncodingError;
-    fn try_from(bytes: &Decaf377Bytes) -> Result<Self, Self::Error> {
+    fn try_from(bytes: &Encoding) -> Result<Self, Self::Error> {
         bytes.decompress()
     }
 }
 
-impl TryFrom<Decaf377Bytes> for Decaf377 {
+impl TryFrom<Encoding> for Element {
     type Error = EncodingError;
-    fn try_from(bytes: Decaf377Bytes) -> Result<Self, Self::Error> {
+    fn try_from(bytes: Encoding) -> Result<Self, Self::Error> {
         bytes.decompress()
     }
 }
 
-impl CanonicalDeserialize for Decaf377Bytes {
+impl CanonicalDeserialize for Encoding {
     fn deserialize<R: std::io::Read>(
         mut reader: R,
     ) -> Result<Self, ark_serialize::SerializationError> {
@@ -199,9 +201,9 @@ impl CanonicalDeserialize for Decaf377Bytes {
     }
 }
 
-impl CanonicalDeserialize for Decaf377 {
+impl CanonicalDeserialize for Element {
     fn deserialize<R: std::io::Read>(reader: R) -> Result<Self, ark_serialize::SerializationError> {
-        let bytes = Decaf377Bytes::deserialize(reader)?;
+        let bytes = Encoding::deserialize(reader)?;
         bytes
             .try_into()
             .map_err(|_| ark_serialize::SerializationError::InvalidData)
@@ -220,27 +222,35 @@ mod tests {
 
     #[test]
     fn identity_encoding_is_zero() {
-        let identity = Decaf377 {
-            inner: EdwardsProjective::zero(),
-        };
+        let identity = Element::default();
         let identity_bytes = identity.compress();
         assert_eq!(identity_bytes.0, [0; 32]);
         let identity2 = identity_bytes.decompress().unwrap();
-        //assert_eq!(identity, identity2);
+        assert_eq!(identity, identity2);
+    }
+
+    #[test]
+    fn check_generator() {
+        let mut bytes = [0u8; 32];
+
+        for b in 1..=255 {
+            bytes[0] = b;
+            if let Ok(_element) = Encoding(bytes).decompress() {
+                break;
+            }
+        }
+
+        // The generator [8,0,...] is minimal
+        assert_eq!(bytes[0], 8);
+
+        let enc2 = Encoding(bytes).decompress().unwrap().compress();
+        assert_eq!(bytes, enc2.0);
     }
 
     proptest! {
         #[test]
-        fn generator_multiples_on_curve(x: u64) {
-            use ark_ec::ProjectiveCurve;
-            let gen = EdwardsProjective::prime_subgroup_generator();
-            let point = gen.mul(&[x]);
-            assert!(point.is_on_curve());
-        }
-
-        #[test]
         fn decompress_round_trip_if_successful(bytes: [u8; 32]) {
-            let bytes = Decaf377Bytes(bytes);
+            let bytes = Encoding(bytes);
 
             if let Ok(element) = bytes.decompress() {
                 let bytes2 = element.compress();

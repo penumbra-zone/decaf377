@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use ark_ed_on_bls12_377::Fq;
 
 pub trait Sign: core::ops::Neg<Output = Self> + Sized {
@@ -20,11 +18,10 @@ pub trait Sign: core::ops::Neg<Output = Self> + Sized {
 
 impl Sign for Fq {
     fn is_nonnegative(&self) -> bool {
-        // TODO: make this a constant
-        let half_q = Fq::from_str(
-            "4222230874714185212124412469390773265687949667577031913967616727958704619520",
-        )
-        .unwrap();
-        self <= &half_q
+        use ark_serialize::CanonicalSerialize;
+        let mut bytes = [0u8; 32];
+        self.serialize(&mut bytes[..])
+            .expect("serialization into array should be infallible");
+        bytes[0] & 1 == 0
     }
 }
