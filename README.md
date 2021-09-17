@@ -18,4 +18,4 @@ abstraction that provides a prime-order group, complete with hash-to-group
 functionality, and works the same way inside and outside of a circuit.
 
 More details are available on the [Penumbra
-website](https://penumbra.zone/crypto/primitives/decaf377.html).
+website](https://penumbra.zone/main/crypto/decaf377.html).
