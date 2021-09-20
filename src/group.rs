@@ -5,7 +5,7 @@ use ark_ed_on_bls12_377::{EdwardsParameters, EdwardsProjective, Fq};
 use ark_ff::{Field, One, Zero};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 
-use crate::{invsqrt::SqrtRatioZeta, sign::Sign, EncodingError};
+use crate::{invsqrt::SqrtRatioZeta, scalar::Scalar, sign::Sign, EncodingError};
 
 use ark_ec::models::twisted_edwards_extended::GroupProjective;
 
@@ -43,6 +43,8 @@ impl Default for Element {
         }
     }
 }
+
+// TODO: Also add an subtle::ConstantTimeEq implementation here?
 
 impl PartialEq for Element {
     fn eq(&self, other: &Element) -> bool {
@@ -213,6 +215,17 @@ impl CanonicalDeserialize for Element {
 ////////////////////////////////////////////////////////////////////////////////
 // Group operations
 ////////////////////////////////////////////////////////////////////////////////
+
+// For basic arithmetic we will have:
+// * impl Add, AddAssign, Sub, SubAssign for Element
+// * impl Mul, MulAssign for Scalar, Element (and Element, Scalar)
+//
+// For this arithmetic, we can use the `ark-curves` BLS12-377
+// curve implementation since Decaf just changes the point
+// encoding/decoding and equality checking formulae?
+//
+// We also need to implement
+// * Hash to group in Element::hash_from_bytes()
 
 #[cfg(test)]
 mod tests {
