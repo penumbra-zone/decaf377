@@ -4,6 +4,7 @@
 mod error;
 mod group;
 mod invsqrt;
+mod scalar;
 mod sign;
 
 pub use error::EncodingError;
