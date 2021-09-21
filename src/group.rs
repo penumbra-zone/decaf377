@@ -225,13 +225,34 @@ impl CanonicalDeserialize for Element {
 // Group operations
 ////////////////////////////////////////////////////////////////////////////////
 
-impl<'b> Add<&'b Element> for Element {
+impl<'a, 'b> Add<&'b Element> for &'a Element {
     type Output = Element;
 
     fn add(self, other: &'b Element) -> Element {
         Element {
             inner: self.inner + other.inner,
         }
+    }
+}
+
+impl<'b> Add<&'b Element> for Element {
+    type Output = Element;
+    fn add(self, other: &'b Element) -> Element {
+        &self + other
+    }
+}
+
+impl<'a> Add<Element> for &'a Element {
+    type Output = Element;
+    fn add(self, other: Element) -> Element {
+        self + &other
+    }
+}
+
+impl Add<Element> for Element {
+    type Output = Element;
+    fn add(self, other: Element) -> Element {
+        &self + &other
     }
 }
 
@@ -243,13 +264,43 @@ impl<'b> AddAssign<&'b Element> for Element {
     }
 }
 
+impl AddAssign<Element> for Element {
+    fn add_assign(&mut self, other: Element) {
+        *self += &other;
+    }
+}
+
+impl<'a, 'b> Sub<&'b Element> for &'a Element {
+    type Output = Element;
+
+    fn sub(self, other: &'b Element) -> Element {
+        Element {
+            inner: self.inner - other.inner,
+        }
+    }
+}
+
 impl<'b> Sub<&'b Element> for Element {
     type Output = Element;
 
     fn sub(self, other: &'b Element) -> Element {
-        Self {
-            inner: self.inner - other.inner,
-        }
+        &self - other
+    }
+}
+
+impl<'a> Sub<Element> for &'a Element {
+    type Output = Element;
+
+    fn sub(self, other: Element) -> Element {
+        self - &other
+    }
+}
+
+impl Sub<Element> for Element {
+    type Output = Element;
+
+    fn sub(self, other: Element) -> Element {
+        &self - &other
     }
 }
 
@@ -258,6 +309,12 @@ impl<'b> SubAssign<&'b Element> for Element {
         *self = Element {
             inner: self.inner - other.inner,
         }
+    }
+}
+
+impl SubAssign<Element> for Element {
+    fn sub_assign(&mut self, other: Element) {
+        *self -= &other;
     }
 }
 
@@ -280,13 +337,75 @@ impl<'b> MulAssign<&'b Scalar> for Element {
     }
 }
 
-impl<'b> Mul<&'b Scalar> for Element {
+impl MulAssign<Scalar> for Element {
+    fn mul_assign(&mut self, other: Scalar) {
+        *self *= &other;
+    }
+}
+
+impl<'a, 'b> Mul<&'b Scalar> for &'a Element {
     type Output = Element;
 
     fn mul(self, point: &'b Scalar) -> Element {
         let mut p = self.inner;
         p *= point.inner;
         Element { inner: p }
+    }
+}
+
+impl<'a, 'b> Mul<&'b Element> for &'a Scalar {
+    type Output = Element;
+
+    fn mul(self, point: &'b Element) -> Element {
+        point * self
+    }
+}
+
+impl<'b> Mul<&'b Scalar> for Element {
+    type Output = Element;
+
+    fn mul(self, other: &'b Scalar) -> Element {
+        &self * other
+    }
+}
+
+impl<'a> Mul<Scalar> for &'a Element {
+    type Output = Element;
+
+    fn mul(self, other: Scalar) -> Element {
+        self * &other
+    }
+}
+
+impl Mul<Scalar> for Element {
+    type Output = Element;
+
+    fn mul(self, other: Scalar) -> Element {
+        &self * &other
+    }
+}
+
+impl<'b> Mul<&'b Element> for Scalar {
+    type Output = Element;
+
+    fn mul(self, other: &'b Element) -> Element {
+        &self * other
+    }
+}
+
+impl<'a> Mul<Element> for &'a Scalar {
+    type Output = Element;
+
+    fn mul(self, other: Element) -> Element {
+        self * &other
+    }
+}
+
+impl Mul<Element> for Scalar {
+    type Output = Element;
+
+    fn mul(self, other: Element) -> Element {
+        &self * &other
     }
 }
 
