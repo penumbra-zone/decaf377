@@ -7,6 +7,7 @@ use ark_ff::Zero;
 use zeroize::Zeroize;
 
 /// `Scalar` Represents an integer value.
+#[derive(Copy, Clone)]
 pub struct Scalar {
     pub(crate) inner: ark_ed_on_bls12_377::Fr,
 }
@@ -16,6 +17,15 @@ impl Default for Scalar {
         Scalar {
             inner: ark_ed_on_bls12_377::Fr::zero(),
         }
+    }
+}
+
+// `ark_ed_on_bls12_377::Fr` is an alias for `ark_ff::fields::models::Fp256`
+// which has implementations of `From` for many types T. Here we
+// pass those through to `Scalar`.
+impl<T: Into<ark_ed_on_bls12_377::Fr>> From<T> for Scalar {
+    fn from(x: T) -> Scalar {
+        Scalar { inner: x.into() }
     }
 }
 
