@@ -3,6 +3,7 @@ use core::ops::{Add, AddAssign};
 use core::ops::{Mul, MulAssign};
 use core::ops::{Sub, SubAssign};
 
+use ark_ff::Zero;
 use zeroize::Zeroize;
 
 /// `Scalar` Represents an integer value.
@@ -10,7 +11,13 @@ pub struct Scalar {
     pub(crate) inner: ark_ed_on_bls12_377::Fr,
 }
 
-// TODO: Methods to instantiate Scalar
+impl Default for Scalar {
+    fn default() -> Self {
+        Scalar {
+            inner: ark_ed_on_bls12_377::Fr::zero(),
+        }
+    }
+}
 
 impl Zeroize for Scalar {
     fn zeroize(&mut self) {

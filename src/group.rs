@@ -270,9 +270,9 @@ impl Neg for Element {
 }
 
 impl<'b> MulAssign<&'b Scalar> for Element {
-    /// Scalar multiplication is performed through the implementation
-    /// of `MulAssign` on `EdwardsProjective` which is a type alias for
-    /// `GroupProjective<EdwardsParameters>`.
+    // Scalar multiplication is performed through the implementation
+    // of `MulAssign` on `EdwardsProjective` which is a type alias for
+    // `GroupProjective<EdwardsParameters>`.
     fn mul_assign(&mut self, point: &'b Scalar) {
         let mut p = self.inner;
         p *= point.inner;
