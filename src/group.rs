@@ -1,13 +1,18 @@
+use core::ops::Neg;
+use core::ops::{Add, AddAssign};
+use core::ops::{Mul, MulAssign};
+use core::ops::{Sub, SubAssign};
 use std::convert::{TryFrom, TryInto};
 
+use ark_ec::models::twisted_edwards_extended::GroupProjective;
 use ark_ec::models::TEModelParameters;
 use ark_ed_on_bls12_377::{EdwardsParameters, EdwardsProjective, Fq};
 use ark_ff::{Field, One, Zero};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 
-use crate::{invsqrt::SqrtRatioZeta, sign::Sign, EncodingError};
+use zeroize::Zeroize;
 
-use ark_ec::models::twisted_edwards_extended::GroupProjective;
+use crate::{invsqrt::SqrtRatioZeta, scalar::Scalar, sign::Sign, EncodingError};
 
 trait OnCurve {
     fn is_on_curve(&self) -> bool;
@@ -51,6 +56,12 @@ impl PartialEq for Element {
 }
 
 impl Eq for Element {}
+
+impl Zeroize for Element {
+    fn zeroize(&mut self) {
+        self.inner.zeroize()
+    }
+}
 
 impl Element {
     #[allow(non_snake_case)]
@@ -213,6 +224,71 @@ impl CanonicalDeserialize for Element {
 ////////////////////////////////////////////////////////////////////////////////
 // Group operations
 ////////////////////////////////////////////////////////////////////////////////
+
+impl<'b> Add<&'b Element> for Element {
+    type Output = Element;
+
+    fn add(self, other: &'b Element) -> Element {
+        Element {
+            inner: self.inner + other.inner,
+        }
+    }
+}
+
+impl<'b> AddAssign<&'b Element> for Element {
+    fn add_assign(&mut self, other: &'b Element) {
+        *self = Element {
+            inner: self.inner + other.inner,
+        }
+    }
+}
+
+impl<'b> Sub<&'b Element> for Element {
+    type Output = Element;
+
+    fn sub(self, other: &'b Element) -> Element {
+        Self {
+            inner: self.inner - other.inner,
+        }
+    }
+}
+
+impl<'b> SubAssign<&'b Element> for Element {
+    fn sub_assign(&mut self, other: &'b Element) {
+        *self = Element {
+            inner: self.inner - other.inner,
+        }
+    }
+}
+
+impl Neg for Element {
+    type Output = Self;
+
+    fn neg(self) -> Self {
+        Element { inner: -self.inner }
+    }
+}
+
+impl<'b> MulAssign<&'b Scalar> for Element {
+    // Scalar multiplication is performed through the implementation
+    // of `MulAssign` on `EdwardsProjective` which is a type alias for
+    // `GroupProjective<EdwardsParameters>`.
+    fn mul_assign(&mut self, point: &'b Scalar) {
+        let mut p = self.inner;
+        p *= point.inner;
+        *self = Element { inner: p }
+    }
+}
+
+impl<'b> Mul<&'b Scalar> for Element {
+    type Output = Element;
+
+    fn mul(self, point: &'b Scalar) -> Element {
+        let mut p = self.inner;
+        p *= point.inner;
+        Element { inner: p }
+    }
+}
 
 #[cfg(test)]
 mod tests {
