@@ -6,12 +6,13 @@ use std::convert::{TryFrom, TryInto};
 
 use ark_ec::models::twisted_edwards_extended::GroupProjective;
 use ark_ec::models::TEModelParameters;
-use ark_ed_on_bls12_377::{EdwardsParameters, EdwardsProjective, Fq};
-use ark_ff::{Field, One, Zero};
+use ark_ed_on_bls12_377::{EdwardsAffine, EdwardsParameters, EdwardsProjective, Fq};
+use ark_ff::{Field, FromBytes, One, SquareRootField, Zero};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 
 use zeroize::Zeroize;
 
+use crate::constants;
 use crate::{invsqrt::SqrtRatioZeta, scalar::Scalar, sign::Sign, EncodingError};
 
 trait OnCurve {
@@ -39,6 +40,14 @@ pub struct Encoding(pub [u8; 32]);
 #[derive(Copy, Clone, Debug)]
 pub struct Element {
     inner: EdwardsProjective,
+}
+
+impl From<EdwardsAffine> for Element {
+    fn from(point: EdwardsAffine) -> Self {
+        Element {
+            inner: point.into(),
+        }
+    }
 }
 
 impl Default for Element {
@@ -95,6 +104,71 @@ impl Element {
             .expect("serialization into array should be infallible");
 
         Encoding(bytes)
+    }
+
+    /// Create a decaf377 point (X : Y : Z : T) from its Jacobi Quartic representation (s, t)
+    pub fn from_jacobi_quartic(
+        s: ark_ed_on_bls12_377::Fq,
+        t: ark_ed_on_bls12_377::Fq,
+        sgn: ark_ed_on_bls12_377::Fq,
+    ) -> Element {
+        if s == Fq::zero() {
+            // check this
+            return Element::default();
+        }
+
+        let x = *constants::TWO * s / (*constants::ONE + EdwardsParameters::COEFF_A * s.square());
+        let y = (*constants::ONE - EdwardsParameters::COEFF_A * s.square()) / t;
+
+        EdwardsAffine::new(x, sgn * y).into()
+    }
+
+    /// Elligator map to decaf377 point
+    #[allow(non_snake_case)]
+    fn elligator_map(r_0: &ark_ed_on_bls12_377::Fq) -> Element {
+        // Ref: `Decaf_1_1_Point.elligatorSpec` in `ristretto.sage`
+        let A = EdwardsParameters::COEFF_A;
+        let D = EdwardsParameters::COEFF_D;
+
+        let r = *constants::ZETA * r_0.square();
+        let den = (D * r - (D - A)) * ((D - A) * r - D);
+        if den == Fq::zero() {
+            // check this
+            return Element::default();
+        }
+
+        let n1 = (r + *constants::ONE) * (A - *constants::TWO * D) / den;
+        let n2 = r * n1;
+
+        let mut sgn = *constants::ONE;
+        let s;
+        let t;
+
+        match n1.sqrt() {
+            Some(n1_root) => {
+                s = n1_root;
+                t = -(r - *constants::ONE) * (A - *constants::TWO * D).square() / den
+                    - *constants::ONE;
+            }
+            None => {
+                sgn = -*constants::ONE;
+                s = -n2.sqrt().expect("n2 sqrt not found!");
+                t = r * (r - *constants::ONE) * (A - *constants::TWO * D).square() / den
+                    - *constants::ONE;
+            }
+        }
+
+        Element::from_jacobi_quartic(s, t, sgn)
+    }
+
+    /// Maps uniformly distributed bytestrings to decaf377 elements.
+    #[allow(non_snake_case)]
+    pub fn from_uniform_bytes(bytes: &[u8; 64]) -> Element {
+        let r_1 = Fq::read(bytes[0..32].as_ref()).unwrap();
+        let R_1 = Element::elligator_map(&r_1.into());
+        let r_2 = Fq::read(bytes[32..64].as_ref()).unwrap();
+        let R_2 = Element::elligator_map(&r_2.into());
+        &R_1 + &R_2
     }
 }
 
