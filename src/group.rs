@@ -12,6 +12,9 @@ use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 
 use zeroize::Zeroize;
 
+use digest::generic_array::typenum::U64;
+use digest::Digest;
+
 use crate::constants;
 use crate::{invsqrt::SqrtRatioZeta, scalar::Scalar, sign::Sign, EncodingError};
 
@@ -161,7 +164,7 @@ impl Element {
         Element::from_jacobi_quartic(s, t, sgn)
     }
 
-    /// Maps uniformly distributed bytestrings to decaf377 elements.
+    /// Maps uniformly distributed bytestrings to a decaf377 `Element`.
     #[allow(non_snake_case)]
     pub fn from_uniform_bytes(bytes: &[u8; 64]) -> Element {
         let r_1 = Fq::read(bytes[0..32].as_ref()).unwrap();
@@ -169,6 +172,26 @@ impl Element {
         let r_2 = Fq::read(bytes[32..64].as_ref()).unwrap();
         let R_2 = Element::elligator_map(&r_2.into());
         &R_1 + &R_2
+    }
+
+    /// Take a `Digest` and returns a decaf377 `Element`.
+    pub fn from_hash<D>(input: D) -> Element
+    where
+        D: Digest<OutputSize = U64>,
+    {
+        let mut output = [0u8; 64];
+        output.copy_from_slice(&input.finalize());
+        Element::from_uniform_bytes(&output)
+    }
+
+    /// Takes a byte slice and returns a decaf377 `Element.
+    pub fn hash_from_bytes<D>(input: &[u8]) -> Element
+    where
+        D: Digest<OutputSize = U64>,
+    {
+        let mut hasher = D::new();
+        hasher.update(input);
+        Element::from_hash(hasher)
     }
 }
 
