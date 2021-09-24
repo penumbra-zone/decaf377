@@ -7,6 +7,7 @@ use std::convert::{TryFrom, TryInto};
 use ark_ec::models::twisted_edwards_extended::GroupProjective;
 use ark_ec::models::TEModelParameters;
 use ark_ed_on_bls12_377::{EdwardsAffine, EdwardsParameters, EdwardsProjective, Fq};
+use ark_ff::BigInteger;
 use ark_ff::{Field, FromBytes, One, SquareRootField, Zero};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 
@@ -76,6 +77,13 @@ impl Zeroize for Element {
 }
 
 impl Element {
+    pub fn basepoint() -> Element {
+        let mut bytes = [0u8; 32];
+        bytes[0] = 8;
+
+        Encoding(bytes).decompress().expect("hardcoded basepoint bytes are valid")
+    }
+
     #[allow(non_snake_case)]
     pub fn compress(&self) -> Encoding {
         // This isn't a constant, only because traits don't have const methods
@@ -129,11 +137,23 @@ impl Element {
     /// Elligator map to decaf377 point
     #[allow(non_snake_case)]
     fn elligator_map(r_0: &ark_ed_on_bls12_377::Fq) -> Element {
+        use num_bigint::BigUint;
+
         // Ref: `Decaf_1_1_Point.elligatorSpec` in `ristretto.sage`
         let A = EdwardsParameters::COEFF_A;
-        let D = EdwardsParameters::COEFF_D;
+        //println!("A: {:?}", A.0.to_bytes_le());
+        println!("A: {:?}", A);
 
+        let A_biguint = BigUint::from_bytes_le(&A.0.to_bytes_le());
+        println!("A bigint: {:?}", A_biguint);
+
+        let D = EdwardsParameters::COEFF_D;
+        println!("D: {:?}", D.0.to_bytes_le());
+        println!("r_0: {:?}", r_0.0.to_bytes_le());
+
+        println!("qnr: {:?}", (*constants::ZETA).0.to_bytes_le());
         let r = *constants::ZETA * r_0.square();
+        println!("r: {:?}", r.0.to_bytes_le());
         let den = (D * r - (D - A)) * ((D - A) * r - D);
         if den == Fq::zero() {
             // check this
@@ -161,7 +181,17 @@ impl Element {
             }
         }
 
-        Element::from_jacobi_quartic(s, t, sgn)
+        println!("n1: {:?}", n1.0.to_bytes_le());
+        println!("s: {:?}", s.0.to_bytes_le());
+        println!("t: {:?}", t.0.to_bytes_le());
+        let result = Element::from_jacobi_quartic(s, t, sgn);
+
+        debug_assert!(
+            result.inner.is_on_curve(),
+            "resulting point must be on the curve",
+        );
+
+        result
     }
 
     /// Maps uniformly distributed bytestrings to a decaf377 `Element`.
@@ -171,7 +201,15 @@ impl Element {
         let R_1 = Element::elligator_map(&r_1.into());
         let r_2 = Fq::read(bytes[32..64].as_ref()).unwrap();
         let R_2 = Element::elligator_map(&r_2.into());
-        &R_1 + &R_2
+
+        let result = &R_1 + &R_2;
+
+        debug_assert!(
+            result.inner.is_on_curve(),
+            "resulting point must be on the curve",
+        );
+
+        result
     }
 
     /// Take a `Digest` and returns a decaf377 `Element`.
@@ -184,7 +222,7 @@ impl Element {
         Element::from_uniform_bytes(&output)
     }
 
-    /// Takes a byte slice and returns a decaf377 `Element.
+    /// Takes a byte slice and returns a decaf377 `Element`.
     pub fn hash_from_bytes<D>(input: &[u8]) -> Element
     where
         D: Digest<OutputSize = U64>,
@@ -282,6 +320,20 @@ impl Encoding {
         Ok(Element {
             inner: EdwardsProjective::new(x, y, t, z),
         })
+    }
+}
+
+impl TryFrom<&[u8]> for Encoding {
+    type Error = EncodingError;
+
+    fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
+        if bytes.len() != 32 {
+            Err(EncodingError::InvalidSliceLength)
+        } else {
+            let mut arr = [0u8; 32];
+            arr.copy_from_slice(&bytes[0..32]);
+            Ok(Encoding(arr))
+        }
     }
 }
 
@@ -537,6 +589,77 @@ mod tests {
 
         let enc2 = Encoding(bytes).decompress().unwrap().compress();
         assert_eq!(bytes, enc2.0);
+    }
+
+    #[test]
+    fn test_encoding_matches_sage_encoding() {
+        use hex;
+
+        let mut accumulator = Element::default();
+        let basepoint = Element::basepoint();
+
+        let expected_points = [
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "0800000000000000000000000000000000000000000000000000000000000000",
+            "b2ecf9b9082d6306538be73b0d6ee741141f3222152da78685d6596efc8c1506",
+            "2ebd42dd3a2307083c834e79fb9e787e352dd33e0d719f86ae4adb02fe382409",
+            "6acd327d70f9588fac373d165f4d9d5300510274dffdfdf2bf0955acd78da50d",
+            "460f913e516441c286d95dd30b0a2d2bf14264f325528b06455d7cb93ba13a0b",
+            "ec8798bcbb3bf29329549d769f89cf7993e15e2c68ec7aa2a956edf5ec62ae07",
+            "48b01e513dd37d94c3b48940dc133b92ccba7f546e99d3fc2e602d284f609f00",
+            "a4e85dddd19c80ecf5ef10b9d27b6626ac1a4f90bd10d263c717ecce4da6570a",
+            "1a8fea8cbfbc91236d8c7924e3e7e617f9dd544b710ee83827737fe8dc63ae00",
+            "0a0f86eaac0c1af30eb138467c49381edb2808904c81a4b81d2b02a2d7816006",
+            "588125a8f4e2bab8d16affc4ca60c5f64b50d38d2bb053148021631f72e99b06",
+            "f43f4cefbe7326eaab1584722b1b4860de554b23a14490a03f3fd63a089add0b",
+            "76c739a33ffd15cf6554a8e705dc573f26490b64de0c5bd4e4ac75ed5af8e60b",
+            "200136952d18d3f6c70347032ba3fef4f60c240d706be2950b4f42f1a7087705",
+            "bcb0f922df1c7aa9579394020187a2e19e2d8073452c6ab9b0c4b052aa50f505",
+        ];
+
+        for hexstr in expected_points {
+            let bytes = hex::decode(hexstr).unwrap();
+            let point = Encoding::try_from(bytes.as_slice()).unwrap().decompress().unwrap();
+            
+            let result_hexstr = hex::encode(point.compress().0);
+
+            assert_eq!(result_hexstr.as_str(), hexstr);
+
+            assert_eq!(accumulator, point);
+
+            accumulator += basepoint;
+        }
+    }
+
+    #[test]
+    fn test_elligator() {
+        use ark_ff::BigInteger256;
+
+        // These are the test cases from testElligatorDeterministic in ristretto.sage
+        let inputs: [BigInteger256; 1] = [BigInteger256::new([
+            u64::from_le_bytes([197, 210, 222, 196, 115, 0, 171, 29]),
+            u64::from_le_bytes([179, 50, 199, 157, 127, 7, 162, 66]),
+            u64::from_le_bytes([43, 53, 104, 235, 150, 134, 171, 31]),
+            u64::from_le_bytes([248, 84, 245, 184, 9, 118, 162, 189]),
+        ])];
+        let input_element: ark_ed_on_bls12_377::Fq = Fq::new(inputs[0]);
+
+        let x_f: ark_ed_on_bls12_377::Fq = ark_ff::field_new!(
+            Fq,
+            "2873166235834220037104482467644394559952202754715866736878534498814378075613"
+        );
+        let y_f: ark_ed_on_bls12_377::Fq = ark_ff::field_new!(
+            Fq,
+            "6750795376193520471991496211306666179401869256694488890972168476083830147859"
+        );
+
+        let expected: [Element; 1] = [EdwardsAffine::new(x_f, y_f).into()];
+        println!("expected: {:?}", expected[0]);
+
+        let actual = Element::elligator_map(&input_element);
+        println!("actual: {:?}", actual);
+
+        assert_eq!(actual, expected[0]);
     }
 
     proptest! {

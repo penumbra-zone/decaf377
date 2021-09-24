@@ -8,7 +8,10 @@ def hibit(x): return lobit(2*x)
 def negative(x): return lobit(x)
 def enc_le(x,n): return bytearray([int(x)>>(8*i) & 0xFF for i in range(n)])
 def dec_le(x): return sum(b<<(8*i) for i,b in enumerate(x))
-def randombytes(n): return bytearray([randint(0,255) for _ in range(n)])
+def randombytes(n):
+    nums = [randint(0,255) for _ in range(n)]
+    print('nums: ', nums)
+    return bytearray(nums)
 
 def optimized_version_of(spec):
     """Decorator: This function is an optimized version of some specification"""
@@ -70,6 +73,13 @@ class QuotientEdwardsPoint(object):
             raise NotOnCurveException(str(self))
 
     def __repr__(self):
+        x_str = str(self.x)
+        if len(x_str) % 2 != 0: x_str = '0' + x_str
+        y_str = str(self.y)
+        if len(y_str) % 2 != 0: y_str = '0' + y_str
+
+        #print('x: ', binascii.unhexlify(str(self.x)))
+        #print('y: ', binascii.unhexlify(str(self.y)))
         return "%s(0x%x,0x%x)" % (self.__class__.__name__, self.x, self.y)
 
     def __iter__(self):
@@ -140,7 +150,7 @@ class QuotientEdwardsPoint(object):
         
     @classmethod
     def gfToBytes(cls,x,mustBePositive=False):
-        """Convert little-endian bytes to field element, sanity check length"""
+        """Convert field element to little-endian bytes, sanity check length"""
         if negative(x) and mustBePositive: x = -x
         return enc_le(x,cls.encLen)
 
@@ -553,9 +563,16 @@ class Decaf_1_1_Point(QuotientEdwardsPoint):
     @classmethod
     def elligatorSpec(cls,r0,fromR=False):
         a,d = cls.a,cls.d
+        print('a: ', [x for x in cls.gfToBytes(a)])
+        print('d: ', [x for x in cls.gfToBytes(d)])
+
+        print('r0: ', [x for x in r0])
+        print('fromR: ', fromR)
         if fromR: r = r0
         else: r = cls.qnr * cls.bytesToGf(r0,mustBeProper=False,maskHiBits=True)^2
-        
+        print('r: ', [x for x in cls.gfToBytes(r)])
+        print('cls.qnr: ', [x for x in cls.gfToBytes(cls.qnr)] )
+
         den = (d*r-(d-a))*((d-a)*r-d)
         if den == 0: return cls()
         n1 = (r+1)*(a-2*d)/den
@@ -565,8 +582,11 @@ class Decaf_1_1_Point(QuotientEdwardsPoint):
         else:
             sgn,s,t = -1, -xsqrt(n2), r*(r-1)*(a-2*d)^2 / den - 1
         
+        print('n1: ', [x for x in cls.gfToBytes(n1)])
+        print('s: ', [x for x in cls.gfToBytes(s)])
+        print('t: ', [x for x in cls.gfToBytes(t)])
         return cls.fromJacobiQuartic(s,t)
-            
+
     @classmethod
     @optimized_version_of("elligatorSpec")
     def elligator(cls,r0):
@@ -819,7 +839,10 @@ def testElligator(cls,n):
     print ("Testing elligator on %s" % cls.__name__)
     for i in range(n):
         r = randombytes(cls.encLen)
+        print('input: ', r)
         P = cls.elligator(r)
+        print('P.x: ', P.x)
+        print('P.y: ', P.y)
         if hasattr(P,"invertElligator"):
             iv = P.invertElligator()
             modr = bytes(cls.gfToBytes(cls.bytesToGf(r,mustBeProper=False,maskHiBits=True)))
@@ -834,6 +857,27 @@ def testElligator(cls,n):
                 #break
         else:
             pass # TODO
+
+def testElligatorDeterministic(cls):
+    """These test cases correspond to those in the Decaf377 crate in test_elligator"""
+
+    inputs = [
+        [197, 210, 222, 196, 115, 0, 171, 29, 179, 50, 199, 157, 127, 7, 162, 66, 43, 53, 104, 235, 150, 134, 171, 31, 248, 84, 245, 184, 9, 118, 162, 189]
+    ]
+
+    expected = [
+        [2873166235834220037104482467644394559952202754715866736878534498814378075613, 6750795376193520471991496211306666179401869256694488890972168476083830147859]
+    ]
+
+    for i, r in enumerate(inputs):
+        print('Elligator test case for input: ', r)
+        r = bytearray(r)
+        P = cls.elligator(r)
+        print('Expected outputs are decaf377 point (insert in test case): ', P)
+        assert P.x == expected[i][0]
+        assert P.y == expected[i][1]
+        print('P.x: ', P.x)
+        print('P.y: ', P.y)
 
 def gangtest(classes,n):
     print ("Gang test",[cls.__name__ for cls in classes])
@@ -898,8 +942,10 @@ def testDoubleAndEncode(cls,n):
 #gangtest([IsoEd448Point,TwistedEd448GoldilocksPoint,Ed448GoldilocksPoint],100)
 #gangtest([Ed25519Point,IsoEd25519Point],100)
 
-test(Decaf377Point, 100)
-testDoubleAndEncode(Decaf377Point, 100)
-testElligator(Decaf377Point, 100)
+#test(Decaf377Point, 16, True)
+#testDoubleAndEncode(Decaf377Point, 100)
+#testElligator(Decaf377Point, 10)
 
-test(Decaf377Point,16,True)
+testElligatorDeterministic(Decaf377Point)
+
+#test(Decaf377Point,16,True)
