@@ -563,15 +563,20 @@ class Decaf_1_1_Point(QuotientEdwardsPoint):
     @classmethod
     def elligatorSpec(cls,r0,fromR=False):
         a,d = cls.a,cls.d
-        print('a: ', [x for x in cls.gfToBytes(a)])
-        print('d: ', [x for x in cls.gfToBytes(d)])
+        print('a', a)
+        print('d', d)
 
-        print('r0: ', [x for x in r0])
+        print('r0: ', r0)
         print('fromR: ', fromR)
         if fromR: r = r0
-        else: r = cls.qnr * cls.bytesToGf(r0,mustBeProper=False,maskHiBits=True)^2
-        print('r: ', [x for x in cls.gfToBytes(r)])
-        print('cls.qnr: ', [x for x in cls.gfToBytes(cls.qnr)] )
+        else:
+            r0_bytes = r0
+            r0 = cls.bytesToGf(r0,mustBeProper=False,maskHiBits=True)
+            print('r0_bytes: ', r0_bytes)
+            print('r0: ', r0)
+            r = cls.qnr * r0^2
+        print('r: ', r)
+        print('cls.qnr: ', cls.qnr)
 
         den = (d*r-(d-a))*((d-a)*r-d)
         if den == 0: return cls()
@@ -582,9 +587,9 @@ class Decaf_1_1_Point(QuotientEdwardsPoint):
         else:
             sgn,s,t = -1, -xsqrt(n2), r*(r-1)*(a-2*d)^2 / den - 1
         
-        print('n1: ', [x for x in cls.gfToBytes(n1)])
-        print('s: ', [x for x in cls.gfToBytes(s)])
-        print('t: ', [x for x in cls.gfToBytes(t)])
+        print('n1: ', n1)
+        print('s: ', s)
+        print('t: ', t)
         return cls.fromJacobiQuartic(s,t)
 
     @classmethod
@@ -862,11 +867,11 @@ def testElligatorDeterministic(cls):
     """These test cases correspond to those in the Decaf377 crate in test_elligator"""
 
     inputs = [
-        [197, 210, 222, 196, 115, 0, 171, 29, 179, 50, 199, 157, 127, 7, 162, 66, 43, 53, 104, 235, 150, 134, 171, 31, 248, 84, 245, 184, 9, 118, 162, 189]
+        [221, 101, 215, 58, 170, 229, 36, 124, 172, 234, 94, 214, 186, 163, 242, 30, 65, 123, 76, 74, 56, 60, 24, 213, 240, 137, 49, 189, 138, 39, 90, 6]
     ]
 
     expected = [
-        [2873166235834220037104482467644394559952202754715866736878534498814378075613, 6750795376193520471991496211306666179401869256694488890972168476083830147859]
+        [1267955849280145133999011095767946180059440909377398529682813961428156596086, 5356565093348124788258444273601808083900527100008973995409157974880178412098]
     ]
 
     for i, r in enumerate(inputs):

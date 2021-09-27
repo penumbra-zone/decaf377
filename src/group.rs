@@ -81,7 +81,9 @@ impl Element {
         let mut bytes = [0u8; 32];
         bytes[0] = 8;
 
-        Encoding(bytes).decompress().expect("hardcoded basepoint bytes are valid")
+        Encoding(bytes)
+            .decompress()
+            .expect("hardcoded basepoint bytes are valid")
     }
 
     #[allow(non_snake_case)]
@@ -137,23 +139,19 @@ impl Element {
     /// Elligator map to decaf377 point
     #[allow(non_snake_case)]
     fn elligator_map(r_0: &ark_ed_on_bls12_377::Fq) -> Element {
-        use num_bigint::BigUint;
+        use crate::arkworks_ext::FieldFormatExt;
 
         // Ref: `Decaf_1_1_Point.elligatorSpec` in `ristretto.sage`
         let A = EdwardsParameters::COEFF_A;
-        //println!("A: {:?}", A.0.to_bytes_le());
-        println!("A: {:?}", A);
-
-        let A_biguint = BigUint::from_bytes_le(&A.0.to_bytes_le());
-        println!("A bigint: {:?}", A_biguint);
+        dbg!(A.to_decimal_string());
 
         let D = EdwardsParameters::COEFF_D;
-        println!("D: {:?}", D.0.to_bytes_le());
-        println!("r_0: {:?}", r_0.0.to_bytes_le());
+        dbg!(D.to_decimal_string());
+        dbg!(r_0.to_decimal_string());
 
-        println!("qnr: {:?}", (*constants::ZETA).0.to_bytes_le());
+        dbg!(constants::ZETA.to_decimal_string());
         let r = *constants::ZETA * r_0.square();
-        println!("r: {:?}", r.0.to_bytes_le());
+        dbg!(r.to_decimal_string());
         let den = (D * r - (D - A)) * ((D - A) * r - D);
         if den == Fq::zero() {
             // check this
@@ -181,9 +179,9 @@ impl Element {
             }
         }
 
-        println!("n1: {:?}", n1.0.to_bytes_le());
-        println!("s: {:?}", s.0.to_bytes_le());
-        println!("t: {:?}", t.0.to_bytes_le());
+        dbg!(n1.to_decimal_string());
+        dbg!(s.to_decimal_string());
+        dbg!(t.to_decimal_string());
         let result = Element::from_jacobi_quartic(s, t, sgn);
 
         debug_assert!(
@@ -619,8 +617,11 @@ mod tests {
 
         for hexstr in expected_points {
             let bytes = hex::decode(hexstr).unwrap();
-            let point = Encoding::try_from(bytes.as_slice()).unwrap().decompress().unwrap();
-            
+            let point = Encoding::try_from(bytes.as_slice())
+                .unwrap()
+                .decompress()
+                .unwrap();
+
             let result_hexstr = hex::encode(point.compress().0);
 
             assert_eq!(result_hexstr.as_str(), hexstr);
@@ -636,21 +637,21 @@ mod tests {
         use ark_ff::BigInteger256;
 
         // These are the test cases from testElligatorDeterministic in ristretto.sage
-        let inputs: [BigInteger256; 1] = [BigInteger256::new([
-            u64::from_le_bytes([197, 210, 222, 196, 115, 0, 171, 29]),
-            u64::from_le_bytes([179, 50, 199, 157, 127, 7, 162, 66]),
-            u64::from_le_bytes([43, 53, 104, 235, 150, 134, 171, 31]),
-            u64::from_le_bytes([248, 84, 245, 184, 9, 118, 162, 189]),
-        ])];
-        let input_element: ark_ed_on_bls12_377::Fq = Fq::new(inputs[0]);
+        let input_element = Fq::deserialize(
+            &[
+                221, 101, 215, 58, 170, 229, 36, 124, 172, 234, 94, 214, 186, 163, 242, 30, 65,
+                123, 76, 74, 56, 60, 24, 213, 240, 137, 49, 189, 138, 39, 90, 6,
+            ][..],
+        )
+        .expect("encoding of test vector is valid");
 
         let x_f: ark_ed_on_bls12_377::Fq = ark_ff::field_new!(
             Fq,
-            "2873166235834220037104482467644394559952202754715866736878534498814378075613"
+            "1267955849280145133999011095767946180059440909377398529682813961428156596086"
         );
         let y_f: ark_ed_on_bls12_377::Fq = ark_ff::field_new!(
             Fq,
-            "6750795376193520471991496211306666179401869256694488890972168476083830147859"
+            "5356565093348124788258444273601808083900527100008973995409157974880178412098"
         );
 
         let expected: [Element; 1] = [EdwardsAffine::new(x_f, y_f).into()];

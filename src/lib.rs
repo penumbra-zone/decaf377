@@ -7,6 +7,7 @@ mod group;
 mod invsqrt;
 mod scalar;
 mod sign;
+mod arkworks_ext;
 
 pub use error::EncodingError;
 pub use group::{Element, Encoding};
