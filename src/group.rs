@@ -7,7 +7,6 @@ use std::convert::{TryFrom, TryInto};
 use ark_ec::models::twisted_edwards_extended::GroupProjective;
 use ark_ec::models::TEModelParameters;
 use ark_ed_on_bls12_377::{EdwardsAffine, EdwardsParameters, EdwardsProjective, Fq};
-use ark_ff::BigInteger;
 use ark_ff::{Field, FromBytes, One, SquareRootField, Zero};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 
@@ -16,8 +15,10 @@ use zeroize::Zeroize;
 use digest::generic_array::typenum::U64;
 use digest::Digest;
 
-use crate::constants;
-use crate::{invsqrt::SqrtRatioZeta, scalar::Scalar, sign::Sign, EncodingError};
+use crate::constants::{ONE, TWO, ZETA};
+use crate::{
+    arkworks_ext::XSqrt, invsqrt::SqrtRatioZeta, scalar::Scalar, sign::Sign, EncodingError,
+};
 
 trait OnCurve {
     fn is_on_curve(&self) -> bool;
@@ -130,8 +131,8 @@ impl Element {
             return Element::default();
         }
 
-        let x = *constants::TWO * s / (*constants::ONE + EdwardsParameters::COEFF_A * s.square());
-        let y = (*constants::ONE - EdwardsParameters::COEFF_A * s.square()) / t;
+        let x = *TWO * s / (*ONE + EdwardsParameters::COEFF_A * s.square());
+        let y = (*ONE - EdwardsParameters::COEFF_A * s.square()) / t;
 
         EdwardsAffine::new(x, sgn * y).into()
     }
@@ -139,49 +140,36 @@ impl Element {
     /// Elligator map to decaf377 point
     #[allow(non_snake_case)]
     fn elligator_map(r_0: &ark_ed_on_bls12_377::Fq) -> Element {
-        use crate::arkworks_ext::FieldFormatExt;
-
         // Ref: `Decaf_1_1_Point.elligatorSpec` in `ristretto.sage`
         let A = EdwardsParameters::COEFF_A;
-        dbg!(A.to_decimal_string());
-
         let D = EdwardsParameters::COEFF_D;
-        dbg!(D.to_decimal_string());
-        dbg!(r_0.to_decimal_string());
 
-        dbg!(constants::ZETA.to_decimal_string());
-        let r = *constants::ZETA * r_0.square();
-        dbg!(r.to_decimal_string());
+        let r = *ZETA * r_0.square();
         let den = (D * r - (D - A)) * ((D - A) * r - D);
         if den == Fq::zero() {
             // check this
             return Element::default();
         }
 
-        let n1 = (r + *constants::ONE) * (A - *constants::TWO * D) / den;
+        let n1 = (r + *ONE) * (A - *TWO * D) / den;
         let n2 = r * n1;
 
-        let mut sgn = *constants::ONE;
+        let mut sgn = *ONE;
         let s;
         let t;
 
-        match n1.sqrt() {
+        match n1.xsqrt() {
             Some(n1_root) => {
                 s = n1_root;
-                t = -(r - *constants::ONE) * (A - *constants::TWO * D).square() / den
-                    - *constants::ONE;
+                t = -(r - *ONE) * (A - *TWO * D).square() / den - *ONE;
             }
             None => {
-                sgn = -*constants::ONE;
-                s = -n2.sqrt().expect("n2 sqrt not found!");
-                t = r * (r - *constants::ONE) * (A - *constants::TWO * D).square() / den
-                    - *constants::ONE;
+                sgn = -*ONE;
+                s = -(n2.sqrt().expect("n2 sqrt not found!"));
+                t = r * (r - *ONE) * (A - *TWO * D).square() / den - *ONE;
             }
         }
 
-        dbg!(n1.to_decimal_string());
-        dbg!(s.to_decimal_string());
-        dbg!(t.to_decimal_string());
         let result = Element::from_jacobi_quartic(s, t, sgn);
 
         debug_assert!(
@@ -276,7 +264,6 @@ impl Encoding {
         // This isn't a constant, only because traits don't have const methods
         // yet and multiplication is only implemented as part of the Mul trait.
         let D4: Fq = EdwardsParameters::COEFF_D * Fq::from(4u32);
-        let TWO = Fq::one() + Fq::one();
 
         // 1/2. Reject unless s is canonically encoded and nonnegative.
         let s = Fq::deserialize(&self.0[..]).map_err(|_| EncodingError::InvalidEncoding)?;
@@ -298,7 +285,7 @@ impl Encoding {
         }
 
         // 6. sign check
-        let two_s_u_1 = TWO * s * u_1;
+        let two_s_u_1 = *TWO * s * u_1;
         let check = two_s_u_1 * v;
         if check.is_negative() {
             v = -v;
@@ -634,33 +621,110 @@ mod tests {
 
     #[test]
     fn test_elligator() {
-        use ark_ff::BigInteger256;
-
         // These are the test cases from testElligatorDeterministic in ristretto.sage
-        let input_element = Fq::deserialize(
-            &[
+        let inputs = [
+            [
                 221, 101, 215, 58, 170, 229, 36, 124, 172, 234, 94, 214, 186, 163, 242, 30, 65,
                 123, 76, 74, 56, 60, 24, 213, 240, 137, 49, 189, 138, 39, 90, 6,
-            ][..],
-        )
-        .expect("encoding of test vector is valid");
+            ],
+            [
+                118, 191, 44, 105, 223, 173, 54, 26, 156, 64, 125, 117, 96, 97, 33, 66, 88, 153,
+                14, 206, 174, 129, 102, 135, 58, 214, 120, 89, 56, 163, 205, 2,
+            ],
+            [
+                72, 47, 66, 129, 24, 237, 191, 146, 248, 97, 173, 205, 208, 146, 214, 222, 207, 15,
+                66, 231, 182, 40, 110, 244, 120, 41, 156, 60, 95, 51, 113, 0,
+            ],
+            [
+                180, 100, 186, 73, 164, 233, 192, 87, 87, 111, 188, 196, 232, 194, 253, 202, 145,
+                80, 72, 186, 245, 243, 12, 140, 43, 48, 233, 64, 220, 246, 195, 4,
+            ],
+            [
+                251, 184, 112, 124, 131, 61, 118, 222, 107, 35, 212, 35, 158, 128, 150, 67, 14, 56,
+                5, 27, 231, 103, 126, 206, 75, 44, 121, 192, 43, 218, 169, 18,
+            ],
+            [
+                111, 209, 86, 18, 133, 185, 154, 96, 249, 211, 127, 84, 195, 120, 202, 226, 39,
+                251, 42, 33, 171, 197, 213, 54, 50, 139, 98, 160, 160, 76, 66, 0,
+            ],
+        ];
 
-        let x_f: ark_ed_on_bls12_377::Fq = ark_ff::field_new!(
-            Fq,
-            "1267955849280145133999011095767946180059440909377398529682813961428156596086"
-        );
-        let y_f: ark_ed_on_bls12_377::Fq = ark_ff::field_new!(
-            Fq,
-            "5356565093348124788258444273601808083900527100008973995409157974880178412098"
-        );
+        let expected_xy_coordinates = [
+            [
+                ark_ff::field_new!(
+                    Fq,
+                    "1267955849280145133999011095767946180059440909377398529682813961428156596086"
+                ),
+                ark_ff::field_new!(
+                    Fq,
+                    "5356565093348124788258444273601808083900527100008973995409157974880178412098"
+                ),
+            ],
+            [
+                ark_ff::field_new!(
+                    Fq,
+                    "200008274961555948861247117495670973596739637087794512618526686349329837896"
+                ),
+                ark_ff::field_new!(
+                    Fq,
+                    "2647160997166078743329301827422337374657888721988786738921611999944531338531"
+                ),
+            ],
+            [
+                ark_ff::field_new!(
+                    Fq,
+                    "2155490339590342463221653343294318190999589388357737005449404856842887783604"
+                ),
+                ark_ff::field_new!(
+                    Fq,
+                    "4481458139914468306847063704257284041203193835717940998143249933452019482864"
+                ),
+            ],
+            [
+                ark_ff::field_new!(
+                    Fq,
+                    "8441734188697456667144320566571776204829442942061036742254289993746772703483"
+                ),
+                ark_ff::field_new!(
+                    Fq,
+                    "7620110693934777700596031508223455603299325399921316208494126022090241681882"
+                ),
+            ],
+            [
+                ark_ff::field_new!(
+                    Fq,
+                    "117140769479701400914019462651613478220779023707299711126764550434911080815"
+                ),
+                ark_ff::field_new!(
+                    Fq,
+                    "5810205353606534415061383517342879526260822986695264074414984877708731584311"
+                ),
+            ],
+            [
+                ark_ff::field_new!(
+                    Fq,
+                    "2862934919620274750419502812011588585092662737799324413702618024907129157332"
+                ),
+                ark_ff::field_new!(
+                    Fq,
+                    "230753360126360732618318176279626021301046880630378028205676927966589412379"
+                ),
+            ],
+        ];
 
-        let expected: [Element; 1] = [EdwardsAffine::new(x_f, y_f).into()];
-        println!("expected: {:?}", expected[0]);
+        for (ind, input) in inputs.iter().enumerate() {
+            let input_element =
+                Fq::deserialize(&input[..]).expect("encoding of test vector is valid");
 
-        let actual = Element::elligator_map(&input_element);
-        println!("actual: {:?}", actual);
+            let expected: Element = EdwardsAffine::new(
+                expected_xy_coordinates[ind][0],
+                expected_xy_coordinates[ind][1],
+            )
+            .into();
+            let actual = Element::elligator_map(&input_element);
 
-        assert_eq!(actual, expected[0]);
+            assert_eq!(actual, expected);
+        }
     }
 
     proptest! {

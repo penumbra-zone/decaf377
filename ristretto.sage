@@ -8,10 +8,7 @@ def hibit(x): return lobit(2*x)
 def negative(x): return lobit(x)
 def enc_le(x,n): return bytearray([int(x)>>(8*i) & 0xFF for i in range(n)])
 def dec_le(x): return sum(b<<(8*i) for i,b in enumerate(x))
-def randombytes(n):
-    nums = [randint(0,255) for _ in range(n)]
-    print('nums: ', nums)
-    return bytearray(nums)
+def randombytes(n): return bytearray([randint(0,255) for _ in range(n)])
 
 def optimized_version_of(spec):
     """Decorator: This function is an optimized version of some specification"""
@@ -73,13 +70,6 @@ class QuotientEdwardsPoint(object):
             raise NotOnCurveException(str(self))
 
     def __repr__(self):
-        x_str = str(self.x)
-        if len(x_str) % 2 != 0: x_str = '0' + x_str
-        y_str = str(self.y)
-        if len(y_str) % 2 != 0: y_str = '0' + y_str
-
-        #print('x: ', binascii.unhexlify(str(self.x)))
-        #print('y: ', binascii.unhexlify(str(self.y)))
         return "%s(0x%x,0x%x)" % (self.__class__.__name__, self.x, self.y)
 
     def __iter__(self):
@@ -563,20 +553,10 @@ class Decaf_1_1_Point(QuotientEdwardsPoint):
     @classmethod
     def elligatorSpec(cls,r0,fromR=False):
         a,d = cls.a,cls.d
-        print('a', a)
-        print('d', d)
-
-        print('r0: ', r0)
-        print('fromR: ', fromR)
         if fromR: r = r0
         else:
-            r0_bytes = r0
             r0 = cls.bytesToGf(r0,mustBeProper=False,maskHiBits=True)
-            print('r0_bytes: ', r0_bytes)
-            print('r0: ', r0)
             r = cls.qnr * r0^2
-        print('r: ', r)
-        print('cls.qnr: ', cls.qnr)
 
         den = (d*r-(d-a))*((d-a)*r-d)
         if den == 0: return cls()
@@ -586,10 +566,7 @@ class Decaf_1_1_Point(QuotientEdwardsPoint):
             sgn,s,t = 1,   xsqrt(n1),  -(r-1)*(a-2*d)^2 / den - 1
         else:
             sgn,s,t = -1, -xsqrt(n2), r*(r-1)*(a-2*d)^2 / den - 1
-        
-        print('n1: ', n1)
-        print('s: ', s)
-        print('t: ', t)
+
         return cls.fromJacobiQuartic(s,t)
 
     @classmethod
@@ -844,10 +821,7 @@ def testElligator(cls,n):
     print ("Testing elligator on %s" % cls.__name__)
     for i in range(n):
         r = randombytes(cls.encLen)
-        print('input: ', r)
         P = cls.elligator(r)
-        print('P.x: ', P.x)
-        print('P.y: ', P.y)
         if hasattr(P,"invertElligator"):
             iv = P.invertElligator()
             modr = bytes(cls.gfToBytes(cls.bytesToGf(r,mustBeProper=False,maskHiBits=True)))
@@ -866,23 +840,36 @@ def testElligator(cls,n):
 def testElligatorDeterministic(cls):
     """These test cases correspond to those in the Decaf377 crate in test_elligator"""
 
+    # Test case inputs were generated beginning with the value
+    # 2873166235834220037104482467644394559952202754715866736878534498814378075613
+    # and then are the x-coordinate of the previous input.
     inputs = [
-        [221, 101, 215, 58, 170, 229, 36, 124, 172, 234, 94, 214, 186, 163, 242, 30, 65, 123, 76, 74, 56, 60, 24, 213, 240, 137, 49, 189, 138, 39, 90, 6]
+        [221, 101, 215, 58, 170, 229, 36, 124, 172, 234, 94, 214, 186, 163, 242, 30, 65, 123, 76, 74, 56, 60, 24, 213, 240, 137, 49, 189, 138, 39, 90, 6],
+        [118, 191, 44, 105, 223, 173, 54, 26, 156, 64, 125, 117, 96, 97, 33, 66, 88, 153, 14, 206, 174, 129, 102, 135, 58, 214, 120, 89, 56, 163, 205, 2],
+        [72, 47, 66, 129, 24, 237, 191, 146, 248, 97, 173, 205, 208, 146, 214, 222, 207, 15, 66, 231, 182, 40, 110, 244, 120, 41, 156, 60, 95, 51, 113],
+        [180, 100, 186, 73, 164, 233, 192, 87, 87, 111, 188, 196, 232, 194, 253, 202, 145, 80, 72, 186, 245, 243, 12, 140, 43, 48, 233, 64, 220, 246, 195, 4],
+        [251, 184, 112, 124, 131, 61, 118, 222, 107, 35, 212, 35, 158, 128, 150, 67, 14, 56, 5, 27, 231, 103, 126, 206, 75, 44, 121, 192, 43, 218, 169, 18],
+        [111, 209, 86, 18, 133, 185, 154, 96, 249, 211, 127, 84, 195, 120, 202, 226, 39, 251, 42, 33, 171, 197, 213, 54, 50, 139, 98, 160, 160, 76, 66]
     ]
 
     expected = [
-        [1267955849280145133999011095767946180059440909377398529682813961428156596086, 5356565093348124788258444273601808083900527100008973995409157974880178412098]
+        [1267955849280145133999011095767946180059440909377398529682813961428156596086, 5356565093348124788258444273601808083900527100008973995409157974880178412098],
+        [200008274961555948861247117495670973596739637087794512618526686349329837896, 2647160997166078743329301827422337374657888721988786738921611999944531338531],
+        [2155490339590342463221653343294318190999589388357737005449404856842887783604, 4481458139914468306847063704257284041203193835717940998143249933452019482864],
+        [8441734188697456667144320566571776204829442942061036742254289993746772703483, 7620110693934777700596031508223455603299325399921316208494126022090241681882],
+        [117140769479701400914019462651613478220779023707299711126764550434911080815, 5810205353606534415061383517342879526260822986695264074414984877708731584311],
+        [2862934919620274750419502812011588585092662737799324413702618024907129157332, 230753360126360732618318176279626021301046880630378028205676927966589412379]
     ]
 
     for i, r in enumerate(inputs):
-        print('Elligator test case for input: ', r)
+        # print('Elligator test case for input: ', r)
         r = bytearray(r)
         P = cls.elligator(r)
-        print('Expected outputs are decaf377 point (insert in test case): ', P)
+        # print('Expected outputs are decaf377 point (insert in test case): ', P)
+        # print('P.x: ', P.x)
+        # print('P.y: ', P.y)
         assert P.x == expected[i][0]
         assert P.y == expected[i][1]
-        print('P.x: ', P.x)
-        print('P.y: ', P.y)
 
 def gangtest(classes,n):
     print ("Gang test",[cls.__name__ for cls in classes])
@@ -947,10 +934,8 @@ def testDoubleAndEncode(cls,n):
 #gangtest([IsoEd448Point,TwistedEd448GoldilocksPoint,Ed448GoldilocksPoint],100)
 #gangtest([Ed25519Point,IsoEd25519Point],100)
 
-#test(Decaf377Point, 16, True)
-#testDoubleAndEncode(Decaf377Point, 100)
-#testElligator(Decaf377Point, 10)
-
+test(Decaf377Point, 100)
+testDoubleAndEncode(Decaf377Point, 100)
+testElligator(Decaf377Point, 10)
 testElligatorDeterministic(Decaf377Point)
-
-#test(Decaf377Point,16,True)
+test(Decaf377Point,16,True)
