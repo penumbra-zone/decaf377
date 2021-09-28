@@ -121,7 +121,7 @@ impl Element {
     }
 
     /// Create a decaf377 point (X : Y : Z : T) from its Jacobi Quartic representation (s, t)
-    pub fn from_jacobi_quartic(
+    fn from_jacobi_quartic(
         s: ark_ed_on_bls12_377::Fq,
         t: ark_ed_on_bls12_377::Fq,
         sgn: ark_ed_on_bls12_377::Fq,
@@ -180,9 +180,9 @@ impl Element {
         result
     }
 
-    /// Maps uniformly distributed bytestrings to a decaf377 `Element`.
+    /// Maps bytestrings to a uniformly distributed decaf377 `Element`.
     #[allow(non_snake_case)]
-    pub fn from_uniform_bytes(bytes: &[u8; 64]) -> Element {
+    pub fn map_to_group_uniform(bytes: &[u8; 64]) -> Element {
         let r_1 = Fq::read(bytes[0..32].as_ref()).unwrap();
         let R_1 = Element::elligator_map(&r_1.into());
         let r_2 = Fq::read(bytes[32..64].as_ref()).unwrap();
@@ -198,24 +198,58 @@ impl Element {
         result
     }
 
-    /// Take a `Digest` and returns a decaf377 `Element`.
-    pub fn from_hash<D>(input: D) -> Element
+    /// Take a `Digest` and returns a decaf377 `Element` using the uniform map.
+    pub fn from_hash_uniform<D>(input: D) -> Element
     where
         D: Digest<OutputSize = U64>,
     {
         let mut output = [0u8; 64];
         output.copy_from_slice(&input.finalize());
-        Element::from_uniform_bytes(&output)
+        Element::map_to_group_uniform(&output)
     }
 
-    /// Takes a byte slice and returns a decaf377 `Element`.
-    pub fn hash_from_bytes<D>(input: &[u8]) -> Element
+    /// Takes a byte slice and returns a decaf377 `Element` using the uniform map.
+    pub fn hash_from_bytes_uniform<D>(input: &[u8]) -> Element
     where
         D: Digest<OutputSize = U64>,
     {
         let mut hasher = D::new();
         hasher.update(input);
-        Element::from_hash(hasher)
+        Element::from_hash_uniform(hasher)
+    }
+
+    /// Maps bytestrings to a decaf377 `Element` suitable for CDH challenges.
+    #[allow(non_snake_case)]
+    pub fn map_to_group_cdh(bytes: &[u8; 64]) -> Element {
+        let r = Fq::read(bytes[0..32].as_ref()).unwrap();
+        let R = Element::elligator_map(&r.into());
+
+        debug_assert!(
+            R.inner.is_on_curve(),
+            "resulting point must be on the curve",
+        );
+
+        R
+    }
+
+    /// Take a `Digest` and returns a decaf377 `Element` using the CDH map.
+    pub fn from_hash_cdh<D>(input: D) -> Element
+    where
+        D: Digest<OutputSize = U64>,
+    {
+        let mut output = [0u8; 64];
+        output.copy_from_slice(&input.finalize());
+        Element::map_to_group_cdh(&output)
+    }
+
+    /// Takes a byte slice and returns a decaf377 `Element` using the CDH map.
+    pub fn hash_from_bytes_cdh<D>(input: &[u8]) -> Element
+    where
+        D: Digest<OutputSize = U64>,
+    {
+        let mut hasher = D::new();
+        hasher.update(input);
+        Element::from_hash_cdh(hasher)
     }
 }
 
