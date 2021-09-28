@@ -44,14 +44,6 @@ pub struct Element {
     inner: EdwardsProjective,
 }
 
-impl From<EdwardsAffine> for Element {
-    fn from(point: EdwardsAffine) -> Self {
-        Element {
-            inner: point.into(),
-        }
-    }
-}
-
 impl Default for Element {
     fn default() -> Self {
         Element {
@@ -130,7 +122,9 @@ impl Element {
         let x = *TWO * s / (*ONE + EdwardsParameters::COEFF_A * s.square());
         let y = (*ONE - EdwardsParameters::COEFF_A * s.square()) / t;
 
-        EdwardsAffine::new(x, sgn * y).into()
+        Element {
+            inner: EdwardsAffine::new(x, sgn * y).into(),
+        }
     }
 
     /// Elligator map to decaf377 point
@@ -706,11 +700,14 @@ mod tests {
             let input_element =
                 Fq::deserialize(&input[..]).expect("encoding of test vector is valid");
 
-            let expected: Element = EdwardsAffine::new(
-                expected_xy_coordinates[ind][0],
-                expected_xy_coordinates[ind][1],
-            )
-            .into();
+            let expected: Element = Element {
+                inner: EdwardsAffine::new(
+                    expected_xy_coordinates[ind][0],
+                    expected_xy_coordinates[ind][1],
+                )
+                .into(),
+            };
+
             let actual = Element::elligator_map(&input_element);
 
             assert_eq!(actual, expected);
