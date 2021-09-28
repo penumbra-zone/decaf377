@@ -7,13 +7,10 @@ use std::convert::{TryFrom, TryInto};
 use ark_ec::models::twisted_edwards_extended::GroupProjective;
 use ark_ec::models::TEModelParameters;
 use ark_ed_on_bls12_377::{EdwardsAffine, EdwardsParameters, EdwardsProjective, Fq};
-use ark_ff::{Field, FromBytes, One, SquareRootField, Zero};
+use ark_ff::{Field, One, SquareRootField, Zero};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 
 use zeroize::Zeroize;
-
-use digest::generic_array::typenum::U64;
-use digest::Digest;
 
 use crate::constants::{ONE, TWO, ZETA};
 use crate::{
@@ -127,7 +124,6 @@ impl Element {
         sgn: ark_ed_on_bls12_377::Fq,
     ) -> Element {
         if s == Fq::zero() {
-            // check this
             return Element::default();
         }
 
@@ -147,7 +143,6 @@ impl Element {
         let r = *ZETA * r_0.square();
         let den = (D * r - (D - A)) * ((D - A) * r - D);
         if den == Fq::zero() {
-            // check this
             return Element::default();
         }
 
@@ -180,14 +175,16 @@ impl Element {
         result
     }
 
-    /// Maps bytestrings to a uniformly distributed decaf377 `Element`.
+    /// Maps two field elements to a uniformly distributed decaf377 `Element`.
+    ///
+    /// The two field elements provided as inputs should be independently chosen.
     #[allow(non_snake_case)]
-    pub fn map_to_group_uniform(bytes: &[u8; 64]) -> Element {
-        let r_1 = Fq::read(bytes[0..32].as_ref()).unwrap();
-        let R_1 = Element::elligator_map(&r_1.into());
-        let r_2 = Fq::read(bytes[32..64].as_ref()).unwrap();
-        let R_2 = Element::elligator_map(&r_2.into());
-
+    pub fn map_to_group_uniform(
+        r_1: &ark_ed_on_bls12_377::Fq,
+        r_2: &ark_ed_on_bls12_377::Fq,
+    ) -> Element {
+        let R_1 = Element::elligator_map(&r_1);
+        let R_2 = Element::elligator_map(&r_2);
         let result = &R_1 + &R_2;
 
         debug_assert!(
@@ -198,31 +195,10 @@ impl Element {
         result
     }
 
-    /// Take a `Digest` and returns a decaf377 `Element` using the uniform map.
-    pub fn from_hash_uniform<D>(input: D) -> Element
-    where
-        D: Digest<OutputSize = U64>,
-    {
-        let mut output = [0u8; 64];
-        output.copy_from_slice(&input.finalize());
-        Element::map_to_group_uniform(&output)
-    }
-
-    /// Takes a byte slice and returns a decaf377 `Element` using the uniform map.
-    pub fn hash_from_bytes_uniform<D>(input: &[u8]) -> Element
-    where
-        D: Digest<OutputSize = U64>,
-    {
-        let mut hasher = D::new();
-        hasher.update(input);
-        Element::from_hash_uniform(hasher)
-    }
-
-    /// Maps bytestrings to a decaf377 `Element` suitable for CDH challenges.
+    /// Maps a field element to a decaf377 `Element` suitable for CDH challenges.
     #[allow(non_snake_case)]
-    pub fn map_to_group_cdh(bytes: &[u8; 64]) -> Element {
-        let r = Fq::read(bytes[0..32].as_ref()).unwrap();
-        let R = Element::elligator_map(&r.into());
+    pub fn map_to_group_cdh(r: &ark_ed_on_bls12_377::Fq) -> Element {
+        let R = Element::elligator_map(&r);
 
         debug_assert!(
             R.inner.is_on_curve(),
@@ -230,26 +206,6 @@ impl Element {
         );
 
         R
-    }
-
-    /// Take a `Digest` and returns a decaf377 `Element` using the CDH map.
-    pub fn from_hash_cdh<D>(input: D) -> Element
-    where
-        D: Digest<OutputSize = U64>,
-    {
-        let mut output = [0u8; 64];
-        output.copy_from_slice(&input.finalize());
-        Element::map_to_group_cdh(&output)
-    }
-
-    /// Takes a byte slice and returns a decaf377 `Element` using the CDH map.
-    pub fn hash_from_bytes_cdh<D>(input: &[u8]) -> Element
-    where
-        D: Digest<OutputSize = U64>,
-    {
-        let mut hasher = D::new();
-        hasher.update(input);
-        Element::from_hash_cdh(hasher)
     }
 }
 

@@ -20,7 +20,6 @@ ark-ec = { version = "0.2" }
 ark-ff = { version = "0.2" }
 ark-serialize = { version = "0.2" }
 ark-ed-on-bls12-377 = {version = "0.2", features = ["r1cs"]}
-digest = { version = "0.9.0" }
 zeroize = { version = "1.4.1" }
 
 [dev-dependencies]
