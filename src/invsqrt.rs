@@ -1,6 +1,8 @@
 use ark_ed_on_bls12_377::Fq;
 use ark_ff::{Field, SquareRootField, Zero};
 
+use crate::constants::ZETA;
+
 pub trait SqrtRatioZeta: Sized {
     /// Computes the square root of a ratio of field elements, returning:
     ///
@@ -21,16 +23,14 @@ impl SqrtRatioZeta for Fq {
         if v.is_zero() {
             return (false, *v);
         }
-        let zeta = ark_ff::field_new!(
-            Fq,
-            "2841681278031794617739547238867782961338435681360110683443920362658525667816"
-        );
 
         let uv = v.inverse().expect("nonzero") * u;
         if let Some(sqrt_uv) = uv.sqrt() {
             return (true, sqrt_uv);
         } else {
-            let sqrt_zeta_uv = (zeta * uv).sqrt().expect("must be square if u/v nonsquare");
+            let sqrt_zeta_uv = (*ZETA * uv)
+                .sqrt()
+                .expect("must be square if u/v nonsquare");
             return (false, sqrt_zeta_uv);
         }
     }
@@ -65,11 +65,7 @@ mod tests {
                     assert_eq!(u, v * zeta_uv);
                 } else {
                     // check zeta_uv = zeta * u / v
-                    let zeta = ark_ff::field_new!(
-                        Fq,
-                        "2841681278031794617739547238867782961338435681360110683443920362658525667816"
-                    );
-                    assert_eq!(zeta * u, v * zeta_uv);
+                    assert_eq!(*ZETA * u, v * zeta_uv);
                 }
             }
         }

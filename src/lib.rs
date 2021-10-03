@@ -1,6 +1,8 @@
 //! `decaf377` [instantiates Decaf over the BLS12-377 scalar
 //! field](https://penumbra.zone/crypto/primitives/decaf377.html).
 
+mod arkworks_ext;
+mod constants;
 mod error;
 mod group;
 mod invsqrt;

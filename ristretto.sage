@@ -140,7 +140,7 @@ class QuotientEdwardsPoint(object):
         
     @classmethod
     def gfToBytes(cls,x,mustBePositive=False):
-        """Convert little-endian bytes to field element, sanity check length"""
+        """Convert field element to little-endian bytes, sanity check length"""
         if negative(x) and mustBePositive: x = -x
         return enc_le(x,cls.encLen)
 
@@ -554,8 +554,10 @@ class Decaf_1_1_Point(QuotientEdwardsPoint):
     def elligatorSpec(cls,r0,fromR=False):
         a,d = cls.a,cls.d
         if fromR: r = r0
-        else: r = cls.qnr * cls.bytesToGf(r0,mustBeProper=False,maskHiBits=True)^2
-        
+        else:
+            r0 = cls.bytesToGf(r0,mustBeProper=False,maskHiBits=True)
+            r = cls.qnr * r0^2
+
         den = (d*r-(d-a))*((d-a)*r-d)
         if den == 0: return cls()
         n1 = (r+1)*(a-2*d)/den
@@ -564,9 +566,10 @@ class Decaf_1_1_Point(QuotientEdwardsPoint):
             sgn,s,t = 1,   xsqrt(n1),  -(r-1)*(a-2*d)^2 / den - 1
         else:
             sgn,s,t = -1, -xsqrt(n2), r*(r-1)*(a-2*d)^2 / den - 1
-        
+
+        # NOTE that sgn is NOT passed through to `fromJacobiQuartic`.
         return cls.fromJacobiQuartic(s,t)
-            
+
     @classmethod
     @optimized_version_of("elligatorSpec")
     def elligator(cls,r0):
@@ -835,6 +838,44 @@ def testElligator(cls,n):
         else:
             pass # TODO
 
+def testElligatorDeterministic(cls):
+    """These test cases correspond to those in the Decaf377 crate in test_elligator"""
+
+    # Test case inputs were generated beginning with the value
+    # 2873166235834220037104482467644394559952202754715866736878534498814378075613
+    # and then are the s-coordinate of the previous result.
+    inputs = [
+        [221, 101, 215, 58, 170, 229, 36, 124, 172, 234, 94, 214, 186, 163, 242, 30, 65, 123, 76, 74, 56, 60, 24, 213, 240, 137, 49, 189, 138, 39, 90, 6],
+        [23, 203, 214, 51, 26, 149, 7, 160, 228, 239, 208, 147, 124, 109, 75, 72, 64, 16, 64, 215, 53, 185, 249, 168, 188, 49, 22, 194, 118, 7, 242, 16, ],
+        [177, 123, 90, 180, 115, 7, 108, 183, 161, 167, 24, 15, 248, 218, 206, 227, 76, 137, 162, 187, 148, 174, 66, 44, 205, 1, 211, 91, 140, 50, 144, 1],
+        [204, 225, 121, 228, 145, 30, 86, 208, 132, 242, 203, 9, 153, 90, 195, 150, 215, 49, 166, 70, 78, 68, 47, 98, 30, 130, 115, 139, 168, 242, 238, 8],
+        [59, 150, 40, 159, 229, 96, 201, 47, 170, 163, 9, 208, 205, 201, 112, 241, 179, 82, 198, 79, 207, 160, 184, 245, 63, 189, 101, 115, 217, 228, 74, 13],
+        [74, 159, 227, 190, 73, 213, 131, 200, 50, 102, 249, 230, 48, 103, 85, 168, 239, 149, 7, 164, 12, 42, 217, 177, 189, 97, 214, 98, 102, 73, 10, 16],
+        [183, 227, 227, 192, 119, 10, 155, 143, 64, 60, 249, 165, 240, 39, 31, 197, 159, 121, 64, 82, 10, 1, 34, 35, 121, 34, 146, 69, 226, 196, 156, 14],
+        [61, 21, 56, 224, 11, 181, 71, 186, 238, 126, 234, 240, 14, 168, 75, 73, 251, 111, 175, 85, 108, 9, 77, 2, 88, 249, 24, 235, 53, 96, 51, 15]
+    ]
+
+    expected = [
+        [1267955849280145133999011095767946180059440909377398529682813961428156596086, 5356565093348124788258444273601808083900527100008973995409157974880178412098],
+        [1502379126429822955521756759528876454108853047288874182661923263559139887582, 7074060208122316523843780248565740332109149189893811936352820920606931717751],
+        [2943006201157313879823661217587757631000260143892726691725524748591717287835, 4988568968545687084099497807398918406354768651099165603393269329811556860241],
+        [2893226299356126359042735859950249532894422276065676168505232431940642875576, 5540423804567408742733533031617546054084724133604190833318816134173899774745],
+        [2950911977149336430054248283274523588551527495862004038190631992225597951816, 4487595759841081228081250163499667279979722963517149877172642608282938805393],
+        [3318574188155535806336376903248065799756521242795466350457330678746659358665, 7706453242502782485686954136003233626318476373744684895503194201695334921001],
+        [3753408652523927772367064460787503971543824818235418436841486337042861871179, 2820605049615187268236268737743168629279853653807906481532750947771625104256],
+        [7803875556376973796629423752730968724982795310878526731231718944925551226171,7033839813997913565841973681083930410776455889380940679209912201081069572111]
+    ]
+
+    for i, r in enumerate(inputs):
+        #print('Elligator test case for input: ', r)
+        r = bytearray(r)
+        P = cls.elligator(r)
+        #print('Expected outputs are decaf377 point (insert in test case): ', P)
+        #print('P.x: ', P.x)
+        #print('P.y: ', P.y)
+        assert P.x == expected[i][0]
+        assert P.y == expected[i][1]
+
 def gangtest(classes,n):
     print ("Gang test",[cls.__name__ for cls in classes])
     specials = [1]
@@ -870,7 +911,7 @@ def testDoubleAndEncode(cls,n):
         Q = P.torque()
         assert P.doubleAndEncode() == Q.doubleAndEncode()
         P = Q
-    
+
     for i in range(n):
         r1 = randombytes(cls.encLen)
         r2 = randombytes(cls.encLen)
@@ -901,5 +942,5 @@ def testDoubleAndEncode(cls,n):
 test(Decaf377Point, 100)
 testDoubleAndEncode(Decaf377Point, 100)
 testElligator(Decaf377Point, 100)
-
+testElligatorDeterministic(Decaf377Point)
 test(Decaf377Point,16,True)
