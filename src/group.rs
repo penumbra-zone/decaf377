@@ -13,7 +13,7 @@ use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use zeroize::Zeroize;
 
 use crate::constants::{TWO, ZETA};
-use crate::{invsqrt::SqrtRatioZeta, scalar::Scalar, sign::Sign, EncodingError};
+use crate::{invsqrt::SqrtRatioZeta, sign::Sign, EncodingError};
 
 trait OnCurve {
     fn is_on_curve(&self) -> bool;
@@ -454,34 +454,34 @@ impl Neg for Element {
     }
 }
 
-impl<'b> MulAssign<&'b Scalar> for Element {
+impl<'b> MulAssign<&'b ark_ed_on_bls12_377::Fr> for Element {
     // Scalar multiplication is performed through the implementation
     // of `MulAssign` on `EdwardsProjective` which is a type alias for
     // `GroupProjective<EdwardsParameters>`.
-    fn mul_assign(&mut self, point: &'b Scalar) {
+    fn mul_assign(&mut self, point: &'b ark_ed_on_bls12_377::Fr) {
         let mut p = self.inner;
-        p *= point.inner;
+        p *= *point;
         *self = Element { inner: p }
     }
 }
 
-impl MulAssign<Scalar> for Element {
-    fn mul_assign(&mut self, other: Scalar) {
+impl MulAssign<ark_ed_on_bls12_377::Fr> for Element {
+    fn mul_assign(&mut self, other: ark_ed_on_bls12_377::Fr) {
         *self *= &other;
     }
 }
 
-impl<'a, 'b> Mul<&'b Scalar> for &'a Element {
+impl<'a, 'b> Mul<&'b ark_ed_on_bls12_377::Fr> for &'a Element {
     type Output = Element;
 
-    fn mul(self, point: &'b Scalar) -> Element {
+    fn mul(self, point: &'b ark_ed_on_bls12_377::Fr) -> Element {
         let mut p = self.inner;
-        p *= point.inner;
+        p *= *point;
         Element { inner: p }
     }
 }
 
-impl<'a, 'b> Mul<&'b Element> for &'a Scalar {
+impl<'a, 'b> Mul<&'b Element> for &'a ark_ed_on_bls12_377::Fr {
     type Output = Element;
 
     fn mul(self, point: &'b Element) -> Element {
@@ -489,31 +489,31 @@ impl<'a, 'b> Mul<&'b Element> for &'a Scalar {
     }
 }
 
-impl<'b> Mul<&'b Scalar> for Element {
+impl<'b> Mul<&'b ark_ed_on_bls12_377::Fr> for Element {
     type Output = Element;
 
-    fn mul(self, other: &'b Scalar) -> Element {
+    fn mul(self, other: &'b ark_ed_on_bls12_377::Fr) -> Element {
         &self * other
     }
 }
 
-impl<'a> Mul<Scalar> for &'a Element {
+impl<'a> Mul<ark_ed_on_bls12_377::Fr> for &'a Element {
     type Output = Element;
 
-    fn mul(self, other: Scalar) -> Element {
+    fn mul(self, other: ark_ed_on_bls12_377::Fr) -> Element {
         self * &other
     }
 }
 
-impl Mul<Scalar> for Element {
+impl Mul<ark_ed_on_bls12_377::Fr> for Element {
     type Output = Element;
 
-    fn mul(self, other: Scalar) -> Element {
+    fn mul(self, other: ark_ed_on_bls12_377::Fr) -> Element {
         &self * &other
     }
 }
 
-impl<'b> Mul<&'b Element> for Scalar {
+impl<'b> Mul<&'b Element> for ark_ed_on_bls12_377::Fr {
     type Output = Element;
 
     fn mul(self, other: &'b Element) -> Element {
@@ -521,7 +521,7 @@ impl<'b> Mul<&'b Element> for Scalar {
     }
 }
 
-impl<'a> Mul<Element> for &'a Scalar {
+impl<'a> Mul<Element> for &'a ark_ed_on_bls12_377::Fr {
     type Output = Element;
 
     fn mul(self, other: Element) -> Element {
@@ -529,7 +529,7 @@ impl<'a> Mul<Element> for &'a Scalar {
     }
 }
 
-impl Mul<Element> for Scalar {
+impl Mul<Element> for ark_ed_on_bls12_377::Fr {
     type Output = Element;
 
     fn mul(self, other: Element) -> Element {
