@@ -34,12 +34,33 @@ impl<P: TEModelParameters> OnCurve for GroupProjective<P> {
     }
 }
 
-#[derive(Copy, Clone, Default, Eq, PartialEq, Debug)]
+#[derive(Copy, Clone, Default, Eq, PartialEq)]
 pub struct Encoding(pub [u8; 32]);
 
-#[derive(Copy, Clone, Debug)]
+impl std::fmt::Debug for Encoding {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!(
+            "decaf377::Encoding({})",
+            hex::encode(&self.0[..])
+        ))
+    }
+}
+
+#[derive(Copy, Clone)]
 pub struct Element {
     inner: EdwardsProjective,
+}
+
+impl std::fmt::Debug for Element {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // This prints the hex of the encoding of self, rather than the
+        // coordinates, because that's what's most useful to downstream
+        // consumers of the library.
+        f.write_fmt(format_args!(
+            "decaf377::Element({})",
+            hex::encode(&self.compress().0[..])
+        ))
+    }
 }
 
 impl Default for Element {
