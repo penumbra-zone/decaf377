@@ -6,7 +6,7 @@ use std::convert::{TryFrom, TryInto};
 
 use ark_ec::models::twisted_edwards_extended::GroupProjective;
 use ark_ec::models::TEModelParameters;
-use ark_ed_on_bls12_377::{EdwardsAffine, EdwardsParameters, EdwardsProjective, Fq};
+use ark_ed_on_bls12_377::{EdwardsAffine, EdwardsParameters, EdwardsProjective};
 use ark_ff::{Field, One, SquareRootField, Zero};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 
@@ -14,6 +14,7 @@ use zeroize::Zeroize;
 
 use crate::constants::{TWO, ZETA};
 use crate::{invsqrt::SqrtRatioZeta, sign::Sign, EncodingError};
+use crate::{Fq, Fr};
 
 trait OnCurve {
     fn is_on_curve(&self) -> bool;
@@ -130,7 +131,7 @@ impl Element {
 
     /// Elligator map to decaf377 point
     #[allow(non_snake_case)]
-    fn elligator_map(r_0: &ark_ed_on_bls12_377::Fq) -> Element {
+    fn elligator_map(r_0: &Fq) -> Element {
         // Ref: `Decaf_1_1_Point.elligatorSpec` in `ristretto.sage`
         let A = EdwardsParameters::COEFF_A;
         let D = EdwardsParameters::COEFF_D;
@@ -183,10 +184,7 @@ impl Element {
     ///
     /// The two field elements provided as inputs should be independently chosen.
     #[allow(non_snake_case)]
-    pub fn map_to_group_uniform(
-        r_1: &ark_ed_on_bls12_377::Fq,
-        r_2: &ark_ed_on_bls12_377::Fq,
-    ) -> Element {
+    pub fn map_to_group_uniform(r_1: &Fq, r_2: &Fq) -> Element {
         let R_1 = Element::elligator_map(&r_1);
         let R_2 = Element::elligator_map(&r_2);
         let result = &R_1 + &R_2;
@@ -201,7 +199,7 @@ impl Element {
 
     /// Maps a field element to a decaf377 `Element` suitable for CDH challenges.
     #[allow(non_snake_case)]
-    pub fn map_to_group_cdh(r: &ark_ed_on_bls12_377::Fq) -> Element {
+    pub fn map_to_group_cdh(r: &Fq) -> Element {
         let R = Element::elligator_map(&r);
 
         debug_assert!(
@@ -454,34 +452,34 @@ impl Neg for Element {
     }
 }
 
-impl<'b> MulAssign<&'b ark_ed_on_bls12_377::Fr> for Element {
+impl<'b> MulAssign<&'b Fr> for Element {
     // Scalar multiplication is performed through the implementation
     // of `MulAssign` on `EdwardsProjective` which is a type alias for
     // `GroupProjective<EdwardsParameters>`.
-    fn mul_assign(&mut self, point: &'b ark_ed_on_bls12_377::Fr) {
+    fn mul_assign(&mut self, point: &'b Fr) {
         let mut p = self.inner;
         p *= *point;
         *self = Element { inner: p }
     }
 }
 
-impl MulAssign<ark_ed_on_bls12_377::Fr> for Element {
-    fn mul_assign(&mut self, other: ark_ed_on_bls12_377::Fr) {
+impl MulAssign<Fr> for Element {
+    fn mul_assign(&mut self, other: Fr) {
         *self *= &other;
     }
 }
 
-impl<'a, 'b> Mul<&'b ark_ed_on_bls12_377::Fr> for &'a Element {
+impl<'a, 'b> Mul<&'b Fr> for &'a Element {
     type Output = Element;
 
-    fn mul(self, point: &'b ark_ed_on_bls12_377::Fr) -> Element {
+    fn mul(self, point: &'b Fr) -> Element {
         let mut p = self.inner;
         p *= *point;
         Element { inner: p }
     }
 }
 
-impl<'a, 'b> Mul<&'b Element> for &'a ark_ed_on_bls12_377::Fr {
+impl<'a, 'b> Mul<&'b Element> for &'a Fr {
     type Output = Element;
 
     fn mul(self, point: &'b Element) -> Element {
@@ -489,31 +487,31 @@ impl<'a, 'b> Mul<&'b Element> for &'a ark_ed_on_bls12_377::Fr {
     }
 }
 
-impl<'b> Mul<&'b ark_ed_on_bls12_377::Fr> for Element {
+impl<'b> Mul<&'b Fr> for Element {
     type Output = Element;
 
-    fn mul(self, other: &'b ark_ed_on_bls12_377::Fr) -> Element {
+    fn mul(self, other: &'b Fr) -> Element {
         &self * other
     }
 }
 
-impl<'a> Mul<ark_ed_on_bls12_377::Fr> for &'a Element {
+impl<'a> Mul<Fr> for &'a Element {
     type Output = Element;
 
-    fn mul(self, other: ark_ed_on_bls12_377::Fr) -> Element {
+    fn mul(self, other: Fr) -> Element {
         self * &other
     }
 }
 
-impl Mul<ark_ed_on_bls12_377::Fr> for Element {
+impl Mul<Fr> for Element {
     type Output = Element;
 
-    fn mul(self, other: ark_ed_on_bls12_377::Fr) -> Element {
+    fn mul(self, other: Fr) -> Element {
         &self * &other
     }
 }
 
-impl<'b> Mul<&'b Element> for ark_ed_on_bls12_377::Fr {
+impl<'b> Mul<&'b Element> for Fr {
     type Output = Element;
 
     fn mul(self, other: &'b Element) -> Element {
@@ -521,7 +519,7 @@ impl<'b> Mul<&'b Element> for ark_ed_on_bls12_377::Fr {
     }
 }
 
-impl<'a> Mul<Element> for &'a ark_ed_on_bls12_377::Fr {
+impl<'a> Mul<Element> for &'a Fr {
     type Output = Element;
 
     fn mul(self, other: Element) -> Element {
@@ -529,7 +527,7 @@ impl<'a> Mul<Element> for &'a ark_ed_on_bls12_377::Fr {
     }
 }
 
-impl Mul<Element> for ark_ed_on_bls12_377::Fr {
+impl Mul<Element> for Fr {
     type Output = Element;
 
     fn mul(self, other: Element) -> Element {
