@@ -1,8 +1,7 @@
 use once_cell::sync::Lazy;
 
 use ark_ed_on_bls12_377::Fq;
-use ark_ff;
-use ark_ff::One;
+use ark_ff::{self, One};
 
 pub static TWO: Lazy<Fq> = Lazy::new(|| Fq::one() + Fq::one());
 
