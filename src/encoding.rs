@@ -71,7 +71,7 @@ impl Encoding {
 
 impl Element {
     #[allow(non_snake_case)]
-    pub fn compress(&self) -> Encoding {
+    pub fn compress_to_field(&self) -> Fq {
         // This isn't a constant, only because traits don't have const methods
         // yet and subtraction is only implemented as part of the Sub trait.
         let A_MINUS_D = EdwardsParameters::COEFF_A - EdwardsParameters::COEFF_D;
@@ -93,6 +93,12 @@ impl Element {
 
         // 5.
         let s = (A_MINUS_D * v * u_3 * p.x).abs();
+
+        s
+    }
+
+    pub fn compress(&self) -> Encoding {
+        let s = self.compress_to_field();
 
         // Encode.
         let mut bytes = [0u8; 32];
@@ -154,6 +160,12 @@ impl TryFrom<&[u8]> for Encoding {
         } else {
             Err(EncodingError::InvalidSliceLength)
         }
+    }
+}
+
+impl From<[u8; 32]> for Encoding {
+    fn from(bytes: [u8; 32]) -> Encoding {
+        Encoding(bytes)
     }
 }
 
