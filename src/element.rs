@@ -53,4 +53,9 @@ impl Element {
             .decompress()
             .expect("hardcoded basepoint bytes are valid")
     }
+
+    /// Convenience method to make identity checks more readable.
+    pub fn is_identity(&self) -> bool {
+        self == &Element::default()
+    }
 }
