@@ -44,6 +44,7 @@ impl Zeroize for Element {
 }
 
 impl Element {
+    /// Return the conventional generator for `decaf377`.
     pub fn basepoint() -> Element {
         let mut bytes = [0u8; 32];
         bytes[0] = 8;
