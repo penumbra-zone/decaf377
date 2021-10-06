@@ -2,7 +2,7 @@ use std::convert::TryFrom;
 
 use proptest::prelude::*;
 
-use decaf377::{Element, Encoding};
+use decaf377::{Element, Encoding, Fr, FrExt};
 
 #[test]
 fn identity_encoding_is_zero() {
@@ -76,11 +76,19 @@ fn test_encoding_matches_sage_encoding() {
 
 proptest! {
     #[test]
-    fn decompress_round_trip_if_successful(bytes: [u8; 32]) {
+    fn group_encoding_round_trip_if_successful(bytes: [u8; 32]) {
         let bytes = Encoding(bytes);
 
         if let Ok(element) = bytes.decompress() {
             let bytes2 = element.compress();
+            assert_eq!(bytes, bytes2);
+        }
+    }
+
+    #[test]
+    fn scalar_encoding_round_trip_if_successful(bytes: [u8; 32]) {
+        if let Ok(x) = Fr::from_bytes(bytes) {
+            let bytes2 = x.to_bytes();
             assert_eq!(bytes, bytes2);
         }
     }
