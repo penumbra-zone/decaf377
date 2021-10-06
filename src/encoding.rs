@@ -169,6 +169,12 @@ impl From<[u8; 32]> for Encoding {
     }
 }
 
+impl From<Encoding> for [u8; 32] {
+    fn from(enc: Encoding) -> [u8; 32] {
+        enc.0
+    }
+}
+
 impl TryFrom<&Encoding> for Element {
     type Error = EncodingError;
     fn try_from(bytes: &Encoding) -> Result<Self, Self::Error> {

@@ -1,8 +1,10 @@
+use std::borrow::Borrow;
+
 use ark_ed_on_bls12_377::EdwardsProjective;
 use ark_ff::Zero;
 use zeroize::Zeroize;
 
-use crate::Encoding;
+use crate::{Encoding, Fr};
 
 #[derive(Copy, Clone)]
 pub struct Element {
@@ -44,6 +46,7 @@ impl Zeroize for Element {
 }
 
 impl Element {
+    /// Return the conventional generator for `decaf377`.
     pub fn basepoint() -> Element {
         let mut bytes = [0u8; 32];
         bytes[0] = 8;
@@ -51,5 +54,41 @@ impl Element {
         Encoding(bytes)
             .decompress()
             .expect("hardcoded basepoint bytes are valid")
+    }
+
+    /// Convenience method to make identity checks more readable.
+    pub fn is_identity(&self) -> bool {
+        self == &Element::default()
+    }
+
+    /// Given an iterator of public scalars and an iterator of public points,
+    /// compute
+    /// $$
+    /// Q = \[c\_1\] P\_1 + \cdots + \[c\_n\] P\_n,
+    /// $$
+    /// using variable-time operations.
+    ///
+    /// It is an error to call this function with two iterators of different
+    /// lengths -- it would require `ExactSizeIterator`, but
+    /// `ExactSizeIterator`s are not closed under chaining, and disallowing
+    /// iterator chaining would destroy the utility of the function.
+    pub fn vartime_multiscalar_mul<I, J>(scalars: I, points: J) -> Element
+    where
+        I: IntoIterator,
+        I::Item: Borrow<Fr>,
+        J: IntoIterator,
+        J::Item: Borrow<Element>,
+    {
+        // XXX this is a stub implementation, try to use a real MSM later
+        let scalars = scalars.into_iter();
+        let points = points.into_iter();
+
+        // XXX panic on length mismatches ? or error?
+
+        scalars
+            .zip(points)
+            .fold(Element::default(), |acc, (scalar, point)| {
+                acc + (scalar.borrow() * point.borrow())
+            })
     }
 }
