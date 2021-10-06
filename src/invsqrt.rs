@@ -39,14 +39,13 @@ impl SqrtRatioZeta for Fq {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    use ark_ff::PrimeField;
     use proptest::prelude::*;
 
     fn fq_strategy() -> BoxedStrategy<Fq> {
-        use ark_serialize::CanonicalDeserialize;
         any::<[u8; 32]>()
-            .prop_filter_map("non-canonical bytes", |bytes| {
-                Fq::deserialize(&bytes[..]).ok()
-            })
+            .prop_map(|bytes| Fq::from_le_bytes_mod_order(&bytes[..]))
             .boxed()
     }
 
