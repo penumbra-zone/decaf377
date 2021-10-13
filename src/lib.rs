@@ -22,3 +22,13 @@ pub use ark_ed_on_bls12_377::{Fq, Fr};
 use invsqrt::SqrtRatioZeta;
 use on_curve::OnCurve;
 use sign::Sign;
+
+/// Return the conventional generator for `decaf377`.
+pub fn basepoint() -> Element {
+    let mut bytes = [0u8; 32];
+    bytes[0] = 8;
+
+    Encoding(bytes)
+        .decompress()
+        .expect("hardcoded basepoint bytes are valid")
+}

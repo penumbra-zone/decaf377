@@ -2,7 +2,7 @@ use std::convert::TryFrom;
 
 use proptest::prelude::*;
 
-use decaf377::{Element, Encoding, Fr, FrExt};
+use decaf377::{basepoint, Element, Encoding, Fr, FrExt};
 
 #[test]
 fn identity_encoding_is_zero() {
@@ -36,7 +36,7 @@ fn test_encoding_matches_sage_encoding() {
     use hex;
 
     let mut accumulator = Element::default();
-    let basepoint = Element::basepoint();
+    let basepoint = basepoint();
 
     let expected_points = [
         "0000000000000000000000000000000000000000000000000000000000000000",
