@@ -4,7 +4,7 @@ use ark_ed_on_bls12_377::EdwardsProjective;
 use ark_ff::Zero;
 use zeroize::Zeroize;
 
-use crate::{Encoding, Fr};
+use crate::Fr;
 
 #[derive(Copy, Clone)]
 pub struct Element {
@@ -46,16 +46,6 @@ impl Zeroize for Element {
 }
 
 impl Element {
-    /// Return the conventional generator for `decaf377`.
-    pub fn basepoint() -> Element {
-        let mut bytes = [0u8; 32];
-        bytes[0] = 8;
-
-        Encoding(bytes)
-            .decompress()
-            .expect("hardcoded basepoint bytes are valid")
-    }
-
     /// Convenience method to make identity checks more readable.
     pub fn is_identity(&self) -> bool {
         self == &Element::default()
