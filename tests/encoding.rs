@@ -2,7 +2,7 @@ use std::convert::TryFrom;
 
 use proptest::prelude::*;
 
-use decaf377::{basepoint, Element, Encoding, Fr, FrExt};
+use decaf377::{basepoint, Element, Encoding, FieldExt, Fr};
 
 #[test]
 fn identity_encoding_is_zero() {
