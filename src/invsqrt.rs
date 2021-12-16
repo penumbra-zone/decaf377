@@ -48,16 +48,16 @@ pub trait InverseSqrtRatioZeta: Sized {
 }
 
 impl InverseSqrtRatioZeta for Fq {
-    fn inverse_sqrt_ratio_zeta(u: &Self, v: &Self) -> (bool, Self) {
+    fn inverse_sqrt_ratio_zeta(u: &Self, v_inverse: &Self) -> (bool, Self) {
         // TODO: optimized implementation
         if u.is_zero() {
             return (true, *u);
         }
-        if v.is_zero() {
-            return (false, *v);
+        if v_inverse.is_zero() {
+            return (false, *v_inverse);
         }
 
-        let uv = v.inverse().expect("nonzero") * u;
+        let uv = *v_inverse * *u;
         if let Some(sqrt_uv) = uv.sqrt() {
             return (true, sqrt_uv.inverse().expect("nonzero"));
         } else {

@@ -4,7 +4,6 @@ use ark_ff::{Field, One};
 
 use crate::{
     constants::{TWO, ZETA},
-    field_ext::FieldExt,
     invsqrt::InverseSqrtRatioZeta,
     Element, Fq, OnCurve, Sign,
 };
@@ -18,31 +17,23 @@ impl Element {
         let D = EdwardsParameters::COEFF_D;
 
         let r = *ZETA * r_0.square();
-        dbg!("{}", r_0.to_bytes());
-        dbg!("{}", r.to_bytes());
 
-        let den = ((D * r - (D - A)) * ((D - A) * r - D))
-            .inverse()
-            .expect("nonzero");
+        let den = (D * r - (D - A)) * ((D - A) * r - D);
         let num = (r + Fq::one()) * (A - *TWO * D);
 
         let (iss, mut isri) = Fq::inverse_sqrt_ratio_zeta(&num, &den);
-        dbg!(isri.to_string());
 
         let sgn;
         let twiddle;
-        dbg!(iss);
         if iss {
             sgn = Fq::one();
             twiddle = Fq::one();
         } else {
             sgn = -(Fq::one());
             twiddle = *ZETA * r_0;
-            dbg!(twiddle.to_string());
         }
 
         isri *= twiddle;
-        dbg!(isri.to_string());
 
         let mut s = isri * num;
         let t = -(sgn) * isri * s * (r - Fq::one()) * (A - *TWO * D).square() - Fq::one();
@@ -54,8 +45,6 @@ impl Element {
         // Convert point from its Jacobi quartic representation (s, t)
         let x = *TWO * s / (Fq::one() + EdwardsParameters::COEFF_A * s.square());
         let y = (Fq::one() - EdwardsParameters::COEFF_A * s.square()) / t;
-        dbg!("{}", x.to_string());
-        dbg!("{}", y.to_string());
 
         // Convert point from affine (x, y) to projective (X : Y : Z : T)
         let result = Element {

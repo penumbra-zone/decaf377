@@ -579,6 +579,9 @@ class Decaf_1_1_Point(QuotientEdwardsPoint):
         den = (d*r-(d-a))*((d-a)*r-d)
         num = (r+1)*(a-2*d)
         
+        # Note that what is passed into the inverse square root function
+        # here is `num*den`, so if we want to compute e.g. `1/sqrt(u/v)` then 
+        # num=u and den=1/v (or v=1/den).
         iss,isri = isqrt_i(num*den)
         if iss: sgn,twiddle =  1,1
         else:   sgn,twiddle = -1,r0*cls.qnr
