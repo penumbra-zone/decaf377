@@ -578,7 +578,7 @@ class Decaf_1_1_Point(QuotientEdwardsPoint):
         r = cls.qnr * r0^2
         den = (d*r-(d-a))*((d-a)*r-d)
         num = (r+1)*(a-2*d)
-        
+
         iss,isri = isqrt_i(num*den)
         if iss: sgn,twiddle =  1,1
         else:   sgn,twiddle = -1,r0*cls.qnr

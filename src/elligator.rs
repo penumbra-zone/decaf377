@@ -1,50 +1,49 @@
 use ark_ec::models::TEModelParameters;
 use ark_ed_on_bls12_377::{EdwardsAffine, EdwardsParameters};
-use ark_ff::{Field, One, SquareRootField, Zero};
+use ark_ff::Field;
 
 use crate::{
-    constants::{TWO, ZETA},
-    Element, Fq, OnCurve, Sign,
+    constants::{ONE, TWO, ZETA},
+    Element, Fq, InverseSqrtZeta, OnCurve, Sign,
 };
 
 impl Element {
     /// Elligator map to decaf377 point
     #[allow(non_snake_case)]
     fn elligator_map(r_0: &Fq) -> Element {
-        // Ref: `Decaf_1_1_Point.elligatorSpec` in `ristretto.sage`
+        // Ref: `Decaf_1_1_Point.elligator` (optimized) in `ristretto.sage`
         let A = EdwardsParameters::COEFF_A;
         let D = EdwardsParameters::COEFF_D;
 
         let r = *ZETA * r_0.square();
+
         let den = (D * r - (D - A)) * ((D - A) * r - D);
-        if den == Fq::zero() {
-            return Element::default();
+        let num = (r + *ONE) * (A - *TWO * D);
+        let x = num * den;
+        let (iss, mut isri) = Fq::isqrt_zeta(&x);
+
+        let sgn;
+        let twiddle;
+        if iss {
+            sgn = *ONE;
+            twiddle = *ONE;
+        } else {
+            sgn = -(*ONE);
+            twiddle = *ZETA * r_0;
         }
 
-        let n1 = (r + Fq::one()) * (A - *TWO * D) / den;
-        let n2 = r * n1;
+        isri *= twiddle;
 
-        let s;
-        let t;
+        let mut s = isri * num;
+        let t = -(sgn) * isri * s * (r - *ONE) * (A - *TWO * D).square() - *ONE;
 
-        match n1.sqrt() {
-            Some(n1_root) => {
-                s = n1_root.abs();
-                t = -(r - Fq::one()) * (A - *TWO * D).square() / den - Fq::one();
-            }
-            None => {
-                s = -(n2.sqrt().expect("n2 sqrt not found!").abs());
-                t = r * (r - Fq::one()) * (A - *TWO * D).square() / den - Fq::one();
-            }
-        }
-
-        if s == Fq::zero() {
-            return Element::default();
+        if s.is_negative() == iss {
+            s = -s
         }
 
         // Convert point from its Jacobi quartic representation (s, t)
-        let x = *TWO * s / (Fq::one() + EdwardsParameters::COEFF_A * s.square());
-        let y = (Fq::one() - EdwardsParameters::COEFF_A * s.square()) / t;
+        let x = *TWO * s / (*ONE + EdwardsParameters::COEFF_A * s.square());
+        let y = (*ONE - EdwardsParameters::COEFF_A * s.square()) / t;
 
         // Convert point from affine (x, y) to projective (X : Y : Z : T)
         let result = Element {
