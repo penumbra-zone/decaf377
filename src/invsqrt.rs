@@ -36,6 +36,39 @@ impl SqrtRatioZeta for Fq {
     }
 }
 
+pub trait InverseSqrtRatioZeta: Sized {
+    /// Computes the inverse square root of a ratio of field elements, returning:
+    ///
+    /// - `(true, 1/sqrt(u/v))` if `u` and `v` are both nonzero and `u/v` is square;
+    /// - `(true, 0)` if `u` is zero;
+    /// - `(false, 0)` if `v` is zero;
+    /// - `(false, 1/sqrt(zeta*u/v))` if `u` and `v` are both nonzero and `u/v` is nonsquare;
+    ///
+    fn inverse_sqrt_ratio_zeta(u: &Self, v: &Self) -> (bool, Self);
+}
+
+impl InverseSqrtRatioZeta for Fq {
+    fn inverse_sqrt_ratio_zeta(u: &Self, v: &Self) -> (bool, Self) {
+        // TODO: optimized implementation
+        if u.is_zero() {
+            return (true, *u);
+        }
+        if v.is_zero() {
+            return (false, *v);
+        }
+
+        let uv = v.inverse().expect("nonzero") * u;
+        if let Some(sqrt_uv) = uv.sqrt() {
+            return (true, sqrt_uv.inverse().expect("nonzero"));
+        } else {
+            let sqrt_zeta_uv = (*ZETA * uv)
+                .sqrt()
+                .expect("must be square if u/v nonsquare");
+            return (false, sqrt_zeta_uv.inverse().expect("nonzero"));
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
