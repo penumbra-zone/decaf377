@@ -19,7 +19,7 @@ pub use field_ext::FieldExt;
 
 pub use ark_ed_on_bls12_377::{Fq, Fr};
 
-use invsqrt::SqrtRatioZeta;
+use invsqrt::{InverseSqrtZeta, SqrtRatioZeta};
 use on_curve::OnCurve;
 use sign::Sign;
 
