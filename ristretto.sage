@@ -309,16 +309,21 @@ class RistrettoPoint(QuotientEdwardsPoint):
         if negative(s) == iss: s = -s
         return cls.fromJacobiQuartic(s,t)
 
+
 def eulers_criterion(n, p):
     if n % p == 0:  # Trivial case
         return True
     else:
         return pow(n, (p - 1)//2, p) == 1
 
+
 def sqrt_tonelli_shanks(n, p):
     """
     Find square root of n mod p for prime p == 1 % 4
     (if p == 3 % 4 there is an explicit formula and this algorithm is not needed).
+
+    TODO: There is a constant time Tonelli-Shanks in Appendix I.4 of:
+    https://datatracker.ietf.org/doc/draft-irtf-cfrg-hash-to-curve/
     """
     if n % p == 0:  # Trivial case
         return 0
@@ -369,6 +374,92 @@ def sqrt_tonelli_shanks(n, p):
         R = (R * b) % p
 
     return R
+
+
+def findSqRoot_sarkar(u, p, z):
+    """findSqRoot from Algorithm 1 in https://eprint.iacr.org/2020/1407.pdf"""
+
+    # Setup for our choice of p
+
+    # First, solve p - 1 = 2**n * m where n >= 1 and m odd
+    m = 1
+    n = 1
+    while  p - 1 != 2 ** n * m:
+        m += 2  # Since m must be odd
+        if p - 1 == 2 ** n * m:
+            break
+        n += 1
+
+    # Next, solve g = z^m where z is a quadratic non-residue in Fp
+    # TODO: Determine best choice of qnr here
+    g = pow(z, m, p)
+
+    # Finally, define l_0... l_{k-1} > 0 such that l_0 + .. + l_{k-1} = n-1
+    l = []
+    while sum(l) != n - 1:
+        l.append(1)  # Check this
+    k = len(l)
+
+    # Line 1 in the algorithm begins here
+    v = pow(u, (m - 1)//2, p)
+
+    if n == 1:
+        y = u * v
+        return y
+    
+    x = u * pow(v, 2, p)  # Such that x = u**m
+
+    # Lookup table creation, step 5
+    x_lookup = []
+    i = 0
+    for i in range(k):
+        exponent = 2 ** (n - 1 - (sum(l[:i+1])))
+        x_lookup.append(pow(x, exponent, p))
+
+    s = 0
+    t = 0
+    for i in range(0, k):
+        t = (s+t) // 2**l[i]
+        gamma = pow(g, t, p)
+        alpha = x_lookup[i] * gamma
+        s = eval_sarkar(alpha, n, g, p)
+
+    t = s + t
+
+    gamma = pow(g, t//2, p)
+    y = u * v * gamma
+    return y
+       
+
+def eval_sarkar(alpha, n, g, p):
+    """eval from Algorithm 1 in https://eprint.iacr.org/2020/1407.pdf"""
+    delta = alpha
+    s = 0
+
+    while delta != 1:
+        i = find_sarkar(delta, p)
+        s = s + pow(2, n - 1 - i, p)
+        
+        if i > 0:
+            exponent = 2 ** (n - 1 - i)
+            delta *= pow(g, exponent, p)
+        else:
+            delta *= -1
+
+    return s
+
+
+def find_sarkar(delta, p):
+    """find from Algorithm 1 in https://eprint.iacr.org/2020/1407.pdf"""
+    mu = delta
+    i = 0
+
+    while mu != -1:
+        mu = pow(mu, 2, p)
+        i += 1
+    
+    return i
+
 
 class Decaf_1_1_Point(QuotientEdwardsPoint):
     """Like current decaf but tweaked for compatibility with Ristretto"""
@@ -981,8 +1072,17 @@ def testDoubleAndEncode(cls,n):
         u = cls.elligator(r1) + cls.elligator(r2)
         assert u.doubleAndEncode() == u.torque().doubleAndEncode()
 
-def test_tonelli_shanks():
-    assert sqrt_tonelli_shanks(5, 41) == 28
+def test_sqrt():
+    #assert sqrt_tonelli_shanks(5, 41) == 28
+    # 3 is a QNR for F41
+    assert findSqRoot_sarkar(5, 41, 3) == 28
+    #print(ct_sqrt_tonelli_shanks(5, 41, 41, 3))
+
+    # BLS12-377
+    z = 2841681278031794617739547238867782961338435681360110683443920362658525667816
+
+    #print(ct_sqrt_tonelli_shanks(5, 8444461749428370424248824938781546531375899335154063827935233455917409239041, 
+    #8444461749428370424248824938781546531375899335154063827935233455917409239041, z))
 
 #testDoubleAndEncode(Ed25519Point,100)
 #testDoubleAndEncode(NegEd25519Point,100)
@@ -1011,4 +1111,4 @@ def test_tonelli_shanks():
 #testElligatorDeterministic(Decaf377Point)
 #test(Decaf377Point,16,True)
 
-test_tonelli_shanks()
+test_sqrt()
