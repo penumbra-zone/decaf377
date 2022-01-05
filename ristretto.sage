@@ -35,7 +35,7 @@ def optimized_version_of(spec):
         wrapper.__name__ = f.__name__
         return wrapper
     return decorator
-    
+
 def xsqrt(x,exn=InvalidEncodingException("Not on curve")):
     """Return sqrt(x)"""
     if not is_square(x): raise exn
@@ -309,6 +309,66 @@ class RistrettoPoint(QuotientEdwardsPoint):
         if negative(s) == iss: s = -s
         return cls.fromJacobiQuartic(s,t)
 
+def eulers_criterion(n, p):
+    if n % p == 0:  # Trivial case
+        return True
+    else:
+        return pow(n, (p - 1)//2, p) == 1
+
+def sqrt_tonelli_shanks(n, p):
+    """
+    Find square root of n mod p for prime p == 1 % 4
+    (if p == 3 % 4 there is an explicit formula and this algorithm is not needed).
+    """
+    if n % p == 0:  # Trivial case
+        return 0
+    
+    # Check if n is a quadratic residue, only proceed if it is
+    if not eulers_criterion(n, p):
+        return None
+
+    # Step 1: Factor out powers of 2 to find Q and S such that p - 1 = Q2^S with Q odd
+    Q = p - 1
+    S = 0
+    while Q % 2 == 0:
+        S += 1
+        Q //= 2
+
+    # Step 2: Find a z in Fp which is a quadratic residue
+    z = 2
+    while eulers_criterion(z, p):
+        z += 1
+
+    # Step 3: Define M, c, t, R
+    M = S
+    c = pow(z, Q, p)
+    t = pow(n, Q, p)
+    R = pow(n, (Q + 1)//2, p)
+
+    # Step 4: Loop until we find a solution
+    while t != 1:
+        if t == 0:
+            return 0
+
+        if t == 1:
+            return R
+
+        # Use repeated squaring to find the least i, 0 < i < M such that
+        # t^(2^i) == 1
+        i = 0
+        lhs = t**(2**i)  # i.e. t since i=0
+        while lhs != 1:
+            i += 1
+            lhs = (lhs ** 2) % p
+
+        exponent = 2 ** (M - i - 1)
+        b = pow(c, exponent, p)
+        M = i
+        c = (b**2) % p
+        t = (t * b**2) % p
+        R = (R * b) % p
+
+    return R
 
 class Decaf_1_1_Point(QuotientEdwardsPoint):
     """Like current decaf but tweaked for compatibility with Ristretto"""
@@ -921,6 +981,9 @@ def testDoubleAndEncode(cls,n):
         u = cls.elligator(r1) + cls.elligator(r2)
         assert u.doubleAndEncode() == u.torque().doubleAndEncode()
 
+def test_tonelli_shanks():
+    assert sqrt_tonelli_shanks(5, 41) == 28
+
 #testDoubleAndEncode(Ed25519Point,100)
 #testDoubleAndEncode(NegEd25519Point,100)
 #testDoubleAndEncode(IsoEd25519Point,100)
@@ -942,8 +1005,10 @@ def testDoubleAndEncode(cls,n):
 #gangtest([IsoEd448Point,TwistedEd448GoldilocksPoint,Ed448GoldilocksPoint],100)
 #gangtest([Ed25519Point,IsoEd25519Point],100)
 
-test(Decaf377Point, 100)
-testDoubleAndEncode(Decaf377Point, 100)
-testElligator(Decaf377Point, 100)
-testElligatorDeterministic(Decaf377Point)
-test(Decaf377Point,16,True)
+#test(Decaf377Point, 100)
+#testDoubleAndEncode(Decaf377Point, 100)
+#testElligator(Decaf377Point, 100)
+#testElligatorDeterministic(Decaf377Point)
+#test(Decaf377Point,16,True)
+
+test_tonelli_shanks()
