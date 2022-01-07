@@ -317,13 +317,82 @@ def eulers_criterion(n, p):
         return pow(n, (p - 1)//2, p) == 1
 
 
+def CMOV(a, b, c):
+    """
+    If c is False, CMOV returns a, otherwise it returns b.
+
+    TODO: constant time
+    """
+    if not c:
+        return a
+    else: 
+        return b
+
+
+
+def precompute_ts(p):
+    """
+    Precompute step taken from [0]
+    
+    [0] https://github.com/cfrg/draft-irtf-cfrg-hash-to-curve/commit/a47caf6a541e59e5e636fedd6fa0d45230bc09a1
+    """
+
+    c1 = 0
+    c2 = p - 1
+    while c2 % 2 == 0:
+        c2 = c2 // 2
+        c1 += 1
+    
+    c3 = (c2 - 1) / 2
+    c4 = 1
+    while eulers_criterion(c4, p):
+        c4 += 1
+    
+    c5 = pow(c4, c2, p)
+
+    print('QNR found: ', c4)
+
+    return (c1, c2, c3, c4, c5)
+
+
+def ct_sqrt_tonelli_shanks(x, p):
+    """
+    Constant time Tonelli-Shanks. Finds the square root of a quadratic residue x
+    for a finite field of characteristic p and order q = p^m [0].
+
+    [0] Appendix I.4 https://datatracker.ietf.org/doc/draft-irtf-cfrg-hash-to-curve/
+    """
+
+    # Define constants. This precompute step should be done and the resulting constants
+    # hardcoded for each curve.
+    c1, c2, c3, c4, c5 = precompute_ts(p)
+
+    # Procedure.
+    z = pow(x, c3, p)
+    t = z * z
+    t = t * x
+    z = z * x
+    b = t
+    c = c5
+    for i in reversed(range(2, c1+1)):
+        for j in range(1, i-2 + 1):
+            b = b * b
+
+        e = b == 1
+        zt = z * c
+        z = CMOV(zt, z, e)
+        c = c * c
+        tt = t * c
+        t = CMOV(tt, t, e)
+        b = t
+
+    return z
+
+
 def sqrt_tonelli_shanks(n, p):
     """
     Find square root of n mod p for prime p == 1 % 4
     (if p == 3 % 4 there is an explicit formula and this algorithm is not needed).
-
-    TODO: There is a constant time Tonelli-Shanks in Appendix I.4 of:
-    https://datatracker.ietf.org/doc/draft-irtf-cfrg-hash-to-curve/
     """
     if n % p == 0:  # Trivial case
         return 0
@@ -1073,16 +1142,16 @@ def testDoubleAndEncode(cls,n):
         assert u.doubleAndEncode() == u.torque().doubleAndEncode()
 
 def test_sqrt():
-    #assert sqrt_tonelli_shanks(5, 41) == 28
+    assert sqrt_tonelli_shanks(5, 41) == 28
     # 3 is a QNR for F41
     assert findSqRoot_sarkar(5, 41, 3) == 28
-    #print(ct_sqrt_tonelli_shanks(5, 41, 41, 3))
+    # The constant-time variant derives a QNR
+    assert ct_sqrt_tonelli_shanks(5, 41) == 28
 
     # BLS12-377
-    z = 2841681278031794617739547238867782961338435681360110683443920362658525667816
+    p_bls12_377 = 8444461749428370424248824938781546531375899335154063827935233455917409239041
+    assert ct_sqrt_tonelli_shanks(1, p_bls12_377) == 1
 
-    #print(ct_sqrt_tonelli_shanks(5, 8444461749428370424248824938781546531375899335154063827935233455917409239041, 
-    #8444461749428370424248824938781546531375899335154063827935233455917409239041, z))
 
 #testDoubleAndEncode(Ed25519Point,100)
 #testDoubleAndEncode(NegEd25519Point,100)
