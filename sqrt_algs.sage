@@ -222,16 +222,104 @@ def find_sarkar(delta, p):
     return i
 
 
+def table_based_findSqRoot_sarkar(u):
+    """Implements decaf377 Sarkar 2020 based method"""
+    p = 8444461749428370424248824938781546531375899335154063827935233455917409239041
+    F = GF(p)
+
+    # Setup for our choice of p
+
+    # First, solve p - 1 = 2**n * m where n >= 1 and m odd
+    n = 47
+    m = (p - 1) // 2**n
+
+    # Next, solve g = z^m where z is a quadratic non-residue in Fp
+    z = F(2841681278031794617739547238867782961338435681360110683443920362658525667816)
+    g = z ** m
+
+    # Finally, define l_0... l_{k-1} > 0 such that l_0 + .. + l_{k-1} = n-1
+    k = 6
+    l = [7, 7, 8, 8, 8, 8]
+    w = 8
+
+    # s lookup table: Indexed by g^{\nu * 2^{n-w}}
+    s_lookup_table = {}
+    exponent = n - w
+    for nu in range(1, 2**8 - 1):
+        s_lookup_table.update({g**(-1 * nu * 2**exponent): nu})
+
+    v = pow(u, (m - 1)//2, p)
+
+    x = u * v * v  # Such that x = u**m
+
+    x5 = x
+    x4 = x5 ** (2**8)
+    x3 = x4 ** (2**8)
+    x2 = x3 ** (2**8)
+    x1 = x2 ** (2**8)
+    x0 = x1 ** (2**7)
+
+    # i = 0
+    t_0 = 0
+    gamma_0 = pow(g, t_0, p)  # TODO: Use table here to make constant time
+    alpha_0 = x0 * gamma_0
+    nu_0 = s_lookup_table[alpha_0]
+    s_0 = nu_0 * 2**(n-w)
+
+    # i = 1
+    t_1 = s_0 // 2**7
+    gamma_1 = pow(g, t_1, p)  # TODO: Use table here to make constant time
+    alpha_1 = x1 * gamma_1
+    nu_1 = s_lookup_table[alpha_1]
+    s_1 = nu_1 * 2**(n-w)
+
+    # i = 2
+    t_2 = (s_1 + t_1) // 2**8
+    gamma_2 = pow(g, t_2, p)  # TODO: Use table here to make constant time
+    alpha_2 = x2 * gamma_2
+    s_2 = s_lookup_table[alpha_2] * 2**(n-w)
+
+    # i = 3
+    t_3 = (s_2 + t_2) // 2**8
+    gamma_3 = pow(g, t_3, p)  # TODO: Use table here to make constant time
+    alpha_3 = x3 * gamma_3
+    s_3 = s_lookup_table[alpha_3] * 2**(n-w)
+
+    # i = 4
+    t_4 = (s_3 + t_3) // 2**8
+    gamma_4 = pow(g, t_4, p)  # TODO: Use table here to make constant time
+    alpha_4 = x4 * gamma_4
+    s_4 = s_lookup_table[alpha_4] * 2**(n-w)
+
+    # i = 5
+    t_5 = (s_4 + t_4) // 2**8
+    gamma_5 = pow(g, t_5, p)  # TODO: Use table here to make constant time
+    alpha_5 = x5 * gamma_5
+    s_5 = s_lookup_table[alpha_5] * 2**(n-w)
+
+    t = s_5 + t_5
+
+    gamma = pow(g, t//2, p)  # TODO: Use table here to make constant time
+    y = u * v * gamma
+    return y
+
+
 def test_sqrt():
-    assert sqrt_tonelli_shanks(5, 41) == 28
+    # assert sqrt_tonelli_shanks(5, 41) == 28
     # 3 is a QNR for F41
-    assert findSqRoot_sarkar(5, 41, 3) == 28
+    # assert findSqRoot_sarkar(5, 41, 3) == 28
     # The constant-time variant derives a QNR
-    assert ct_sqrt_tonelli_shanks(5, 41) == 28
+    # assert ct_sqrt_tonelli_shanks(5, 41) == 28
 
     # BLS12-377
     p_bls12_377 = 8444461749428370424248824938781546531375899335154063827935233455917409239041
-    assert ct_sqrt_tonelli_shanks(1, p_bls12_377) == 1
+    # assert ct_sqrt_tonelli_shanks(1, p_bls12_377) == 1
+
+    # Test squares
+    F = GF(p_bls12_377)
+    #assert table_based_findSqRoot_sarkar(F(1)) == F(1)
+    res = table_based_findSqRoot_sarkar(F(4))
+    assert res**2 == F(4)
 
 
 test_sqrt()
