@@ -33,14 +33,14 @@ def table_based_findSqRoot_sarkar(u):
     powers_needed_for_t_k_over_2 = [0, 6, 14, 22, 30, 38]
     # This is Table 1 and 2 from Sarkar 2020 (combined)
     for power_of_two in powers_needed_for_t_i + powers_needed_for_t_k_over_2:
-        for nu in range (0, 2**w - 1):
+        for nu in range (0, 2**w):
             exponent = nu * F(2) ** power_of_two
             g_lookup_table.update({exponent: g**exponent})
 
     # s lookup table: Indexed by g^{\nu * 2^{n-l}}
     # This is Table 3 from Sarkar 2020
     s_lookup_table = {}
-    for nu in range(1, 2**w - 1):
+    for nu in range(0, 2**w):
         s_lookup_table[g**(-1 * nu * 2**(n-w))] = nu
 
     v = u**((m - 1)//2)
@@ -127,12 +127,15 @@ def table_based_findSqRoot_sarkar(u):
     return y
 
 
-# If a square root exists, the algorithm must return sqrt(x)
-for quadratic_residue in [F(1), F(4), F(10), F(83), F(94)]:
-    res = table_based_findSqRoot_sarkar(quadratic_residue)
-    assert res**2 == quadratic_residue
+def test_sqrt(n):
+    for _ in range(n):
+        u = F.random_element()
 
-# If a square root does not exist, the algorithm must return sqrt(z * x)
-for quadratic_non_residue in [F(11), F(17), F(51), F(99)]:
-    res = table_based_findSqRoot_sarkar(quadratic_non_residue)
-    assert res**2 == quadratic_non_residue * z
+        res = table_based_findSqRoot_sarkar(u)
+        if u.is_square():
+            assert res**2 == u
+        else:
+            assert res**2 == u * z
+
+
+test_sqrt(1000)
