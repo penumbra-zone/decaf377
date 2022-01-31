@@ -24,7 +24,6 @@ struct SquareRootTables {
     pub s_lookup: HashMap<Fq, u64>,
     // reduce required powers of g further?
     pub g0: Box<[Fq; 256]>,
-    pub g6: Box<[Fq; 256]>,
     pub g7: Box<[Fq; 256]>,
     pub g8: Box<[Fq; 256]>,
     pub g14: Box<[Fq; 256]>,
@@ -54,7 +53,7 @@ impl SquareRootTables {
             );
         }
 
-        let powers_of_two = [0, 6, 7, 8, 14, 15, 16, 22, 23, 24, 30, 31, 32, 38];
+        let powers_of_two = [0, 7, 8, 14, 15, 16, 22, 23, 24, 30, 31, 32, 38];
         let mut gtab = Vec::new();
         for power_of_two in powers_of_two {
             let mut gtab_i = Vec::<Fq>::new();
@@ -79,7 +78,6 @@ impl SquareRootTables {
             g14: gtab.pop().unwrap().into_boxed_slice().try_into().unwrap(),
             g8: gtab.pop().unwrap().into_boxed_slice().try_into().unwrap(),
             g7: gtab.pop().unwrap().into_boxed_slice().try_into().unwrap(),
-            g6: gtab.pop().unwrap().into_boxed_slice().try_into().unwrap(),
             g0: gtab.pop().unwrap().into_boxed_slice().try_into().unwrap(),
         }
     }
@@ -163,7 +161,7 @@ impl SqrtRatioZeta for Fq {
         let q5 = SQRT_LOOKUP_TABLES.s_lookup[&alpha_5] as usize;
 
         let gamma = SQRT_LOOKUP_TABLES.g0[q0_prime / 2]
-            * SQRT_LOOKUP_TABLES.g6[q1_prime]
+            * SQRT_LOOKUP_TABLES.g7[q1_prime / 2]
             * SQRT_LOOKUP_TABLES.g14[q2]
             * SQRT_LOOKUP_TABLES.g22[q3]
             * SQRT_LOOKUP_TABLES.g30[q4]
