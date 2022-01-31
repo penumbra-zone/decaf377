@@ -27,7 +27,7 @@ def table_based_findSqRoot_sarkar(u):
 
     # g powers lookup table: Indexed by power of two, then nu
     powers_needed_for_t_i = [7, 8, 15, 16, 23, 24, 31, 32]
-    powers_needed_for_t_k_over_2 = [0, 6, 14, 22, 30, 38]
+    powers_needed_for_t_k_over_2 = [0, 14, 22, 30, 38]
     # This is Table 1 and 2 from Sarkar 2020 (combined)
     gtab = {}
     for power_of_two in powers_needed_for_t_i + powers_needed_for_t_k_over_2:
@@ -79,7 +79,7 @@ def table_based_findSqRoot_sarkar(u):
     alpha_5 = x5 * gtab[0][q_0_prime] * gtab[7][q_1_prime] * gtab[15][q_2] * gtab[23][q_3] * gtab[31][q_4]
     q_5 = s_lookup_table[alpha_5]
 
-    y = u * v * gtab[0][q_0_prime // 2] * gtab[6][q_1_prime] * gtab[14][q_2] * gtab[22][q_3] * gtab[30][q_4] * gtab[38][q_5]
+    y = u * v * gtab[0][q_0_prime // 2] * gtab[7][q_1_prime // 2] * gtab[14][q_2] * gtab[22][q_3] * gtab[30][q_4] * gtab[38][q_5]
     return y
 
 
