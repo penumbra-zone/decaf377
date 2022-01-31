@@ -8,11 +8,6 @@ def table_based_findSqRoot_sarkar(u):
     if u % p == 1:  # Trivial case
         return 1
 
-    # Euler's criterion. If u does not have a square, then we run the
-    # algorithm on z * u
-    if pow(u, (p - 1)//2 , p) != 1:
-        u *= z
-
     # First, solve p - 1 = 2**n * m where n >= 1 and m odd
     n = 47
     m = (p - 1) // 2**n
@@ -44,8 +39,8 @@ def table_based_findSqRoot_sarkar(u):
         s_lookup_table[g**(-1 * nu * 2**(n-w))] = nu
 
     v = u**((m - 1)//2)
-
-    x = u * v * v  # Such that x = u**m
+    uv = u * v
+    x = uv * v  # Such that x = u**m
 
     x5 = x
     x4 = x5 ** (2**l[5])
@@ -79,7 +74,11 @@ def table_based_findSqRoot_sarkar(u):
     alpha_5 = x5 * gtab[0][q_0_prime] * gtab[7][q_1_prime] * gtab[15][q_2] * gtab[23][q_3] * gtab[31][q_4]
     q_5 = s_lookup_table[alpha_5]
 
-    y = u * v * gtab[0][q_0_prime // 2] * gtab[7][q_1_prime // 2] * gtab[14][q_2] * gtab[22][q_3] * gtab[30][q_4] * gtab[38][q_5]
+    y = uv * gtab[0][q_0_prime // 2] * gtab[7][q_1_prime // 2] * gtab[14][q_2] * gtab[22][q_3] * gtab[30][q_4] * gtab[38][q_5]
+
+    if q_0_prime % 2 != 0:  # U is non-square
+        y *= z**((m+1)/2)
+
     return y
 
 

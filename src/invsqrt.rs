@@ -6,7 +6,7 @@ use ark_ff::{BigInteger256, BigInteger64, Field, Zero};
 use once_cell::sync::Lazy;
 
 use crate::constants::{
-    EULER_CRITERION_POW, G, M_MINUS_ONE_DIV_TWO, N, ONE, SQRT_W, ZETA, ZETA_INVERSE,
+    G, M_MINUS_ONE_DIV_TWO, N, ONE, SQRT_W, ZETA_INVERSE, ZETA_TO_M_PLUS_ONE_DIV_TWO,
 };
 
 pub trait SqrtRatioZeta: Sized {
@@ -99,13 +99,7 @@ impl SqrtRatioZeta for Fq {
             return (false, *den);
         }
 
-        let mut u = den.inverse().expect("nonzero") * num;
-
-        // Remove
-        if u.pow(*EULER_CRITERION_POW) != *ONE {
-            u *= *ZETA
-        }
-
+        let u = den.inverse().expect("nonzero") * num;
         let v = u.pow(*M_MINUS_ONE_DIV_TWO);
         let uv = u * v;
 
@@ -166,7 +160,11 @@ impl SqrtRatioZeta for Fq {
             * SQRT_LOOKUP_TABLES.g22[q3]
             * SQRT_LOOKUP_TABLES.g30[q4]
             * SQRT_LOOKUP_TABLES.g38[q5];
-        let res: Fq = uv * gamma;
+        let mut res: Fq = uv * gamma;
+
+        if q0_prime % 2 != 0 {
+            res *= *ZETA_TO_M_PLUS_ONE_DIV_TWO
+        }
 
         let square = res.square() * den;
         let is_square = (square - num) == Fq::zero();
@@ -205,6 +203,7 @@ impl InverseSqrtZeta for Fq {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::constants::ZETA;
 
     use ark_ff::PrimeField;
     use proptest::prelude::*;
