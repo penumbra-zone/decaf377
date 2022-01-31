@@ -22,7 +22,7 @@ def table_based_findSqRoot_sarkar(u):
 
     # g powers lookup table: Indexed by power of two, then nu
     powers_needed_for_t_i = [7, 8, 15, 16, 23, 24, 31, 32]
-    powers_needed_for_t_k_over_2 = [0, 14, 22, 30, 38]
+    powers_needed_for_t_k_over_2 = [0, 40]
     # This is Table 1 and 2 from Sarkar 2020 (combined)
     gtab = {}
     for power_of_two in powers_needed_for_t_i + powers_needed_for_t_k_over_2:
@@ -53,31 +53,46 @@ def table_based_findSqRoot_sarkar(u):
     # Here we want to look up s_0 = q_0 * g**{n-7}, but our table has
     # powers of g**{n-8}, so we're actually looking up q_prime = 2*q_0.
     q_0_prime = s_lookup_table[x0]  # Since x0 = alpha0
+    t = q_0_prime
 
     # i = 1
     alpha_1 = x1 * gtab[32][q_0_prime]  # Looks up g^{q_0_prime * 2**32}
     q_1_prime = s_lookup_table[alpha_1]
+    # The left shift values come from the final expression for t:
+    # t_6 = q_0_prime + q_1_prime * 2^7 + ... + q_5 * 2^39 
+    t += q_1_prime << 7
 
     # i = 2
     alpha_2 = x2 * gtab[24][q_0_prime] * gtab[31][q_1_prime]
     q_2 = s_lookup_table[alpha_2]
+    t += q_2 << 15
 
     # i = 3
     alpha_3 = x3 * gtab[16][q_0_prime] * gtab[23][q_1_prime] * gtab[31][q_2]
     q_3 = s_lookup_table[alpha_3]
+    t += q_3 << 23
 
     # i = 4
     alpha_4 = x4 * gtab[8][q_0_prime] * gtab[15][q_1_prime] * gtab[23][q_2] * gtab[31][q_3]
     q_4 = s_lookup_table[alpha_4]
+    t += q_4 << 31
 
     # i = 5
     alpha_5 = x5 * gtab[0][q_0_prime] * gtab[7][q_1_prime] * gtab[15][q_2] * gtab[23][q_3] * gtab[31][q_4]
     q_5 = s_lookup_table[alpha_5]
+    t += q_5 << 39
 
-    y = uv * gtab[0][q_0_prime // 2] * gtab[7][q_1_prime // 2] * gtab[14][q_2] * gtab[22][q_3] * gtab[30][q_4] * gtab[38][q_5]
+    assert t == q_0_prime + q_1_prime * 2**7 + q_2 * 2**15 + q_3 * 2**23 + q_4 * 2**31 + q_5 * 2**39  # Lemma 4 assertion
 
-    if q_0_prime % 2 != 0:  # U is non-square
-        y *= z**((m+1)/2)
+    # Divide t by 2 in place
+    t = (t + 1) >> 1;
+
+    # Take 8 bits at a time, e.g. (t & 0xFF) is taking the last 8 bits of t to yield a value from 0-255, which are the allowed values in each g lookup table
+    y = uv * gtab[0][t & 0xFF] * gtab[8][(t >> 8) & 0xFF] * gtab[16][(t >> 16) & 0xFF] * gtab[24][(t >> 24) & 0xFF] * gtab[32][(t >> 32) & 0xFF] * gtab[40][(t >> 40)]
+
+    # todo: Get rid of the below?
+    if q_0_prime % 2 != 0:
+        y *= z**((1 - m) / 2)
 
     return y
 
@@ -94,4 +109,4 @@ def test_sqrt(n):
 
 
 #test_sqrt(10000)
-test_sqrt(10)
+test_sqrt(100)

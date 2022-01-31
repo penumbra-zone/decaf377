@@ -6,7 +6,7 @@ use ark_ff::{BigInteger256, BigInteger64, Field, Zero};
 use once_cell::sync::Lazy;
 
 use crate::constants::{
-    G, M_MINUS_ONE_DIV_TWO, N, ONE, SQRT_W, ZETA_INVERSE, ZETA_TO_M_PLUS_ONE_DIV_TWO,
+    G, M_MINUS_ONE_DIV_TWO, N, ONE, SQRT_W, ZETA_INVERSE, ZETA_TO_ONE_MINUS_M_DIV_TWO,
 };
 
 pub trait SqrtRatioZeta: Sized {
@@ -22,20 +22,16 @@ pub trait SqrtRatioZeta: Sized {
 
 struct SquareRootTables {
     pub s_lookup: HashMap<Fq, u64>,
-    // reduce required powers of g further?
     pub g0: Box<[Fq; 256]>,
     pub g7: Box<[Fq; 256]>,
     pub g8: Box<[Fq; 256]>,
-    pub g14: Box<[Fq; 256]>,
     pub g15: Box<[Fq; 256]>,
     pub g16: Box<[Fq; 256]>,
-    pub g22: Box<[Fq; 256]>,
     pub g23: Box<[Fq; 256]>,
     pub g24: Box<[Fq; 256]>,
-    pub g30: Box<[Fq; 256]>,
     pub g31: Box<[Fq; 256]>,
     pub g32: Box<[Fq; 256]>,
-    pub g38: Box<[Fq; 256]>,
+    pub g40: Box<[Fq; 256]>,
 }
 
 impl SquareRootTables {
@@ -53,7 +49,7 @@ impl SquareRootTables {
             );
         }
 
-        let powers_of_two = [0, 7, 8, 14, 15, 16, 22, 23, 24, 30, 31, 32, 38];
+        let powers_of_two = [0, 7, 8, 15, 16, 23, 24, 31, 32, 40];
         let mut gtab = Vec::new();
         for power_of_two in powers_of_two {
             let mut gtab_i = Vec::<Fq>::new();
@@ -66,16 +62,13 @@ impl SquareRootTables {
 
         Self {
             s_lookup,
-            g38: gtab.pop().unwrap().into_boxed_slice().try_into().unwrap(),
+            g40: gtab.pop().unwrap().into_boxed_slice().try_into().unwrap(),
             g32: gtab.pop().unwrap().into_boxed_slice().try_into().unwrap(),
             g31: gtab.pop().unwrap().into_boxed_slice().try_into().unwrap(),
-            g30: gtab.pop().unwrap().into_boxed_slice().try_into().unwrap(),
             g24: gtab.pop().unwrap().into_boxed_slice().try_into().unwrap(),
             g23: gtab.pop().unwrap().into_boxed_slice().try_into().unwrap(),
-            g22: gtab.pop().unwrap().into_boxed_slice().try_into().unwrap(),
             g16: gtab.pop().unwrap().into_boxed_slice().try_into().unwrap(),
             g15: gtab.pop().unwrap().into_boxed_slice().try_into().unwrap(),
-            g14: gtab.pop().unwrap().into_boxed_slice().try_into().unwrap(),
             g8: gtab.pop().unwrap().into_boxed_slice().try_into().unwrap(),
             g7: gtab.pop().unwrap().into_boxed_slice().try_into().unwrap(),
             g0: gtab.pop().unwrap().into_boxed_slice().try_into().unwrap(),
@@ -121,14 +114,17 @@ impl SqrtRatioZeta for Fq {
 
         // i = 0
         let q0_prime = SQRT_LOOKUP_TABLES.s_lookup[&x0] as usize;
+        let mut t = q0_prime;
 
         // i = 1
         let alpha_1 = x1 * SQRT_LOOKUP_TABLES.g32[q0_prime];
         let q1_prime = SQRT_LOOKUP_TABLES.s_lookup[&alpha_1] as usize;
+        t += q1_prime << 7;
 
         // i = 2
         let alpha_2 = x2 * SQRT_LOOKUP_TABLES.g24[q0_prime] * SQRT_LOOKUP_TABLES.g31[q1_prime];
         let q2 = SQRT_LOOKUP_TABLES.s_lookup[&alpha_2] as usize;
+        t += q2 << 15;
 
         // i = 3
         let alpha_3 = x3
@@ -136,6 +132,7 @@ impl SqrtRatioZeta for Fq {
             * SQRT_LOOKUP_TABLES.g23[q1_prime]
             * SQRT_LOOKUP_TABLES.g31[q2];
         let q3 = SQRT_LOOKUP_TABLES.s_lookup[&alpha_3] as usize;
+        t += q3 << 23;
 
         // i = 4
         let alpha_4 = x4
@@ -144,6 +141,7 @@ impl SqrtRatioZeta for Fq {
             * SQRT_LOOKUP_TABLES.g23[q2]
             * SQRT_LOOKUP_TABLES.g31[q3];
         let q4 = SQRT_LOOKUP_TABLES.s_lookup[&alpha_4] as usize;
+        t += q4 << 31;
 
         // i = 5
         let alpha_5 = x5
@@ -153,17 +151,19 @@ impl SqrtRatioZeta for Fq {
             * SQRT_LOOKUP_TABLES.g23[q3]
             * SQRT_LOOKUP_TABLES.g31[q4];
         let q5 = SQRT_LOOKUP_TABLES.s_lookup[&alpha_5] as usize;
+        t += q5 << 39;
 
-        let gamma = SQRT_LOOKUP_TABLES.g0[q0_prime / 2]
-            * SQRT_LOOKUP_TABLES.g7[q1_prime / 2]
-            * SQRT_LOOKUP_TABLES.g14[q2]
-            * SQRT_LOOKUP_TABLES.g22[q3]
-            * SQRT_LOOKUP_TABLES.g30[q4]
-            * SQRT_LOOKUP_TABLES.g38[q5];
-        let mut res: Fq = uv * gamma;
+        t = (t + 1) >> 1;
+        let mut res: Fq = uv
+            * SQRT_LOOKUP_TABLES.g0[t & 0xFF]
+            * SQRT_LOOKUP_TABLES.g8[(t >> 8) & 0xFF]
+            * SQRT_LOOKUP_TABLES.g16[(t >> 16) & 0xFF]
+            * SQRT_LOOKUP_TABLES.g24[(t >> 24) & 0xFF]
+            * SQRT_LOOKUP_TABLES.g32[(t >> 32) & 0xFF]
+            * SQRT_LOOKUP_TABLES.g40[(t >> 40) & 0xFF];
 
         if q0_prime % 2 != 0 {
-            res *= *ZETA_TO_M_PLUS_ONE_DIV_TWO
+            res *= *ZETA_TO_ONE_MINUS_M_DIV_TWO
         }
 
         let square = res.square() * den;
