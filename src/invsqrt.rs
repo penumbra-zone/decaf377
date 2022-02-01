@@ -22,6 +22,7 @@ pub trait SqrtRatioZeta: Sized {
 
 struct SquareRootTables {
     pub s_lookup: HashMap<Fq, u64>,
+    pub nonsquare_lookup: [Fq; 2],
     pub g0: Box<[Fq; 256]>,
     pub g7: Box<[Fq; 256]>,
     pub g8: Box<[Fq; 256]>,
@@ -60,8 +61,11 @@ impl SquareRootTables {
             gtab.push(gtab_i);
         }
 
+        let nonsquare_lookup = [*ONE, *ZETA_TO_ONE_MINUS_M_DIV_TWO];
+
         Self {
             s_lookup,
+            nonsquare_lookup,
             g40: gtab.pop().unwrap().into_boxed_slice().try_into().unwrap(),
             g32: gtab.pop().unwrap().into_boxed_slice().try_into().unwrap(),
             g31: gtab.pop().unwrap().into_boxed_slice().try_into().unwrap(),
@@ -154,17 +158,14 @@ impl SqrtRatioZeta for Fq {
         t += q5 << 39;
 
         t = (t + 1) >> 1;
-        let mut res: Fq = uv
+        let res: Fq = uv
+            * SQRT_LOOKUP_TABLES.nonsquare_lookup[q0_prime & 0b1]
             * SQRT_LOOKUP_TABLES.g0[t & 0xFF]
             * SQRT_LOOKUP_TABLES.g8[(t >> 8) & 0xFF]
             * SQRT_LOOKUP_TABLES.g16[(t >> 16) & 0xFF]
             * SQRT_LOOKUP_TABLES.g24[(t >> 24) & 0xFF]
             * SQRT_LOOKUP_TABLES.g32[(t >> 32) & 0xFF]
             * SQRT_LOOKUP_TABLES.g40[(t >> 40) & 0xFF];
-
-        if q0_prime % 2 != 0 {
-            res *= *ZETA_TO_ONE_MINUS_M_DIV_TWO
-        }
 
         let square = res.square() * den;
         let is_square = (square - num) == Fq::zero();
