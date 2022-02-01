@@ -38,6 +38,12 @@ def table_based_findSqRoot_sarkar(u):
     for nu in range(0, 2**w):
         s_lookup_table[g**(-1 * nu * 2**(n-w))] = nu
 
+    # Required to return z * u for non squares. Remove?
+    uz = {
+        0b0: F(1),
+        0b1: z**((1 - m) / 2)
+    }
+
     v = u**((m - 1)//2)
     uv = u * v
     x = uv * v  # Such that x = u**m
@@ -88,11 +94,7 @@ def table_based_findSqRoot_sarkar(u):
     t = (t + 1) >> 1;
 
     # Take 8 bits at a time, e.g. (t & 0xFF) is taking the last 8 bits of t to yield a value from 0-255, which are the allowed values in each g lookup table
-    y = uv * gtab[0][t & 0xFF] * gtab[8][(t >> 8) & 0xFF] * gtab[16][(t >> 16) & 0xFF] * gtab[24][(t >> 24) & 0xFF] * gtab[32][(t >> 32) & 0xFF] * gtab[40][(t >> 40)]
-
-    # todo: Get rid of the below?
-    if q_0_prime % 2 != 0:
-        y *= z**((1 - m) / 2)
+    y = uv * uz[q_0_prime & 0b1] * gtab[0][t & 0xFF] * gtab[8][(t >> 8) & 0xFF] * gtab[16][(t >> 16) & 0xFF] * gtab[24][(t >> 24) & 0xFF] * gtab[32][(t >> 32) & 0xFF] * gtab[40][(t >> 40)]
 
     return y
 
