@@ -24,13 +24,9 @@ struct SquareRootTables {
     pub s_lookup: HashMap<Fq, u64>,
     pub nonsquare_lookup: [Fq; 2],
     pub g0: Box<[Fq; 256]>,
-    pub g7: Box<[Fq; 256]>,
     pub g8: Box<[Fq; 256]>,
-    pub g15: Box<[Fq; 256]>,
     pub g16: Box<[Fq; 256]>,
-    pub g23: Box<[Fq; 256]>,
     pub g24: Box<[Fq; 256]>,
-    pub g31: Box<[Fq; 256]>,
     pub g32: Box<[Fq; 256]>,
     pub g40: Box<[Fq; 256]>,
 }
@@ -50,7 +46,7 @@ impl SquareRootTables {
             );
         }
 
-        let powers_of_two = [0, 7, 8, 15, 16, 23, 24, 31, 32, 40];
+        let powers_of_two = [0, 8, 16, 24, 32, 40];
         let mut gtab = Vec::new();
         for power_of_two in powers_of_two {
             let mut gtab_i = Vec::<Fq>::new();
@@ -68,13 +64,9 @@ impl SquareRootTables {
             nonsquare_lookup,
             g40: gtab.pop().unwrap().into_boxed_slice().try_into().unwrap(),
             g32: gtab.pop().unwrap().into_boxed_slice().try_into().unwrap(),
-            g31: gtab.pop().unwrap().into_boxed_slice().try_into().unwrap(),
             g24: gtab.pop().unwrap().into_boxed_slice().try_into().unwrap(),
-            g23: gtab.pop().unwrap().into_boxed_slice().try_into().unwrap(),
             g16: gtab.pop().unwrap().into_boxed_slice().try_into().unwrap(),
-            g15: gtab.pop().unwrap().into_boxed_slice().try_into().unwrap(),
             g8: gtab.pop().unwrap().into_boxed_slice().try_into().unwrap(),
-            g7: gtab.pop().unwrap().into_boxed_slice().try_into().unwrap(),
             g0: gtab.pop().unwrap().into_boxed_slice().try_into().unwrap(),
         }
     }
@@ -126,34 +118,35 @@ impl SqrtRatioZeta for Fq {
         t += q1_prime << 7;
 
         // i = 2
-        let alpha_2 = x2 * SQRT_LOOKUP_TABLES.g24[q0_prime] * SQRT_LOOKUP_TABLES.g31[q1_prime];
+        let alpha_2 =
+            x2 * SQRT_LOOKUP_TABLES.g24[q0_prime] * SQRT_LOOKUP_TABLES.g32[(t >> 8) & 0xFF];
         let q2 = SQRT_LOOKUP_TABLES.s_lookup[&alpha_2] as usize;
         t += q2 << 15;
 
         // i = 3
         let alpha_3 = x3
             * SQRT_LOOKUP_TABLES.g16[q0_prime]
-            * SQRT_LOOKUP_TABLES.g23[q1_prime]
-            * SQRT_LOOKUP_TABLES.g31[q2];
+            * SQRT_LOOKUP_TABLES.g24[(t >> 8) & 0xFF]
+            * SQRT_LOOKUP_TABLES.g32[(t >> 16) & 0xFF];
         let q3 = SQRT_LOOKUP_TABLES.s_lookup[&alpha_3] as usize;
         t += q3 << 23;
 
         // i = 4
         let alpha_4 = x4
             * SQRT_LOOKUP_TABLES.g8[q0_prime]
-            * SQRT_LOOKUP_TABLES.g15[q1_prime]
-            * SQRT_LOOKUP_TABLES.g23[q2]
-            * SQRT_LOOKUP_TABLES.g31[q3];
+            * SQRT_LOOKUP_TABLES.g16[(t >> 8) & 0xFF]
+            * SQRT_LOOKUP_TABLES.g24[(t >> 16) & 0xFF]
+            * SQRT_LOOKUP_TABLES.g32[(t >> 24) & 0xFF];
         let q4 = SQRT_LOOKUP_TABLES.s_lookup[&alpha_4] as usize;
         t += q4 << 31;
 
         // i = 5
         let alpha_5 = x5
             * SQRT_LOOKUP_TABLES.g0[q0_prime]
-            * SQRT_LOOKUP_TABLES.g7[q1_prime]
-            * SQRT_LOOKUP_TABLES.g15[q2]
-            * SQRT_LOOKUP_TABLES.g23[q3]
-            * SQRT_LOOKUP_TABLES.g31[q4];
+            * SQRT_LOOKUP_TABLES.g8[(t >> 8) & 0xFF]
+            * SQRT_LOOKUP_TABLES.g16[(t >> 16) & 0xFF]
+            * SQRT_LOOKUP_TABLES.g24[(t >> 24) & 0xFF]
+            * SQRT_LOOKUP_TABLES.g32[(t >> 32) & 0xFF];
         let q5 = SQRT_LOOKUP_TABLES.s_lookup[&alpha_5] as usize;
         t += q5 << 39;
 
