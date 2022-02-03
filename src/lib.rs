@@ -12,6 +12,7 @@ mod on_curve;
 mod ops;
 mod sign;
 
+pub use constants::ZETA;
 pub use element::Element;
 pub use encoding::Encoding;
 pub use error::EncodingError;
@@ -19,7 +20,7 @@ pub use field_ext::FieldExt;
 
 pub use ark_ed_on_bls12_377::{Fq, Fr};
 
-use invsqrt::{InverseSqrtZeta, SqrtRatioZeta};
+pub use invsqrt::{InverseSqrtZeta, SqrtRatioZeta};
 use on_curve::OnCurve;
 use sign::Sign;
 
