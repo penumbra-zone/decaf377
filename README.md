@@ -18,4 +18,14 @@ abstraction that provides a prime-order group, complete with hash-to-group
 functionality, and works the same way inside and outside of a circuit.
 
 More details are available on the [Penumbra
-website](https://penumbra.zone/main/crypto/decaf377.html).
+website](https://protocol.penumbra.zone/main/crypto/decaf377.html).
+
+## Benchmarks
+
+Run `criterion` benchmarks using:
+
+```
+cargo bench
+```
+
+This will generate a report at `target/criterion/report/index.html`.
