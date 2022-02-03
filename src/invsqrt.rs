@@ -88,9 +88,13 @@ impl SqrtRatioZeta for Fq {
             return (false, *den);
         }
 
-        let u = den.inverse().expect("nonzero") * num;
-        let v = u.pow(*M_MINUS_ONE_DIV_TWO);
-        let uv = u * v;
+        let s_exp: BigInteger256 = (2u64.pow(N) - 1).into();
+        let s = den.pow(s_exp);
+        let t = s.square() * den;
+        let w = (*num * t).pow(*M_MINUS_ONE_DIV_TWO) * s;
+
+        let v = w * den;
+        let uv = w * num;
 
         // x = u * v^2 = x5
         let x5 = uv * v;
