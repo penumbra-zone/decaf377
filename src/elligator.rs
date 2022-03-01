@@ -4,7 +4,7 @@ use ark_ff::Field;
 
 use crate::{
     constants::{ONE, TWO, ZETA},
-    Element, Fq, InverseSqrtZeta, OnCurve, Sign,
+    Element, Fq, OnCurve, Sign, SqrtRatioZeta,
 };
 
 impl Element {
@@ -19,8 +19,9 @@ impl Element {
 
         let den = (D * r - (D - A)) * ((D - A) * r - D);
         let num = (r + *ONE) * (A - *TWO * D);
+
         let x = num * den;
-        let (iss, mut isri) = Fq::isqrt_zeta(&x);
+        let (iss, mut isri) = Fq::sqrt_ratio_zeta(&ONE, &x);
 
         let sgn;
         let twiddle;
@@ -29,7 +30,7 @@ impl Element {
             twiddle = *ONE;
         } else {
             sgn = -(*ONE);
-            twiddle = *ZETA * r_0;
+            twiddle = *r_0;
         }
 
         isri *= twiddle;

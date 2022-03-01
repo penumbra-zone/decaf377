@@ -5,9 +5,7 @@ use ark_ed_on_bls12_377::Fq;
 use ark_ff::{BigInteger256, BigInteger64, Field, Zero};
 use once_cell::sync::Lazy;
 
-use crate::constants::{
-    G, M_MINUS_ONE_DIV_TWO, N, ONE, SQRT_W, ZETA_INVERSE, ZETA_TO_ONE_MINUS_M_DIV_TWO,
-};
+use crate::constants::{G, M_MINUS_ONE_DIV_TWO, N, ONE, SQRT_W, ZETA_TO_ONE_MINUS_M_DIV_TWO};
 
 pub trait SqrtRatioZeta: Sized {
     /// Computes the square root of a ratio of field elements, returning:
@@ -16,8 +14,7 @@ pub trait SqrtRatioZeta: Sized {
     /// - `(true, 0)` if `num` is zero;
     /// - `(false, 0)` if `den` is zero;
     /// - `(false, sqrt(zeta*num/den))` if `num` and `den` are both nonzero and `num/den` is nonsquare;
-    ///
-    fn sqrt_ratio_zeta(u: &Self, den: &Self) -> (bool, Self);
+    fn sqrt_ratio_zeta(num: &Self, den: &Self) -> (bool, Self);
 }
 
 struct SquareRootTables {
@@ -168,33 +165,6 @@ impl SqrtRatioZeta for Fq {
         let is_square = (square - num) == Fq::zero();
 
         (is_square, res)
-    }
-}
-
-pub trait InverseSqrtZeta: Sized {
-    /// Computes the inverse square root of a field element, returning:
-    ///
-    /// - `(true, 0)` if `x` is zero;
-    /// - `(true, 1/sqrt(x))` if `x` is nonzero and `x` is square;
-    /// - `(false, 1/sqrt(zeta*x))` if `x` is nonzero and `x` is nonsquare;
-    ///
-    fn isqrt_zeta(x: &Self) -> (bool, Self);
-}
-
-impl InverseSqrtZeta for Fq {
-    fn isqrt_zeta(x: &Self) -> (bool, Self) {
-        // Corresponds to isqrt_i in Sage specification
-        let (iss, isri) = Fq::sqrt_ratio_zeta(&ONE, x);
-
-        if isri == Fq::zero() {
-            (true, isri)
-        } else if isri != Fq::zero() && !iss {
-            // The result `isri` of sqrt_ratio_zeta in this case is `sqrt(zeta*1/x)`
-            // whereas we want `1/sqrt(zeta*x)`. So we multiply `isri` by `1/zeta`.
-            (iss, *ZETA_INVERSE * isri)
-        } else {
-            (iss, isri)
-        }
     }
 }
 

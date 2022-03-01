@@ -16,9 +16,6 @@ pub static ZETA: Lazy<Fq> = Lazy::new(|| {
 
 // Constants used for square root computation //
 
-pub static ZETA_INVERSE: Lazy<Fq> =
-    Lazy::new(|| (*ZETA).inverse().expect("inverse of zeta must exist"));
-
 // N is the 2-adicity
 pub static N: u32 = 47;
 
