@@ -2,7 +2,8 @@ use ark_ed_on_bls12_377::Fq;
 use ark_ff::{Field, PrimeField, SquareRootField, Zero};
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use decaf377::{SqrtRatioZeta, ZETA};
-use rand_core::{OsRng, RngCore};
+use rand_chacha::ChaChaRng;
+use rand_core::{RngCore, SeedableRng};
 
 fn sqrt_original(u: &Fq, v: &Fq) -> (bool, Fq) {
     if u.is_zero() {
@@ -26,7 +27,7 @@ fn sqrt_original(u: &Fq, v: &Fq) -> (bool, Fq) {
 pub fn bench_sqrt_ratio(c: &mut Criterion) {
     let mut group = c.benchmark_group("sqrt");
     let n = 10;
-    let mut rng = OsRng;
+    let mut rng = ChaChaRng::seed_from_u64(666);
     let mut test_field_elements = Vec::with_capacity(n);
     for _ in 0..n {
         let mut i_bytes = [0u8; 32];
