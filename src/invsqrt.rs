@@ -202,4 +202,13 @@ mod tests {
             }
         }
     }
+
+    #[test]
+    fn sqrt_ratio_edge_cases() {
+        // u = 0
+        assert_eq!(Fq::sqrt_ratio_zeta(&Fq::zero(), &ONE), (true, Fq::zero()));
+
+        // v = 0
+        assert_eq!(Fq::sqrt_ratio_zeta(&ONE, &Fq::zero()), (false, Fq::zero()));
+    }
 }
