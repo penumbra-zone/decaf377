@@ -17,7 +17,11 @@ pub use encoding::Encoding;
 pub use error::EncodingError;
 pub use field_ext::FieldExt;
 
-pub use ark_ed_on_bls12_377::{Fq, Fr};
+#[cfg(feature = "proofs")]
+pub mod proof;
+
+pub use ark_bls12_377::Bls12_377;
+pub use ark_ed_on_bls12_377::{EdwardsParameters, Fq, Fr};
 
 use invsqrt::SqrtRatioZeta;
 use on_curve::OnCurve;
