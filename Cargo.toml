@@ -24,8 +24,3 @@ zeroize = "1.4"
 
 [dev-dependencies]
 proptest = "1"
-
-[patch.crates-io]
-# The "ours" branch is based off of v0.3.0
-ark-ff = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }
-ark-serialize = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }
