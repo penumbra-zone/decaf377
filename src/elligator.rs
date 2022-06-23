@@ -8,7 +8,7 @@ use crate::{
 };
 
 impl Element {
-    /// Elligator map to decaf377 point
+    /// Elligator 2 map to decaf377 point
     #[allow(non_snake_case)]
     fn elligator_map(r_0: &Fq) -> Element {
         // Ref: `Decaf_1_1_Point.elligator` (optimized) in `ristretto.sage`

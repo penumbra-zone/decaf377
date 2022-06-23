@@ -7,7 +7,7 @@ use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 
 use crate::{constants::TWO, Element, EncodingError, Fq, OnCurve, Sign, SqrtRatioZeta};
 
-#[derive(Copy, Clone, Default, Eq, PartialEq)]
+#[derive(Copy, Clone, Default, Eq, Ord, PartialOrd, PartialEq)]
 pub struct Encoding(pub [u8; 32]);
 
 impl std::fmt::Debug for Encoding {

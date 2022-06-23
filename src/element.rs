@@ -33,6 +33,7 @@ impl Default for Element {
 
 impl PartialEq for Element {
     fn eq(&self, other: &Element) -> bool {
+        // Section 4.5 of Decaf paper
         self.inner.x * other.inner.y == self.inner.y * other.inner.x
     }
 }
