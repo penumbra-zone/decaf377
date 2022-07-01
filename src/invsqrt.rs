@@ -184,6 +184,7 @@ mod tests {
     }
 
     proptest! {
+        #![proptest_config(ProptestConfig::with_cases(10000))]
         #[test]
         fn sqrt_ratio_zeta(u in fq_strategy(), v in fq_strategy()) {
             if u.is_zero() {
