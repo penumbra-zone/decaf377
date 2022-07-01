@@ -110,56 +110,57 @@ impl SqrtRatioZeta for Fq {
         let x0 = x1.pow(pow2_7);
 
         // i = 0
-        let q0_prime = SQRT_LOOKUP_TABLES.s_lookup[&x0] as usize;
+        let q0_prime = SQRT_LOOKUP_TABLES.s_lookup[&x0];
         let mut t = q0_prime;
 
         // i = 1
-        let alpha_1 = x1 * SQRT_LOOKUP_TABLES.g32[q0_prime];
-        let q1_prime = SQRT_LOOKUP_TABLES.s_lookup[&alpha_1] as usize;
+        let alpha_1 = x1 * SQRT_LOOKUP_TABLES.g32[q0_prime as usize];
+        let q1_prime = SQRT_LOOKUP_TABLES.s_lookup[&alpha_1];
         t += q1_prime << 7;
 
         // i = 2
-        let alpha_2 =
-            x2 * SQRT_LOOKUP_TABLES.g24[q0_prime] * SQRT_LOOKUP_TABLES.g32[(t >> 8) & 0xFF];
-        let q2 = SQRT_LOOKUP_TABLES.s_lookup[&alpha_2] as usize;
+        let alpha_2 = x2
+            * SQRT_LOOKUP_TABLES.g24[q0_prime as usize]
+            * SQRT_LOOKUP_TABLES.g32[((t >> 8) & 0xFF) as usize];
+        let q2 = SQRT_LOOKUP_TABLES.s_lookup[&alpha_2];
         t += q2 << 15;
 
         // i = 3
         let alpha_3 = x3
-            * SQRT_LOOKUP_TABLES.g16[q0_prime]
-            * SQRT_LOOKUP_TABLES.g24[(t >> 8) & 0xFF]
-            * SQRT_LOOKUP_TABLES.g32[(t >> 16) & 0xFF];
-        let q3 = SQRT_LOOKUP_TABLES.s_lookup[&alpha_3] as usize;
+            * SQRT_LOOKUP_TABLES.g16[q0_prime as usize]
+            * SQRT_LOOKUP_TABLES.g24[((t >> 8) & 0xFF) as usize]
+            * SQRT_LOOKUP_TABLES.g32[((t >> 16) & 0xFF) as usize];
+        let q3 = SQRT_LOOKUP_TABLES.s_lookup[&alpha_3];
         t += q3 << 23;
 
         // i = 4
         let alpha_4 = x4
-            * SQRT_LOOKUP_TABLES.g8[q0_prime]
-            * SQRT_LOOKUP_TABLES.g16[(t >> 8) & 0xFF]
-            * SQRT_LOOKUP_TABLES.g24[(t >> 16) & 0xFF]
-            * SQRT_LOOKUP_TABLES.g32[(t >> 24) & 0xFF];
-        let q4 = SQRT_LOOKUP_TABLES.s_lookup[&alpha_4] as usize;
+            * SQRT_LOOKUP_TABLES.g8[q0_prime as usize]
+            * SQRT_LOOKUP_TABLES.g16[((t >> 8) & 0xFF) as usize]
+            * SQRT_LOOKUP_TABLES.g24[((t >> 16) & 0xFF) as usize]
+            * SQRT_LOOKUP_TABLES.g32[((t >> 24) & 0xFF) as usize];
+        let q4 = SQRT_LOOKUP_TABLES.s_lookup[&alpha_4];
         t += q4 << 31;
 
         // i = 5
         let alpha_5 = x5
-            * SQRT_LOOKUP_TABLES.g0[q0_prime]
-            * SQRT_LOOKUP_TABLES.g8[(t >> 8) & 0xFF]
-            * SQRT_LOOKUP_TABLES.g16[(t >> 16) & 0xFF]
-            * SQRT_LOOKUP_TABLES.g24[(t >> 24) & 0xFF]
-            * SQRT_LOOKUP_TABLES.g32[(t >> 32) & 0xFF];
-        let q5 = SQRT_LOOKUP_TABLES.s_lookup[&alpha_5] as usize;
+            * SQRT_LOOKUP_TABLES.g0[q0_prime as usize]
+            * SQRT_LOOKUP_TABLES.g8[((t >> 8) & 0xFF) as usize]
+            * SQRT_LOOKUP_TABLES.g16[((t >> 16) & 0xFF) as usize]
+            * SQRT_LOOKUP_TABLES.g24[((t >> 24) & 0xFF) as usize]
+            * SQRT_LOOKUP_TABLES.g32[((t >> 32) & 0xFF) as usize];
+        let q5 = SQRT_LOOKUP_TABLES.s_lookup[&alpha_5];
         t += q5 << 39;
 
         t = (t + 1) >> 1;
         let res: Fq = uv
-            * SQRT_LOOKUP_TABLES.nonsquare_lookup[q0_prime & 0b1]
-            * SQRT_LOOKUP_TABLES.g0[t & 0xFF]
-            * SQRT_LOOKUP_TABLES.g8[(t >> 8) & 0xFF]
-            * SQRT_LOOKUP_TABLES.g16[(t >> 16) & 0xFF]
-            * SQRT_LOOKUP_TABLES.g24[(t >> 24) & 0xFF]
-            * SQRT_LOOKUP_TABLES.g32[(t >> 32) & 0xFF]
-            * SQRT_LOOKUP_TABLES.g40[(t >> 40) & 0xFF];
+            * SQRT_LOOKUP_TABLES.nonsquare_lookup[(q0_prime & 0b1) as usize]
+            * SQRT_LOOKUP_TABLES.g0[(t & 0xFF) as usize]
+            * SQRT_LOOKUP_TABLES.g8[((t >> 8) & 0xFF) as usize]
+            * SQRT_LOOKUP_TABLES.g16[((t >> 16) & 0xFF) as usize]
+            * SQRT_LOOKUP_TABLES.g24[((t >> 24) & 0xFF) as usize]
+            * SQRT_LOOKUP_TABLES.g32[((t >> 32) & 0xFF) as usize]
+            * SQRT_LOOKUP_TABLES.g40[((t >> 40) & 0xFF) as usize];
 
         let square = res.square() * den;
         let is_square = (square - num) == Fq::zero();
@@ -183,6 +184,7 @@ mod tests {
     }
 
     proptest! {
+        #![proptest_config(ProptestConfig::with_cases(10000))]
         #[test]
         fn sqrt_ratio_zeta(u in fq_strategy(), v in fq_strategy()) {
             if u.is_zero() {
