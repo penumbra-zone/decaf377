@@ -189,6 +189,33 @@ impl TryFrom<Encoding> for Element {
     }
 }
 
+impl TryFrom<&[u8]> for Element {
+    type Error = EncodingError;
+
+    fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
+        let b: [u8; 32] = bytes
+            .try_into()
+            .map_err(|_| EncodingError::InvalidSliceLength)?;
+
+        Encoding(b).try_into()
+    }
+}
+
+impl TryFrom<[u8; 32]> for Element {
+    type Error = EncodingError;
+
+    fn try_from(bytes: [u8; 32]) -> Result<Self, Self::Error> {
+        let encoding = Encoding(bytes);
+        encoding.try_into()
+    }
+}
+
+impl From<Element> for [u8; 32] {
+    fn from(enc: Element) -> [u8; 32] {
+        enc.compress().0
+    }
+}
+
 impl CanonicalDeserialize for Encoding {
     fn deserialize<R: std::io::Read>(
         mut reader: R,
