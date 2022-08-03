@@ -97,14 +97,14 @@ def table_based_findSqRoot_sarkar(uv, v):
 
     assert t == q_0_prime + q_1_prime * 2**7 + q_2 * 2**15 + q_3 * 2**23 + q_4 * 2**31 + q_5 * 2**39  # Lemma 4 assertion
 
-    t = t >> 1;
+    t = (t + 1) >> 1;
 
     # Take 8 bits at a time, e.g. (t & 0xFF) is taking the last 8 bits of t to yield a value from 0-255, which are the allowed values in each g lookup table
     gamma = gtab[0][t & 0xFF] * gtab[8][(t >> 8) & 0xFF] * gtab[16][(t >> 16) & 0xFF] * gtab[24][(t >> 24) & 0xFF] * gtab[32][(t >> 32) & 0xFF] * gtab[40][(t >> 40)]
     y = uv * gamma
 
     if q_0_prime % 2 != 0:
-        y *= z**((m+1) / 2)
+        y *= z**((1-m) / 2)
 
     return y
 
