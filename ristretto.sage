@@ -487,7 +487,11 @@ class Decaf_1_1_Point(QuotientEdwardsPoint):
         s2 = s^2
         den = 1+a*s2
         num = den^2 - 4*d*s2
-        isr = isqrt(num*den^2)
+        
+        is_square, isr = isqrt_i(num*den^2, cls.qnr)
+        if not is_square:
+            raise InvalidEncodingException()
+
         altx = 2*s*isr*den*cls.isoMagic
         if negative(altx): isr = -isr
         x = 2*s *isr^2*den*num
