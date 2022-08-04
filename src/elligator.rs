@@ -1,5 +1,5 @@
 use ark_ec::models::TEModelParameters;
-use ark_ed_on_bls12_377::{EdwardsAffine, EdwardsParameters};
+use ark_ed_on_bls12_377::{EdwardsParameters, EdwardsProjective};
 use ark_ff::Field;
 
 use crate::{
@@ -42,13 +42,13 @@ impl Element {
             s = -s
         }
 
-        // Convert point from its Jacobi quartic representation (s, t)
-        let x = *TWO * s / (*ONE + EdwardsParameters::COEFF_A * s.square());
-        let y = (*ONE - EdwardsParameters::COEFF_A * s.square()) / t;
-
-        // Convert point from affine (x, y) to projective (X : Y : Z : T)
+        // Convert point to extended projective (X : Y : Z : T)
+        let E = *TWO * s;
+        let F = *ONE + EdwardsParameters::COEFF_A * s.square();
+        let G = *ONE - EdwardsParameters::COEFF_A * s.square();
+        let H = t;
         let result = Element {
-            inner: EdwardsAffine::new(x, y).into(),
+            inner: EdwardsProjective::new(E * H, F * G, E * G, F * H),
         };
 
         debug_assert!(
@@ -78,6 +78,8 @@ impl Element {
 
 #[cfg(test)]
 mod tests {
+    use ark_ed_on_bls12_377::EdwardsAffine;
+
     use super::*;
 
     #[test]
