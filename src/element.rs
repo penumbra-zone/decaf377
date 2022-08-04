@@ -18,7 +18,7 @@ impl std::fmt::Debug for Element {
         // consumers of the library.
         f.write_fmt(format_args!(
             "decaf377::Element({})",
-            hex::encode(&self.compress().0[..])
+            hex::encode(&self.vartime_compress().0[..])
         ))
     }
 }
