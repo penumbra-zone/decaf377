@@ -1,5 +1,5 @@
 use ark_ec::models::{twisted_edwards_extended::GroupProjective, TEModelParameters};
-use ark_ff::Field;
+use ark_ff::{Field, Zero};
 
 pub trait OnCurve {
     fn is_on_curve(&self) -> bool;
@@ -16,6 +16,6 @@ impl<P: TEModelParameters> OnCurve for GroupProjective<P> {
         let on_curve = (YY + P::COEFF_A * XX) == (ZZ + P::COEFF_D * TT);
         let on_segre_embedding = self.t * self.z == self.x * self.y;
 
-        on_curve && on_segre_embedding
+        on_curve && on_segre_embedding && self.z != P::BaseField::zero()
     }
 }
