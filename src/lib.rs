@@ -31,6 +31,6 @@ pub fn basepoint() -> Element {
     bytes[0] = 8;
 
     Encoding(bytes)
-        .decompress()
+        .vartime_decompress()
         .expect("hardcoded basepoint bytes are valid")
 }

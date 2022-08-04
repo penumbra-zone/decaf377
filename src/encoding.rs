@@ -1,3 +1,5 @@
+#![allow(non_snake_case)]
+
 use std::convert::{TryFrom, TryInto};
 
 use ark_ec::models::TEModelParameters;
@@ -20,8 +22,12 @@ impl std::fmt::Debug for Encoding {
 }
 
 impl Encoding {
-    #[allow(non_snake_case)]
+    #[deprecated(note = "please use `vartime_decompress` instead")]
     pub fn decompress(&self) -> Result<Element, EncodingError> {
+        self.vartime_decompress()
+    }
+
+    pub fn vartime_decompress(&self) -> Result<Element, EncodingError> {
         // This isn't a constant, only because traits don't have const methods
         // yet and multiplication is only implemented as part of the Mul trait.
         let D4: Fq = EdwardsParameters::COEFF_D * Fq::from(4u32);
@@ -70,8 +76,12 @@ impl Encoding {
 }
 
 impl Element {
-    #[allow(non_snake_case)]
+    #[deprecated(note = "please use `vartime_compress_to_field` instead")]
     pub fn compress_to_field(&self) -> Fq {
+        self.vartime_compress_to_field()
+    }
+
+    pub fn vartime_compress_to_field(&self) -> Fq {
         // This isn't a constant, only because traits don't have const methods
         // yet and subtraction is only implemented as part of the Sub trait.
         let A_MINUS_D = EdwardsParameters::COEFF_A - EdwardsParameters::COEFF_D;
@@ -97,8 +107,13 @@ impl Element {
         s
     }
 
+    #[deprecated(note = "please use `vartime_compress` instead")]
     pub fn compress(&self) -> Encoding {
-        let s = self.compress_to_field();
+        self.vartime_compress()
+    }
+
+    pub fn vartime_compress(&self) -> Encoding {
+        let s = self.vartime_compress_to_field();
 
         // Encode.
         let mut bytes = [0u8; 32];
@@ -112,13 +127,13 @@ impl Element {
 
 impl From<&Element> for Encoding {
     fn from(point: &Element) -> Self {
-        point.compress()
+        point.vartime_compress()
     }
 }
 
 impl From<Element> for Encoding {
     fn from(point: Element) -> Self {
-        point.compress()
+        point.vartime_compress()
     }
 }
 
@@ -145,7 +160,7 @@ impl CanonicalSerialize for Element {
         &self,
         writer: W,
     ) -> Result<(), ark_serialize::SerializationError> {
-        self.compress().serialize(writer)
+        self.vartime_compress().serialize(writer)
     }
 }
 
@@ -178,14 +193,14 @@ impl From<Encoding> for [u8; 32] {
 impl TryFrom<&Encoding> for Element {
     type Error = EncodingError;
     fn try_from(bytes: &Encoding) -> Result<Self, Self::Error> {
-        bytes.decompress()
+        bytes.vartime_decompress()
     }
 }
 
 impl TryFrom<Encoding> for Element {
     type Error = EncodingError;
     fn try_from(bytes: Encoding) -> Result<Self, Self::Error> {
-        bytes.decompress()
+        bytes.vartime_decompress()
     }
 }
 
@@ -212,7 +227,7 @@ impl TryFrom<[u8; 32]> for Element {
 
 impl From<Element> for [u8; 32] {
     fn from(enc: Element) -> [u8; 32] {
-        enc.compress().0
+        enc.vartime_compress().0
     }
 }
 
