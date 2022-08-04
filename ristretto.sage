@@ -1,3 +1,10 @@
+"""
+Please note: This script applies to curves with a=1 or a=-1.
+In several places in the equations below, we implicitly assume
+a=1 or a=-1. You should be careful when using the equations for
+a given curve that your a constant matches the a for that curve!
+"""
+
 import binascii
 class InvalidEncodingException(Exception): pass
 class NotOnCurveException(Exception): pass
@@ -333,7 +340,7 @@ class Decaf_1_1_Point(QuotientEdwardsPoint):
         s = cls.bytesToGf(s,mustBePositive=True)
         
         if s==0: return cls()
-        t = xsqrt(s^4 + 2*(a-2*d)*s^2 + 1)
+        t = xsqrt(a^2 * s^4 + 2*(a-2*d)*s^2 + 1)
         altx = 2*s*cls.isoMagic/t
         if negative(altx): t = -t
         x = 2*s / (1+a*s^2)
