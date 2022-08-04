@@ -4,7 +4,7 @@ use ark_ed_on_bls12_377::EdwardsProjective;
 use ark_ff::Zero;
 use zeroize::Zeroize;
 
-use crate::Fr;
+use crate::{Fq, Fr};
 
 #[derive(Copy, Clone)]
 pub struct Element {
@@ -49,7 +49,9 @@ impl Zeroize for Element {
 impl Element {
     /// Convenience method to make identity checks more readable.
     pub fn is_identity(&self) -> bool {
-        self == &Element::default()
+        // Section 4.5 of Decaf paper states for cofactor 4 curves we can
+        // just check X = 0 to check equality with identity
+        self.inner.x == Fq::zero()
     }
 
     /// Given an iterator of public scalars and an iterator of public points,

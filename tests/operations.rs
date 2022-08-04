@@ -7,7 +7,7 @@ use proptest::prelude::*;
 fn element_strategy() -> BoxedStrategy<Element> {
     any::<[u8; 32]>()
         .prop_map(|bytes| Fq::from_le_bytes_mod_order(&bytes[..]))
-        .prop_map(|r| Element::map_to_group_cdh(&r))
+        .prop_map(|r| Element::encode_to_curve(&r))
         .boxed()
 }
 
