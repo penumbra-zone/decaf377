@@ -114,20 +114,20 @@ impl SqrtRatioZeta for Fq {
         let mut t = q0_prime;
 
         // i = 1
-        let alpha_1 = x1 * SQRT_LOOKUP_TABLES.g32[q0_prime as usize];
+        let alpha_1 = x1 * SQRT_LOOKUP_TABLES.g32[(t & 0xFF) as usize];
         let q1_prime = SQRT_LOOKUP_TABLES.s_lookup[&alpha_1];
         t += q1_prime << 7;
 
         // i = 2
         let alpha_2 = x2
-            * SQRT_LOOKUP_TABLES.g24[q0_prime as usize]
+            * SQRT_LOOKUP_TABLES.g24[(t & 0xFF) as usize]
             * SQRT_LOOKUP_TABLES.g32[((t >> 8) & 0xFF) as usize];
         let q2 = SQRT_LOOKUP_TABLES.s_lookup[&alpha_2];
         t += q2 << 15;
 
         // i = 3
         let alpha_3 = x3
-            * SQRT_LOOKUP_TABLES.g16[q0_prime as usize]
+            * SQRT_LOOKUP_TABLES.g16[(t & 0xFF) as usize]
             * SQRT_LOOKUP_TABLES.g24[((t >> 8) & 0xFF) as usize]
             * SQRT_LOOKUP_TABLES.g32[((t >> 16) & 0xFF) as usize];
         let q3 = SQRT_LOOKUP_TABLES.s_lookup[&alpha_3];
@@ -135,7 +135,7 @@ impl SqrtRatioZeta for Fq {
 
         // i = 4
         let alpha_4 = x4
-            * SQRT_LOOKUP_TABLES.g8[q0_prime as usize]
+            * SQRT_LOOKUP_TABLES.g8[(t & 0xFF) as usize]
             * SQRT_LOOKUP_TABLES.g16[((t >> 8) & 0xFF) as usize]
             * SQRT_LOOKUP_TABLES.g24[((t >> 16) & 0xFF) as usize]
             * SQRT_LOOKUP_TABLES.g32[((t >> 24) & 0xFF) as usize];
@@ -144,7 +144,7 @@ impl SqrtRatioZeta for Fq {
 
         // i = 5
         let alpha_5 = x5
-            * SQRT_LOOKUP_TABLES.g0[q0_prime as usize]
+            * SQRT_LOOKUP_TABLES.g0[(t & 0xFF) as usize]
             * SQRT_LOOKUP_TABLES.g8[((t >> 8) & 0xFF) as usize]
             * SQRT_LOOKUP_TABLES.g16[((t >> 16) & 0xFF) as usize]
             * SQRT_LOOKUP_TABLES.g24[((t >> 24) & 0xFF) as usize]
@@ -162,10 +162,7 @@ impl SqrtRatioZeta for Fq {
             * SQRT_LOOKUP_TABLES.g32[((t >> 32) & 0xFF) as usize]
             * SQRT_LOOKUP_TABLES.g40[((t >> 40) & 0xFF) as usize];
 
-        let square = res.square() * den;
-        let is_square = (square - num) == Fq::zero();
-
-        (is_square, res)
+        ((q0_prime & 0b1) == 0, res)
     }
 }
 
