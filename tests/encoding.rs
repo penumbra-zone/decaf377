@@ -7,9 +7,9 @@ use decaf377::{basepoint, Element, Encoding, FieldExt, Fr};
 #[test]
 fn identity_encoding_is_zero() {
     let identity = Element::default();
-    let identity_bytes = identity.compress();
+    let identity_bytes = identity.vartime_compress();
     assert_eq!(identity_bytes.0, [0; 32]);
-    let identity2 = identity_bytes.decompress().unwrap();
+    let identity2 = identity_bytes.vartime_decompress().unwrap();
     assert_eq!(identity, identity2);
 }
 
@@ -19,7 +19,7 @@ fn check_generator() {
 
     for b in 1..=255 {
         bytes[0] = b;
-        if let Ok(_element) = Encoding(bytes).decompress() {
+        if let Ok(_element) = Encoding(bytes).vartime_decompress() {
             break;
         }
     }
@@ -27,8 +27,13 @@ fn check_generator() {
     // The generator [8,0,...] is minimal
     assert_eq!(bytes[0], 8);
 
-    let enc2 = Encoding(bytes).decompress().unwrap().compress();
+    let enc2 = Encoding(bytes)
+        .vartime_decompress()
+        .unwrap()
+        .vartime_compress();
     assert_eq!(bytes, enc2.0);
+
+    assert_eq!(Encoding(bytes).vartime_decompress().unwrap(), basepoint());
 }
 
 #[test]
@@ -61,10 +66,10 @@ fn test_encoding_matches_sage_encoding() {
         let bytes = hex::decode(hexstr).unwrap();
         let point = Encoding::try_from(bytes.as_slice())
             .unwrap()
-            .decompress()
+            .vartime_decompress()
             .unwrap();
 
-        let result_hexstr = hex::encode(point.compress().0);
+        let result_hexstr = hex::encode(point.vartime_compress().0);
 
         assert_eq!(result_hexstr.as_str(), hexstr);
 
@@ -79,8 +84,8 @@ proptest! {
     fn group_encoding_round_trip_if_successful(bytes: [u8; 32]) {
         let bytes = Encoding(bytes);
 
-        if let Ok(element) = bytes.decompress() {
-            let bytes2 = element.compress();
+        if let Ok(element) = bytes.vartime_decompress() {
+            let bytes2 = element.vartime_compress();
             assert_eq!(bytes, bytes2);
         }
     }
