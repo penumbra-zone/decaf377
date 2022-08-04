@@ -1,3 +1,4 @@
+#![allow(non_snake_case)]
 use ark_ec::models::TEModelParameters;
 use ark_ed_on_bls12_377::{EdwardsParameters, EdwardsProjective};
 use ark_ff::Field;
@@ -9,7 +10,6 @@ use crate::{
 
 impl Element {
     /// Elligator 2 map to decaf377 point
-    #[allow(non_snake_case)]
     fn elligator_map(r_0: &Fq) -> Element {
         // Ref: `Decaf_1_1_Point.elligator` (optimized) in `ristretto.sage`
         let A = EdwardsParameters::COEFF_A;
@@ -62,17 +62,25 @@ impl Element {
     /// Maps two field elements to a uniformly distributed decaf377 `Element`.
     ///
     /// The two field elements provided as inputs should be independently chosen.
-    #[allow(non_snake_case)]
-    pub fn map_to_group_uniform(r_1: &Fq, r_2: &Fq) -> Element {
-        let R_1 = Element::elligator_map(&r_1);
-        let R_2 = Element::elligator_map(&r_2);
+    pub fn hash_to_curve(r_1: &Fq, r_2: &Fq) -> Element {
+        let R_1 = Element::elligator_map(r_1);
+        let R_2 = Element::elligator_map(r_2);
         &R_1 + &R_2
     }
 
+    #[deprecated(note = "please use `hash_to_curve` instead")]
+    pub fn map_to_group_uniform(r_1: &Fq, r_2: &Fq) -> Element {
+        Element::hash_to_curve(r_1, r_2)
+    }
+
     /// Maps a field element to a decaf377 `Element` suitable for CDH challenges.
-    #[allow(non_snake_case)]
+    pub fn encode_to_curve(r: &Fq) -> Element {
+        Element::elligator_map(r)
+    }
+
+    #[deprecated(note = "please use `encode_to_curve` instead")]
     pub fn map_to_group_cdh(r: &Fq) -> Element {
-        Element::elligator_map(&r)
+        Element::encode_to_curve(r)
     }
 }
 
