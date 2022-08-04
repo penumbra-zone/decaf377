@@ -12,6 +12,7 @@ mod on_curve;
 mod ops;
 mod sign;
 
+use ark_ed_on_bls12_377::EdwardsProjective;
 pub use constants::ZETA;
 pub use element::Element;
 pub use encoding::Encoding;
@@ -27,10 +28,12 @@ use sign::Sign;
 
 /// Return the conventional generator for `decaf377`.
 pub fn basepoint() -> Element {
-    let mut bytes = [0u8; 32];
-    bytes[0] = 8;
-
-    Encoding(bytes)
-        .vartime_decompress()
-        .expect("hardcoded basepoint bytes are valid")
+    Element {
+        inner: EdwardsProjective::new(
+            *constants::B_X,
+            *constants::B_Y,
+            *constants::B_T,
+            *constants::B_Z,
+        ),
+    }
 }

@@ -51,3 +51,24 @@ pub static G: Lazy<Fq> = Lazy::new(|| (*ZETA).pow(*M));
 
 // Choice of W in the square root algorithm.
 pub static SQRT_W: u32 = 8;
+
+// Canonical basepoint projective coordinates
+pub static B_X: Lazy<Fq> = Lazy::new(|| {
+    ark_ff::field_new!(
+        Fq,
+        "4959445789346820725352484487855828915252512307947624787834978378872129235627"
+    )
+});
+pub static B_Y: Lazy<Fq> = Lazy::new(|| {
+    ark_ff::field_new!(
+        Fq,
+        "6060471950081851567114691557659790004756535011754163002297540472747064943288"
+    )
+});
+pub static B_T: Lazy<Fq> = Lazy::new(|| {
+    ark_ff::field_new!(
+        Fq,
+        "7709528722369014828560854854815397945854484030754980890329689855465844419067"
+    )
+});
+pub static B_Z: Lazy<Fq> = Lazy::new(|| ark_ff::field_new!(Fq, "1"));
