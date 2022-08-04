@@ -53,13 +53,11 @@ def isqrt(x,exn=InvalidEncodingException("Not on curve")):
 
 def inv0(x): return 1/x if x != 0 else 0
 
-def isqrt_i(x):
+def isqrt_i(x, zeta):
     """Return 1/sqrt(x) or 1/sqrt(zeta * x)"""
     if x==0: return True,0
-    gen = x.parent(-1)
-    while is_square(gen): gen = sqrt(gen)
     if is_square(x): return True,1/sqrt(x)
-    else: return False,1/sqrt(x*gen)
+    else: return False,1/sqrt(x*zeta)
 
 class QuotientEdwardsPoint(object):
     """Abstract class for point an a quotiented Edwards curve; needs F,a,d,cofactor to work"""
@@ -300,7 +298,7 @@ class RistrettoPoint(QuotientEdwardsPoint):
         den = (d*r-a)*(a*r-d)
         num = cls.a*(r+1)*(a+d)*(d-a)
         
-        iss,isri = isqrt_i(num*den)
+        iss,isri = isqrt_i(num*den, cls.qnr)
         if iss: sgn,twiddle =  1,1
         else:   sgn,twiddle = -1,r0*cls.qnr
         isri *= twiddle
@@ -453,7 +451,7 @@ class Decaf_1_1_Point(QuotientEdwardsPoint):
                         rden = ((d*a-1)*m12+m1)
                         if swap: rnum,rden = rden,rnum
                     
-                        ok,sr = isqrt_i(rnum*rden*self.qnr)
+                        ok,sr = isqrt_i(rnum*rden*self.qnr, self.qnr)
                         if not ok: continue
                         sr *= rnum
                         #print "Works! %d %x" % (swap,sr)
@@ -579,7 +577,7 @@ class Decaf_1_1_Point(QuotientEdwardsPoint):
         den = (d*r-(d-a))*((d-a)*r-d)
         num = (r+1)*(a-2*d)
 
-        iss,isri = isqrt_i(num*den)
+        iss,isri = isqrt_i(num*den, cls.qnr)
         if iss: sgn,twiddle =  1,1
         else:   sgn,twiddle = -1,r0*cls.qnr
         isri *= twiddle
