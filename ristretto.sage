@@ -564,6 +564,8 @@ class Decaf_1_1_Point(QuotientEdwardsPoint):
         a,d = cls.a,cls.d
         if fromR: r = r0
         else:
+            if len(r0) < cls.encLen:
+                raise InvalidData("too short!")
             r0 = cls.bytesToGf(r0,mustBeProper=False,maskHiBits=True)
             r = cls.qnr * r0^2
 
@@ -583,6 +585,8 @@ class Decaf_1_1_Point(QuotientEdwardsPoint):
     @optimized_version_of("elligatorSpec")
     def elligator(cls,r0):
         a,d = cls.a,cls.d
+        if len(r0) < cls.encLen:
+            raise InvalidData("too short!")
         r0 = cls.bytesToGf(r0,mustBeProper=False,maskHiBits=True)
         r = cls.qnr * r0^2
         den = (d*r-(d-a))*((d-a)*r-d)
