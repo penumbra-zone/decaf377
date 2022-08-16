@@ -1,6 +1,6 @@
 use once_cell::sync::Lazy;
 
-use ark_ed_on_bls12_377::Fq;
+use ark_ed_on_bls12_377::{Fq, Fr};
 use ark_ff::{self, BigInteger256, Field, One};
 
 pub static ONE: Lazy<Fq> = Lazy::new(|| Fq::one());
@@ -72,3 +72,11 @@ pub static B_T: Lazy<Fq> = Lazy::new(|| {
     )
 });
 pub static B_Z: Lazy<Fq> = Lazy::new(|| ark_ff::field_new!(Fq, "1"));
+
+// Modulus of basefield
+pub static R: Lazy<Fr> = Lazy::new(|| {
+    ark_ff::field_new!(
+        Fr,
+        "2111115437357092606062206234695386632838870926408408195193685246394721360383"
+    )
+});
