@@ -28,6 +28,11 @@ impl Encoding {
     }
 
     pub fn vartime_decompress(&self) -> Result<Element, EncodingError> {
+        // Top three bits of last byte should be zero
+        if self.0[31] >> 5 != 0u8 {
+            return Err(EncodingError::InvalidEncoding);
+        }
+
         // This isn't a constant, only because traits don't have const methods
         // yet and multiplication is only implemented as part of the Mul trait.
         let D4: Fq = EdwardsParameters::COEFF_D * Fq::from(4u32);
@@ -120,6 +125,8 @@ impl Element {
         debug_assert_eq!(s.serialized_size(), 32);
         s.serialize(&mut bytes[..])
             .expect("serialization into array should be infallible");
+        // Set top three bits of last byte to zero
+        bytes[31] &= 0b00011111;
 
         Encoding(bytes)
     }
