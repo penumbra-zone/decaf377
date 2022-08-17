@@ -30,14 +30,14 @@ impl FieldExt for Fq {
         debug_assert_eq!(self.serialized_size(), 32);
         self.serialize(&mut bytes[..])
             .expect("serialization into array should be infallible");
-        // Set top three bits of last byte to zero
-        bytes[31] &= 0b00011111;
+        debug_assert!(bytes[31] >> 5 == 0u8);
 
         bytes
     }
 
     fn from_bytes(bytes: [u8; 32]) -> Result<Self, EncodingError> {
-        // Top three bits of last byte should be zero
+        // Check the top three bits of the last byte as Arkworks
+        // doesn't check them when deciding if an encoding is canonical.
         if bytes[31] >> 5 != 0u8 {
             return Err(EncodingError::InvalidEncoding);
         }
