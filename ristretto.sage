@@ -952,8 +952,18 @@ def testDoubleAndEncode(cls,n):
 #gangtest([IsoEd448Point,TwistedEd448GoldilocksPoint,Ed448GoldilocksPoint],100)
 #gangtest([Ed25519Point,IsoEd25519Point],100)
 
+def testDecaf377DecodeSadPath():
+    test_element = Decaf377Point.gfToBytes(8444461749428370424248824938781546531375899335154063827935233455917409239041 - 1)
+    # Check exception type is InvalidEncodingException, not NotOnCurveException
+    try:
+        Decaf377Point.decode(test_element)
+        raise
+    except InvalidEncodingException:
+        pass
+
 test(Decaf377Point, 100)
 testDoubleAndEncode(Decaf377Point, 100)
 testElligator(Decaf377Point, 100)
 testElligatorDeterministic(Decaf377Point)
 test(Decaf377Point,16,True)
+testDecaf377DecodeSadPath()
