@@ -62,7 +62,7 @@ def inv0(x): return 1/x if x != 0 else 0
 
 def isqrt_i(x, zeta):
     """Return 1/sqrt(x) or 1/sqrt(zeta * x)"""
-    if x==0: return True,0
+    if x==0: return False,0
     if is_square(x): return True,1/sqrt(x)
     else: return False,1/sqrt(x*zeta)
 
