@@ -43,7 +43,8 @@ impl EqGadget<Fq> for Decaf377ElementVar {
     fn is_eq(&self, other: &Self) -> Result<Boolean<Fq>, SynthesisError> {
         // Could use formulae Section 4.5 of Decaf paper which uses projective
         // - but here the inner point is affine since there is only an `AffineVar`
-        // in ark-r1cs-std for twisted Edwards curves.
+        // (`EdwardsVar` is a type alias for `AffineVar`) in `ark-r1cs-std` for
+        // twisted Edwards curves.
         let x_equal = self.inner.x.is_eq(&other.inner.x)?;
         let y_equal = self.inner.y.is_eq(&other.inner.y)?;
         x_equal.and(&y_equal)
