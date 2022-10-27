@@ -1,9 +1,7 @@
 use ark_ed_on_bls12_377::constraints::{EdwardsVar, FqVar};
-use ark_r1cs_std::prelude::*;
+use ark_r1cs_std::{eq::EqGadget, prelude::*};
 use ark_relations::ns;
-use ark_relations::r1cs::ConstraintSystemRef;
-
-use anyhow::Result;
+use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 
 use crate::{Element, Fq};
 
@@ -18,7 +16,7 @@ impl Decaf377ElementVar {
         cs: ConstraintSystemRef<Fq>,
         decaf_element: Element,
         mode: AllocationMode,
-    ) -> Result<Self> {
+    ) -> anyhow::Result<Self> {
         // Add affine coordinates to constraint system using the provided allocation mode
         let x = FqVar::new_variable(ns!(cs, "element_x"), || Ok(decaf_element.inner.x), mode)
             .map_err(|e| anyhow::anyhow!("couldn't add x to constraint system: {}", e))?;
@@ -26,5 +24,39 @@ impl Decaf377ElementVar {
             .map_err(|e| anyhow::anyhow!("couldn't add y to constraint system: {}", e))?;
         let inner = EdwardsVar::new(x, y);
         Ok(Decaf377ElementVar { inner })
+    }
+}
+
+impl EqGadget<Fq> for Decaf377ElementVar {
+    fn is_eq(&self, other: &Self) -> Result<Boolean<Fq>, SynthesisError> {
+        todo!()
+    }
+
+    fn is_neq(&self, other: &Self) -> Result<Boolean<Fq>, SynthesisError> {
+        todo!()
+    }
+
+    fn conditional_enforce_equal(
+        &self,
+        other: &Self,
+        should_enforce: &Boolean<Fq>,
+    ) -> Result<(), SynthesisError> {
+        todo!()
+    }
+
+    fn enforce_equal(&self, other: &Self) -> Result<(), SynthesisError> {
+        todo!()
+    }
+
+    fn conditional_enforce_not_equal(
+        &self,
+        other: &Self,
+        should_enforce: &Boolean<Fq>,
+    ) -> Result<(), SynthesisError> {
+        todo!()
+    }
+
+    fn enforce_not_equal(&self, other: &Self) -> Result<(), SynthesisError> {
+        todo!()
     }
 }
