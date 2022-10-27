@@ -29,34 +29,35 @@ impl Decaf377ElementVar {
 
 impl EqGadget<Fq> for Decaf377ElementVar {
     fn is_eq(&self, other: &Self) -> Result<Boolean<Fq>, SynthesisError> {
-        todo!()
-    }
-
-    fn is_neq(&self, other: &Self) -> Result<Boolean<Fq>, SynthesisError> {
-        todo!()
+        // Could use formulae Section 4.5 of Decaf paper which uses projective
+        // - but here the inner point is affine since there is only an `AffineVar`
+        // in ark-r1cs-std for twisted Edwards curves.
+        let x_equal = self.inner.x.is_eq(&other.inner.x)?;
+        let y_equal = self.inner.y.is_eq(&other.inner.y)?;
+        x_equal.and(&y_equal)
     }
 
     fn conditional_enforce_equal(
         &self,
         other: &Self,
-        should_enforce: &Boolean<Fq>,
+        condition: &Boolean<Fq>,
     ) -> Result<(), SynthesisError> {
-        todo!()
-    }
-
-    fn enforce_equal(&self, other: &Self) -> Result<(), SynthesisError> {
-        todo!()
+        self.inner
+            .x
+            .conditional_enforce_equal(&other.inner.x, condition)?;
+        self.inner
+            .y
+            .conditional_enforce_equal(&other.inner.y, condition)?;
+        Ok(())
     }
 
     fn conditional_enforce_not_equal(
         &self,
         other: &Self,
-        should_enforce: &Boolean<Fq>,
+        condition: &Boolean<Fq>,
     ) -> Result<(), SynthesisError> {
-        todo!()
-    }
-
-    fn enforce_not_equal(&self, other: &Self) -> Result<(), SynthesisError> {
-        todo!()
+        self.is_eq(other)?
+            .and(condition)?
+            .enforce_equal(&Boolean::Constant(false))
     }
 }
