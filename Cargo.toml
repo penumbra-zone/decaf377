@@ -15,7 +15,7 @@ tracing = "0.1"
 tracing-subscriber = "0.2"
 anyhow = "1.0"
 ark-relations = "0.3"
-ark-r1cs-std = "0.3"
+ark-r1cs-std = {version = "0.3", optional=true }
 ark-std = "0.3"
 ark-ec = "0.3"
 ark-ff = "0.3"
@@ -26,7 +26,7 @@ ark-groth16 = { version = "0.3", optional=true }
 zeroize = "1.4"
 
 [features]
-groth16 = ["ark-groth16"]
+r1cs = ["ark-r1cs-std", "ark-groth16"]
 
 [dev-dependencies]
 proptest = "1"
