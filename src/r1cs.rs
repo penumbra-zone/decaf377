@@ -10,7 +10,7 @@ use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 
 use crate::{Element, Fq};
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 /// Represents the R1CS equivalent of a `decaf377::Element`
 pub struct Decaf377ElementVar {
     pub(crate) inner: EdwardsVar,
@@ -88,5 +88,20 @@ impl R1CSVar<Fq> for Decaf377ElementVar {
 
     fn value(&self) -> Result<Self::Value, SynthesisError> {
         self.inner.value()
+    }
+}
+
+impl CondSelectGadget<Fq> for Decaf377ElementVar {
+    fn conditionally_select(
+        cond: &Boolean<Fq>,
+        true_value: &Self,
+        false_value: &Self,
+    ) -> Result<Self, SynthesisError> {
+        let x = cond.select(&true_value.inner.x, &false_value.inner.x)?;
+        let y = cond.select(&true_value.inner.y, &false_value.inner.y)?;
+
+        Ok(Decaf377ElementVar {
+            inner: EdwardsVar::new(x, y),
+        })
     }
 }
