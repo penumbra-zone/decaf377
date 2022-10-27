@@ -1,3 +1,5 @@
+use std::ops::Add;
+
 use ark_ed_on_bls12_377::constraints::{EdwardsVar, FqVar};
 use ark_r1cs_std::{eq::EqGadget, prelude::*};
 use ark_relations::ns;
@@ -24,6 +26,16 @@ impl Decaf377ElementVar {
             .map_err(|e| anyhow::anyhow!("couldn't add y to constraint system: {}", e))?;
         let inner = EdwardsVar::new(x, y);
         Ok(Decaf377ElementVar { inner })
+    }
+}
+
+impl Add for Decaf377ElementVar {
+    type Output = Decaf377ElementVar;
+
+    fn add(self, other: Decaf377ElementVar) -> Self::Output {
+        Decaf377ElementVar {
+            inner: self.inner.add(other.inner),
+        }
     }
 }
 
