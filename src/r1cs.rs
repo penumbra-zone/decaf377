@@ -1,12 +1,16 @@
 use std::ops::Add;
 
-use ark_ed_on_bls12_377::constraints::{EdwardsVar, FqVar};
-use ark_r1cs_std::{eq::EqGadget, prelude::*};
+use ark_ed_on_bls12_377::{
+    constraints::{EdwardsVar, FqVar},
+    EdwardsProjective,
+};
+use ark_r1cs_std::{eq::EqGadget, prelude::*, R1CSVar};
 use ark_relations::ns;
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 
 use crate::{Element, Fq};
 
+#[derive(Debug)]
 /// Represents the R1CS equivalent of a `decaf377::Element`
 pub struct Decaf377ElementVar {
     pub(crate) inner: EdwardsVar,
@@ -72,5 +76,17 @@ impl EqGadget<Fq> for Decaf377ElementVar {
         self.is_eq(other)?
             .and(condition)?
             .enforce_equal(&Boolean::Constant(false))
+    }
+}
+
+impl R1CSVar<Fq> for Decaf377ElementVar {
+    type Value = EdwardsProjective;
+
+    fn cs(&self) -> ConstraintSystemRef<Fq> {
+        self.inner.cs()
+    }
+
+    fn value(&self) -> Result<Self::Value, SynthesisError> {
+        self.inner.value()
     }
 }
