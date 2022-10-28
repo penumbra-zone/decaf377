@@ -77,13 +77,15 @@ impl SubAssign for Decaf377ElementVar {
 
 impl EqGadget<Fq> for Decaf377ElementVar {
     fn is_eq(&self, other: &Self) -> Result<Boolean<Fq>, SynthesisError> {
-        // Could use formulae Section 4.5 of Decaf paper which uses projective
-        // - but here the inner point is affine since there is only an `AffineVar`
-        // (`EdwardsVar` is a type alias for `AffineVar`) in `ark-r1cs-std` for
-        // twisted Edwards curves.
-        let x_equal = self.inner.x.is_eq(&other.inner.x)?;
-        let y_equal = self.inner.y.is_eq(&other.inner.y)?;
-        x_equal.and(&y_equal)
+        // Section 4.5 of Decaf paper: X_1 * Y_2 = X_2 * Y_1
+        // Note that x, y are affine here but projective X = x, Y = y
+        let X_1 = self.inner.x;
+        let Y_1 = self.inner.y;
+        let X_2 = other.inner.x;
+        let Y_2 = other.inner.y;
+        let lhs = X_1 * Y_2;
+        let rhs = X_2 * Y_1;
+        lhs.is_eq(&rhs)
     }
 
     fn conditional_enforce_equal(
