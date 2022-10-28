@@ -1,7 +1,8 @@
+#![allow(non_snake_case)]
 use ark_ec::TEModelParameters;
 use ark_ed_on_bls12_377::{
     constraints::{EdwardsVar, FqVar},
-    EdwardsParameters, EdwardsProjective,
+    EdwardsAffine, EdwardsParameters, EdwardsProjective,
 };
 use ark_r1cs_std::{
     alloc::AllocVar, eq::EqGadget, groups::curves::twisted_edwards::AffineVar, prelude::*, R1CSVar,
@@ -41,7 +42,6 @@ impl Decaf377ElementVar {
         let affine_y = &self.inner.y;
 
         let X = affine_x;
-        let Y = affine_y;
         let Z = FqVar::one();
         let T = affine_x * affine_y;
 
@@ -153,6 +153,24 @@ impl AllocVar<EdwardsProjective, Fq> for Decaf377ElementVar {
     }
 }
 
+impl AllocVar<EdwardsAffine, Fq> for Decaf377ElementVar {
+    fn new_variable<T: std::borrow::Borrow<EdwardsAffine>>(
+        cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
+        f: impl FnOnce() -> Result<T, SynthesisError>,
+        mode: AllocationMode,
+    ) -> Result<Self, SynthesisError> {
+        // Since the closure here can only do operations that are allowed on the `Decaf377ElementVar`,
+        // as the inner `EdwardsVar` is not exposed in the API, we do not need to check again
+        // that the resulting point is valid.
+        //
+        // Compare this with the implementation of this trait for `EdwardsVar`, where they check that the
+        // point is in the right subgroup prior to witnessing.
+        Ok(Decaf377ElementVar {
+            inner: AffineVar::<EdwardsParameters, FqVar>::new_variable(cs, f, mode)?,
+        })
+    }
+}
+
 impl ToBitsGadget<Fq> for Decaf377ElementVar {
     fn to_bits_le(&self) -> Result<Vec<Boolean<Fq>>, SynthesisError> {
         let compressed_fq = self.compress_to_field()?;
@@ -166,5 +184,40 @@ impl ToBytesGadget<Fq> for Decaf377ElementVar {
         let compressed_fq = self.compress_to_field()?;
         let encoded_bytes = compressed_fq.to_bytes()?;
         Ok(encoded_bytes)
+    }
+}
+
+// Problem: This requires a bunch of arithmetic ops between Decaf377ElementVar and
+// EdwardsProjective to be implemented, but we can't do that infallibly since
+// EdwardsProjective may or may not be a valid decaf point.
+impl<'a> GroupOpsBounds<'a, EdwardsProjective, Decaf377ElementVar> for Decaf377ElementVar {}
+
+impl CurveVar<EdwardsProjective, Fq> for Decaf377ElementVar {
+    fn zero() -> Self {
+        todo!()
+    }
+
+    fn constant(other: EdwardsProjective) -> Self {
+        todo!()
+    }
+
+    fn new_variable_omit_prime_order_check(
+        cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
+        f: impl FnOnce() -> Result<EdwardsProjective, SynthesisError>,
+        mode: AllocationMode,
+    ) -> Result<Self, SynthesisError> {
+        todo!()
+    }
+
+    fn enforce_prime_order(&self) -> Result<(), SynthesisError> {
+        todo!()
+    }
+
+    fn double_in_place(&mut self) -> Result<(), SynthesisError> {
+        todo!()
+    }
+
+    fn negate(&self) -> Result<Self, SynthesisError> {
+        todo!()
     }
 }
