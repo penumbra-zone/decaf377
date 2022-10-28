@@ -1,4 +1,4 @@
-use std::ops::Add;
+use std::ops::{Add, AddAssign, Sub, SubAssign};
 
 use ark_ec::{twisted_edwards_extended::GroupProjective, TEModelParameters};
 use ark_ed_on_bls12_377::{
@@ -44,6 +44,28 @@ impl Add for Decaf377ElementVar {
         Decaf377ElementVar {
             inner: self.inner.add(other.inner),
         }
+    }
+}
+
+impl AddAssign for Decaf377ElementVar {
+    fn add_assign(&mut self, rhs: Decaf377ElementVar) {
+        self.inner.add_assign(rhs.inner)
+    }
+}
+
+impl Sub for Decaf377ElementVar {
+    type Output = Decaf377ElementVar;
+
+    fn sub(self, other: Decaf377ElementVar) -> Self::Output {
+        Decaf377ElementVar {
+            inner: self.inner.sub(other.inner),
+        }
+    }
+}
+
+impl SubAssign for Decaf377ElementVar {
+    fn sub_assign(&mut self, rhs: Decaf377ElementVar) {
+        self.inner.sub_assign(rhs.inner)
     }
 }
 
