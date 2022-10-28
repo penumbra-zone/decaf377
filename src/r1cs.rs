@@ -1,10 +1,13 @@
 use std::ops::Add;
 
+use ark_ec::{twisted_edwards_extended::GroupProjective, TEModelParameters};
 use ark_ed_on_bls12_377::{
     constraints::{EdwardsVar, FqVar},
-    EdwardsProjective,
+    EdwardsParameters, EdwardsProjective,
 };
-use ark_r1cs_std::{eq::EqGadget, prelude::*, R1CSVar};
+use ark_r1cs_std::{
+    alloc::AllocVar, eq::EqGadget, groups::curves::twisted_edwards::AffineVar, prelude::*, R1CSVar,
+};
 use ark_relations::ns;
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 
@@ -13,11 +16,12 @@ use crate::{Element, Fq};
 #[derive(Clone, Debug)]
 /// Represents the R1CS equivalent of a `decaf377::Element`
 pub struct Decaf377ElementVar {
+    /// Inner type is an alias for `AffineVar<EdwardsParameters, FqVar>`
     pub(crate) inner: EdwardsVar,
 }
 
 impl Decaf377ElementVar {
-    /// Add an existing `Element`
+    /// Add an existing `Element` to the constraint system.
     pub fn add_element(
         cs: ConstraintSystemRef<Fq>,
         decaf_element: Element,
@@ -102,6 +106,26 @@ impl CondSelectGadget<Fq> for Decaf377ElementVar {
 
         Ok(Decaf377ElementVar {
             inner: EdwardsVar::new(x, y),
+        })
+    }
+}
+
+// This lets us use `new_constant`, `new_input` (public), or `new_witness` to add
+// decaf elements to an R1CS constraint system.
+impl AllocVar<EdwardsProjective, Fq> for Decaf377ElementVar {
+    fn new_variable<T: std::borrow::Borrow<EdwardsProjective>>(
+        cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
+        f: impl FnOnce() -> Result<T, SynthesisError>,
+        mode: AllocationMode,
+    ) -> Result<Self, SynthesisError> {
+        // Since the closure here can only do operations that are allowed on the `Decaf377ElementVar`,
+        // as the inner `EdwardsVar` is not exposed in the API, we do not need to check again
+        // that the resulting point is valid.
+        //
+        // Compare this with the implementation of this trait for `EdwardsVar`, where they check that the
+        // point is in the right subgroup prior to witnessing.
+        Ok(Decaf377ElementVar {
+            inner: AffineVar::<EdwardsParameters, FqVar>::new_variable(cs, f, mode)?,
         })
     }
 }
