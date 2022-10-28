@@ -35,6 +35,12 @@ impl Decaf377ElementVar {
         let inner = EdwardsVar::new(x, y);
         Ok(Decaf377ElementVar { inner })
     }
+
+    /// R1CS equivalent of `Element::vartime_compress_to_field`
+    pub(crate) fn compress_to_field(&self) -> FqVar {
+        todo!()
+        // TODO: We have affine x, y but our compression formulae are in projective
+    }
 }
 
 impl Add for Decaf377ElementVar {
@@ -149,5 +155,21 @@ impl AllocVar<EdwardsProjective, Fq> for Decaf377ElementVar {
         Ok(Decaf377ElementVar {
             inner: AffineVar::<EdwardsParameters, FqVar>::new_variable(cs, f, mode)?,
         })
+    }
+}
+
+impl ToBitsGadget<Fq> for Decaf377ElementVar {
+    fn to_bits_le(&self) -> Result<Vec<Boolean<Fq>>, SynthesisError> {
+        let compressed_fq = self.compress_to_field();
+        let encoded_bits = compressed_fq.to_bits_le()?;
+        Ok(encoded_bits)
+    }
+}
+
+impl ToBytesGadget<Fq> for Decaf377ElementVar {
+    fn to_bytes(&self) -> Result<Vec<UInt8<Fq>>, SynthesisError> {
+        let compressed_fq = self.compress_to_field();
+        let encoded_bytes = compressed_fq.to_bytes()?;
+        Ok(encoded_bytes)
     }
 }
