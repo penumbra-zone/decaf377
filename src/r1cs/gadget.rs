@@ -21,12 +21,22 @@ pub struct Decaf377ElementVar {
 
 impl Decaf377ElementVar {
     /// Add an existing `Element` to the constraint system.
+    /// Remove this method. If you want to construct Decaf377ElementVar, you first
+    /// decode to bytes/field element.
+    /// Replace this with decode
+    /// Prover:
+    /// * Witnesses the field element.
+    /// * Add constraints / relations to show I know two other field elements x, y
+    /// such that they are valid decodings of the field element that is witnessed.
     pub fn add_element(
         cs: ConstraintSystemRef<Fq>,
         decaf_element: Element,
         mode: AllocationMode,
     ) -> anyhow::Result<Self> {
         // Add affine coordinates to constraint system using the provided allocation mode
+        // TODO: Decode
+        // TODO: Encode
+        // Problem: Expensive.
         let x = FqVar::new_variable(ns!(cs, "element_x"), || Ok(decaf_element.inner.x), mode)
             .map_err(|e| anyhow::anyhow!("couldn't add x to constraint system: {}", e))?;
         let y = FqVar::new_variable(ns!(cs, "element_y"), || Ok(decaf_element.inner.y), mode)
@@ -42,7 +52,8 @@ impl Decaf377ElementVar {
         let affine_y = &self.inner.y;
 
         let X = affine_x;
-        let Z = FqVar::one();
+        // We treat Z at a constant.
+        let Z = FqVar::constant(Fq::one());
         let T = affine_x * affine_y;
 
         let A_MINUS_D = FqVar::constant(EdwardsParameters::COEFF_A - EdwardsParameters::COEFF_D);
@@ -53,6 +64,7 @@ impl Decaf377ElementVar {
         // 2.
         let den = u_1.clone() * A_MINUS_D.clone() * X.square()?;
         let one_over_den = den.inverse()?;
+        // TODO. Use EqGadget to constrain v * v = one_over_den
         let v: FqVar = one_over_den.isqrt();
 
         // 3.
@@ -107,6 +119,7 @@ impl EqGadget<Fq> for Decaf377ElementVar {
 }
 
 impl R1CSVar<Fq> for Decaf377ElementVar {
+    // TODO: Shouldn't this be Element?
     type Value = EdwardsProjective;
 
     fn cs(&self) -> ConstraintSystemRef<Fq> {
@@ -147,9 +160,28 @@ impl AllocVar<EdwardsProjective, Fq> for Decaf377ElementVar {
         //
         // Compare this with the implementation of this trait for `EdwardsVar`, where they check that the
         // point is in the right subgroup prior to witnessing.
+
+        // Way that is secure: Encode (out of circuit) to an Fq
+        // Witness the encoded value
+        // and then decode (in circuit)
+        // The resulting variables is what we construct Decaf377ElementVar from
+
+        // Q. What is cheaper? Need to work out formulae to prove this point is in the
+        // image of the encoding map. This is stronger than what we need.
+        // Can do by checking if the point is even (see section 1.2 Decaf paper)
+
+        // P = output of f
+        // Outside circuit, compute Q = 1/2 * P
+        // Inside the circuit, witness Q. Add equality constraint that Q + Q = P
+
+        // Future: Only do for witnessing?
+
+        // The below value should be constructed from the decode method.
+        // i.e. do NOT pass f into the AffineValue::new_variable()
         Ok(Decaf377ElementVar {
             inner: AffineVar::<EdwardsParameters, FqVar>::new_variable(cs, f, mode)?,
         })
+        // Where is prime subgroup check done?
     }
 }
 
@@ -190,9 +222,12 @@ impl ToBytesGadget<Fq> for Decaf377ElementVar {
 // Problem: This requires a bunch of arithmetic ops between Decaf377ElementVar and
 // EdwardsProjective to be implemented, but we can't do that infallibly since
 // EdwardsProjective may or may not be a valid decaf point.
-impl<'a> GroupOpsBounds<'a, EdwardsProjective, Decaf377ElementVar> for Decaf377ElementVar {}
+//
+// Solution (TODO): Implement all required traits on Element that we need from
+// EdwardsProjective from ark-ec.
+impl<'a> GroupOpsBounds<'a, Element, Decaf377ElementVar> for Decaf377ElementVar {}
 
-impl CurveVar<EdwardsProjective, Fq> for Decaf377ElementVar {
+impl CurveVar<Element, Fq> for Decaf377ElementVar {
     fn zero() -> Self {
         todo!()
     }
@@ -203,14 +238,16 @@ impl CurveVar<EdwardsProjective, Fq> for Decaf377ElementVar {
 
     fn new_variable_omit_prime_order_check(
         cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
-        f: impl FnOnce() -> Result<EdwardsProjective, SynthesisError>,
+        f: impl FnOnce() -> Result<Element, SynthesisError>,
         mode: AllocationMode,
     ) -> Result<Self, SynthesisError> {
+        // Similar logic as AllocVar
         todo!()
     }
 
     fn enforce_prime_order(&self) -> Result<(), SynthesisError> {
-        todo!()
+        // This is decaf
+        Ok(())
     }
 
     fn double_in_place(&mut self) -> Result<(), SynthesisError> {
