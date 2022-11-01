@@ -1,8 +1,6 @@
 use std::ops::{Add, AddAssign, Sub, SubAssign};
 
-use ark_ed_on_bls12_377::EdwardsProjective;
-
-use crate::r1cs::gadget::Decaf377ElementVar;
+use crate::{r1cs::gadget::Decaf377ElementVar, Element};
 
 impl Add for Decaf377ElementVar {
     type Output = Decaf377ElementVar;
@@ -68,38 +66,34 @@ impl<'a> SubAssign<&'a Decaf377ElementVar> for Decaf377ElementVar {
     }
 }
 
-// BELOW ARE NOT FOR MERGE. These are required for
-// `GroupOpsBounds` but should not be done infallibly
-// since we do not know the other `EdwardsProjective`
-// is a valid decaf point.
-impl Sub<EdwardsProjective> for Decaf377ElementVar {
+impl Sub<Element> for Decaf377ElementVar {
     type Output = Decaf377ElementVar;
 
-    fn sub(self, other: EdwardsProjective) -> Self::Output {
+    fn sub(self, other: Element) -> Self::Output {
         Decaf377ElementVar {
-            inner: self.inner.sub(other),
+            inner: self.inner.sub(other.inner),
         }
     }
 }
 
-impl SubAssign<EdwardsProjective> for Decaf377ElementVar {
-    fn sub_assign(&mut self, rhs: EdwardsProjective) {
-        self.inner.sub_assign(rhs)
+impl SubAssign<Element> for Decaf377ElementVar {
+    fn sub_assign(&mut self, rhs: Element) {
+        self.inner.sub_assign(rhs.inner)
     }
 }
 
-impl Add<EdwardsProjective> for Decaf377ElementVar {
+impl Add<Element> for Decaf377ElementVar {
     type Output = Decaf377ElementVar;
 
-    fn add(self, other: EdwardsProjective) -> Self::Output {
+    fn add(self, other: Element) -> Self::Output {
         Decaf377ElementVar {
-            inner: self.inner.add(other),
+            inner: self.inner.add(other.inner),
         }
     }
 }
 
-impl AddAssign<EdwardsProjective> for Decaf377ElementVar {
-    fn add_assign(&mut self, rhs: EdwardsProjective) {
-        self.inner.add_assign(rhs)
+impl AddAssign<Element> for Decaf377ElementVar {
+    fn add_assign(&mut self, rhs: Element) {
+        self.inner.add_assign(rhs.inner)
     }
 }
