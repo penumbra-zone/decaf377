@@ -6,11 +6,16 @@ pub trait FqVarExtension {
 }
 
 impl FqVarExtension for FqVar {
+    // Remove this in favor of impl Sign for FqVar
     fn abs(&self) -> FqVar {
         todo!()
     }
 
     fn isqrt(&self) -> FqVar {
+        // Out of circuit sqrt computation
+        // Add constraints in circuit
         todo!()
     }
 }
+
+// impl Sign for FqVar
