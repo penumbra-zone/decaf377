@@ -1,12 +1,18 @@
 use std::borrow::Borrow;
 
-use ark_ed_on_bls12_377::EdwardsProjective;
+use ark_ec::{
+    twisted_edwards_extended::{GroupAffine, GroupProjective},
+    AffineCurve, ProjectiveCurve,
+};
+use ark_ed_on_bls12_377::{EdwardsParameters, EdwardsProjective};
 use ark_ff::Zero;
+use ark_std::fmt::{Display, Formatter, Result as FmtResult};
+
 use zeroize::Zeroize;
 
 use crate::{Fq, Fr};
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Hash)]
 pub struct Element {
     pub(crate) inner: EdwardsProjective,
 }
@@ -20,6 +26,16 @@ impl std::fmt::Debug for Element {
             "decaf377::Element({})",
             hex::encode(&self.vartime_compress().0[..])
         ))
+    }
+}
+
+impl Display for Element {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        write!(
+            f,
+            "decaf377::Element({})",
+            hex::encode(&self.vartime_compress().0[..])
+        )
     }
 }
 
@@ -83,5 +99,59 @@ impl Element {
             .fold(Element::default(), |acc, (scalar, point)| {
                 acc + (scalar.borrow() * point.borrow())
             })
+    }
+}
+
+impl Zero for Element {
+    fn zero() -> Self {
+        Self::default()
+    }
+
+    fn is_zero(&self) -> bool {
+        self.inner.is_zero()
+    }
+}
+
+impl core::iter::Sum<Self> for Element {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.fold(Self::zero(), core::ops::Add::add)
+    }
+}
+
+impl<'a> core::iter::Sum<&'a Element> for Element {
+    fn sum<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
+        iter.fold(Self::zero(), core::ops::Add::add)
+    }
+}
+
+impl ProjectiveCurve for Element {
+    const COFACTOR: &'static [u64] = EdwardsProjective::COFACTOR;
+
+    type ScalarField = Fr;
+
+    type BaseField = Fq;
+
+    //type Affine = GroupAffine<EdwardsParameters>;
+    // TODO: Make affine variant of Element with Into impls?
+    type Affine = Element;
+
+    fn prime_subgroup_generator() -> Self {
+        todo!()
+    }
+
+    fn batch_normalization(v: &mut [Self]) {
+        todo!()
+    }
+
+    fn is_normalized(&self) -> bool {
+        todo!()
+    }
+
+    fn double_in_place(&mut self) -> &mut Self {
+        todo!()
+    }
+
+    fn add_assign_mixed(&mut self, other: &Self::Affine) {
+        todo!()
     }
 }

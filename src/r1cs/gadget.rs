@@ -119,8 +119,7 @@ impl EqGadget<Fq> for Decaf377ElementVar {
 }
 
 impl R1CSVar<Fq> for Decaf377ElementVar {
-    // TODO: Shouldn't this be Element?
-    type Value = EdwardsProjective;
+    type Value = Element;
 
     fn cs(&self) -> ConstraintSystemRef<Fq> {
         self.inner.cs()

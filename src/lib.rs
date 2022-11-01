@@ -10,6 +10,8 @@ mod field_ext;
 mod invsqrt;
 mod on_curve;
 mod ops;
+pub mod rand;
+pub mod serialize;
 mod sign;
 
 use ark_ed_on_bls12_377::EdwardsProjective;
