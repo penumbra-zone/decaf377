@@ -1,7 +1,10 @@
+use std::convert::TryInto;
+
 use ark_ff::{FromBytes, ToBytes};
+use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_std::io::{Read, Result as IoResult, Write};
 
-use crate::{Element, Encoding, FieldExt, Fq};
+use crate::{AffineElement, Element, Encoding, FieldExt, Fq};
 
 impl ToBytes for Element {
     #[inline]
@@ -20,5 +23,45 @@ impl FromBytes for Element {
             .vartime_decompress()
             .map_err(|_| std::io::ErrorKind::InvalidData)?;
         Ok(element)
+    }
+}
+
+impl ToBytes for AffineElement {
+    #[inline]
+    fn write<W: Write>(&self, mut writer: W) -> IoResult<()> {
+        let element: Element = self.into();
+        element.write(&mut writer)
+    }
+}
+
+impl FromBytes for AffineElement {
+    #[inline]
+    fn read<R: Read>(mut reader: R) -> IoResult<Self> {
+        let element = Element::read(&mut reader)?;
+        Ok(element.into())
+    }
+}
+
+impl CanonicalDeserialize for AffineElement {
+    fn deserialize<R: std::io::Read>(reader: R) -> Result<Self, ark_serialize::SerializationError> {
+        let bytes = Encoding::deserialize(reader)?;
+        let element: Element = bytes
+            .try_into()
+            .map_err(|_| ark_serialize::SerializationError::InvalidData)?;
+        Ok(element.into())
+    }
+}
+
+impl CanonicalSerialize for AffineElement {
+    fn serialized_size(&self) -> usize {
+        32
+    }
+
+    fn serialize<W: std::io::Write>(
+        &self,
+        writer: W,
+    ) -> Result<(), ark_serialize::SerializationError> {
+        let element: Element = self.into();
+        element.vartime_compress().serialize(writer)
     }
 }
