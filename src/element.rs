@@ -4,7 +4,7 @@ use ark_ec::{
     twisted_edwards_extended::{GroupAffine, GroupProjective},
     AffineCurve, ProjectiveCurve,
 };
-use ark_ed_on_bls12_377::{EdwardsParameters, EdwardsProjective};
+use ark_ed_on_bls12_377::{EdwardsAffine, EdwardsParameters, EdwardsProjective};
 use ark_ff::Zero;
 use ark_std::fmt::{Display, Formatter, Result as FmtResult};
 
@@ -124,16 +124,61 @@ impl<'a> core::iter::Sum<&'a Element> for Element {
     }
 }
 
+#[derive(Copy, Clone, Hash)]
+pub struct AffineElement {
+    pub(crate) inner: EdwardsAffine,
+}
+
+impl Zero for AffineElement {
+    fn zero() -> Self {
+        Self::default()
+    }
+
+    fn is_zero(&self) -> bool {
+        self.inner.is_zero()
+    }
+}
+
+impl core::iter::Sum<Self> for AffineElement {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.fold(Self::zero(), core::ops::Add::add)
+    }
+}
+
+impl<'a> core::iter::Sum<&'a AffineElement> for AffineElement {
+    fn sum<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
+        iter.fold(Self::zero(), core::ops::Add::add)
+    }
+}
+
+impl PartialEq for AffineElement {
+    fn eq(&self, other: &AffineElement) -> bool {
+        // Section 4.5 of Decaf paper
+        self.inner.x * other.inner.y == self.inner.y * other.inner.x
+    }
+}
+
+impl Eq for AffineElement {}
+
+impl Zeroize for AffineElement {
+    fn zeroize(&mut self) {
+        self.inner.zeroize()
+    }
+}
+
 impl ProjectiveCurve for Element {
+    // We implement `ProjectiveCurve` as it is required by the `CurveVar`
+    // trait used in the R1CS feature. The `ProjectiveCurve` trait requires
+    // an affine representation of `Element` to be defined, and `AffineCurve`
+    // to be implemented on that type.
+
     const COFACTOR: &'static [u64] = EdwardsProjective::COFACTOR;
 
     type ScalarField = Fr;
 
     type BaseField = Fq;
 
-    //type Affine = GroupAffine<EdwardsParameters>;
-    // TODO: Make affine variant of Element with Into impls?
-    type Affine = Element;
+    type Affine = AffineElement;
 
     fn prime_subgroup_generator() -> Self {
         todo!()
@@ -152,6 +197,39 @@ impl ProjectiveCurve for Element {
     }
 
     fn add_assign_mixed(&mut self, other: &Self::Affine) {
+        todo!()
+    }
+}
+
+impl AffineCurve for AffineElement {
+    const COFACTOR: &'static [u64] = EdwardsAffine::COFACTOR;
+
+    type ScalarField = Fr;
+
+    type BaseField = Fq;
+
+    type Projective = Element;
+
+    fn prime_subgroup_generator() -> Self {
+        todo!()
+    }
+
+    fn from_random_bytes(bytes: &[u8]) -> Option<Self> {
+        todo!()
+    }
+
+    fn mul<S: Into<<Self::ScalarField as ark_ff::PrimeField>::BigInt>>(
+        &self,
+        other: S,
+    ) -> Self::Projective {
+        todo!()
+    }
+
+    fn mul_by_cofactor_to_projective(&self) -> Self::Projective {
+        todo!()
+    }
+
+    fn mul_by_cofactor_inv(&self) -> Self {
         todo!()
     }
 }
