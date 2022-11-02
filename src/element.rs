@@ -45,6 +45,7 @@ impl ProjectiveCurve for Element {
 }
 
 impl AffineCurve for AffineElement {
+    // TODO: Set cofactor to identity in `AffineCurve` and `ProjectiveCurve`?
     const COFACTOR: &'static [u64] = EdwardsAffine::COFACTOR;
 
     type ScalarField = Fr;
@@ -54,26 +55,34 @@ impl AffineCurve for AffineElement {
     type Projective = Element;
 
     fn prime_subgroup_generator() -> Self {
-        todo!()
+        AffineElement {
+            inner: EdwardsAffine::prime_subgroup_generator(),
+        }
     }
 
     fn from_random_bytes(bytes: &[u8]) -> Option<Self> {
-        todo!()
+        EdwardsAffine::from_random_bytes(bytes).map(|inner| AffineElement { inner })
     }
 
     fn mul<S: Into<<Self::ScalarField as ark_ff::PrimeField>::BigInt>>(
         &self,
         other: S,
     ) -> Self::Projective {
-        todo!()
+        Element {
+            inner: self.inner.mul(other),
+        }
     }
 
     fn mul_by_cofactor_to_projective(&self) -> Self::Projective {
-        todo!()
+        Element {
+            inner: self.inner.mul_by_cofactor_to_projective(),
+        }
     }
 
     fn mul_by_cofactor_inv(&self) -> Self {
-        todo!()
+        AffineElement {
+            inner: self.inner.mul_by_cofactor_inv(),
+        }
     }
 }
 
