@@ -24,23 +24,29 @@ impl ProjectiveCurve for Element {
     type Affine = AffineElement;
 
     fn prime_subgroup_generator() -> Self {
-        todo!()
+        Element {
+            inner: EdwardsProjective::prime_subgroup_generator(),
+        }
     }
 
     fn batch_normalization(v: &mut [Self]) {
-        todo!()
+        let mut v_inner = v.iter_mut().map(|g| g.inner).collect::<Vec<_>>();
+        EdwardsProjective::batch_normalization(&mut v_inner[..]);
     }
 
     fn is_normalized(&self) -> bool {
-        todo!()
+        self.inner.is_normalized()
     }
 
     fn double_in_place(&mut self) -> &mut Self {
-        todo!()
+        let inner = *self.inner.double_in_place();
+        *self = Element { inner };
+        self
     }
 
     fn add_assign_mixed(&mut self, other: &Self::Affine) {
-        todo!()
+        let proj_other: Element = other.into();
+        *self += proj_other;
     }
 }
 
