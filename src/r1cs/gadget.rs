@@ -1,16 +1,19 @@
 #![allow(non_snake_case)]
-use ark_ec::TEModelParameters;
+use std::borrow::Borrow;
+
+use ark_ec::{AffineCurve, TEModelParameters};
 use ark_ed_on_bls12_377::{
     constraints::{EdwardsVar, FqVar},
-    EdwardsAffine, EdwardsParameters, EdwardsProjective,
+    EdwardsAffine, EdwardsParameters,
 };
 use ark_r1cs_std::{
     alloc::AllocVar, eq::EqGadget, groups::curves::twisted_edwards::AffineVar, prelude::*, R1CSVar,
 };
 use ark_relations::ns;
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
+use ark_std::One;
 
-use crate::{r1cs::fqvar_ext::FqVarExtension, Element, Fq};
+use crate::{r1cs::fqvar_ext::FqVarExtension, AffineElement, Element, Fq};
 
 #[derive(Clone, Debug)]
 /// Represents the R1CS equivalent of a `decaf377::Element`
@@ -126,7 +129,11 @@ impl R1CSVar<Fq> for Decaf377ElementVar {
     }
 
     fn value(&self) -> Result<Self::Value, SynthesisError> {
-        self.inner.value()
+        let (x, y) = (self.inner.x.value()?, self.inner.y.value()?);
+        let result = EdwardsAffine::new(x, y);
+        Ok(Element {
+            inner: result.into(),
+        })
     }
 }
 
@@ -147,8 +154,8 @@ impl CondSelectGadget<Fq> for Decaf377ElementVar {
 
 // This lets us use `new_constant`, `new_input` (public), or `new_witness` to add
 // decaf elements to an R1CS constraint system.
-impl AllocVar<EdwardsProjective, Fq> for Decaf377ElementVar {
-    fn new_variable<T: std::borrow::Borrow<EdwardsProjective>>(
+impl AllocVar<Element, Fq> for Decaf377ElementVar {
+    fn new_variable<T: std::borrow::Borrow<Element>>(
         cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
         f: impl FnOnce() -> Result<T, SynthesisError>,
         mode: AllocationMode,
@@ -177,28 +184,22 @@ impl AllocVar<EdwardsProjective, Fq> for Decaf377ElementVar {
 
         // The below value should be constructed from the decode method.
         // i.e. do NOT pass f into the AffineValue::new_variable()
-        Ok(Decaf377ElementVar {
-            inner: AffineVar::<EdwardsParameters, FqVar>::new_variable(cs, f, mode)?,
-        })
+        let ns = cs.into();
+        let cs = ns.cs();
+        let f = || Ok(*f()?.borrow());
+        let point = Self::new_variable_omit_prime_order_check(cs, f, mode)?;
+        Ok(point)
         // Where is prime subgroup check done?
     }
 }
 
-impl AllocVar<EdwardsAffine, Fq> for Decaf377ElementVar {
-    fn new_variable<T: std::borrow::Borrow<EdwardsAffine>>(
+impl AllocVar<AffineElement, Fq> for Decaf377ElementVar {
+    fn new_variable<T: Borrow<AffineElement>>(
         cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
         f: impl FnOnce() -> Result<T, SynthesisError>,
         mode: AllocationMode,
     ) -> Result<Self, SynthesisError> {
-        // Since the closure here can only do operations that are allowed on the `Decaf377ElementVar`,
-        // as the inner `EdwardsVar` is not exposed in the API, we do not need to check again
-        // that the resulting point is valid.
-        //
-        // Compare this with the implementation of this trait for `EdwardsVar`, where they check that the
-        // point is in the right subgroup prior to witnessing.
-        Ok(Decaf377ElementVar {
-            inner: AffineVar::<EdwardsParameters, FqVar>::new_variable(cs, f, mode)?,
-        })
+        Self::new_variable(cs, || f().map(|b| b.borrow().into_projective()), mode)
     }
 }
 
@@ -231,7 +232,7 @@ impl CurveVar<Element, Fq> for Decaf377ElementVar {
         todo!()
     }
 
-    fn constant(other: EdwardsProjective) -> Self {
+    fn constant(other: Element) -> Self {
         todo!()
     }
 
@@ -240,8 +241,26 @@ impl CurveVar<Element, Fq> for Decaf377ElementVar {
         f: impl FnOnce() -> Result<Element, SynthesisError>,
         mode: AllocationMode,
     ) -> Result<Self, SynthesisError> {
-        // Similar logic as AllocVar
-        todo!()
+        // TODO: Use similar logic as AllocVar
+        let ns = cs.into();
+        let cs = ns.cs();
+
+        let (x, y) = match f() {
+            Ok(ge) => {
+                let ge: EdwardsAffine = ge.inner.into();
+                (Ok(ge.x), Ok(ge.y))
+            }
+            _ => (
+                Err(SynthesisError::AssignmentMissing),
+                Err(SynthesisError::AssignmentMissing),
+            ),
+        };
+
+        let x = FqVar::new_variable(ark_relations::ns!(cs, "x"), || x, mode)?;
+        let y = FqVar::new_variable(ark_relations::ns!(cs, "y"), || y, mode)?;
+        Ok(Decaf377ElementVar {
+            inner: AffineVar::new(x, y),
+        })
     }
 
     fn enforce_prime_order(&self) -> Result<(), SynthesisError> {
