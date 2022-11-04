@@ -219,21 +219,19 @@ impl ToBytesGadget<Fq> for Decaf377ElementVar {
     }
 }
 
-// Problem: This requires a bunch of arithmetic ops between Decaf377ElementVar and
-// EdwardsProjective to be implemented, but we can't do that infallibly since
-// EdwardsProjective may or may not be a valid decaf point.
-//
-// Solution (TODO): Implement all required traits on Element that we need from
-// EdwardsProjective from ark-ec.
 impl<'a> GroupOpsBounds<'a, Element, Decaf377ElementVar> for Decaf377ElementVar {}
 
 impl CurveVar<Element, Fq> for Decaf377ElementVar {
     fn zero() -> Self {
-        todo!()
+        Self {
+            inner: AffineVar::<EdwardsParameters, FqVar>::zero(),
+        }
     }
 
     fn constant(other: Element) -> Self {
-        todo!()
+        Self {
+            inner: AffineVar::<EdwardsParameters, FqVar>::constant(other.inner),
+        }
     }
 
     fn new_variable_omit_prime_order_check(
@@ -269,10 +267,12 @@ impl CurveVar<Element, Fq> for Decaf377ElementVar {
     }
 
     fn double_in_place(&mut self) -> Result<(), SynthesisError> {
-        todo!()
+        self.inner.double_in_place()?;
+        Ok(())
     }
 
     fn negate(&self) -> Result<Self, SynthesisError> {
-        todo!()
+        let negated = self.inner.negate()?;
+        Ok(Self { inner: negated })
     }
 }
