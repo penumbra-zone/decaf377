@@ -67,11 +67,11 @@ impl Decaf377ElementVar {
         // 2.
         let den = u_1.clone() * A_MINUS_D.clone() * X.square()?;
         let one_over_den = den.inverse()?;
-        // TODO. Use EqGadget to constrain v * v = one_over_den
-        let v: FqVar = one_over_den.isqrt();
+        let v = FqVar::isqrt(one_over_den)?;
+        let v_var = FqVar::constant(v);
 
         // 3.
-        let u_2: FqVar = (v.clone() * u_1).abs();
+        let u_2: FqVar = (v_var * u_1).abs();
 
         // 4.
         let u_3 = u_2 * Z - T;
