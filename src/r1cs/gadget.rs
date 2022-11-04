@@ -24,31 +24,6 @@ pub struct Decaf377ElementVar {
 }
 
 impl Decaf377ElementVar {
-    /// Add an existing `Element` to the constraint system.
-    /// Remove this method. If you want to construct Decaf377ElementVar, you first
-    /// decode to bytes/field element.
-    /// Replace this with decode
-    /// Prover:
-    /// * Witnesses the field element.
-    /// * Add constraints / relations to show I know two other field elements x, y
-    /// such that they are valid decodings of the field element that is witnessed.
-    pub fn add_element(
-        cs: ConstraintSystemRef<Fq>,
-        decaf_element: Element,
-        mode: AllocationMode,
-    ) -> anyhow::Result<Self> {
-        // Add affine coordinates to constraint system using the provided allocation mode
-        // TODO: Decode
-        // TODO: Encode
-        // Problem: Expensive.
-        let x = FqVar::new_variable(ns!(cs, "element_x"), || Ok(decaf_element.inner.x), mode)
-            .map_err(|e| anyhow::anyhow!("couldn't add x to constraint system: {}", e))?;
-        let y = FqVar::new_variable(ns!(cs, "element_y"), || Ok(decaf_element.inner.y), mode)
-            .map_err(|e| anyhow::anyhow!("couldn't add y to constraint system: {}", e))?;
-        let inner = EdwardsVar::new(x, y);
-        Ok(Decaf377ElementVar { inner })
-    }
-
     /// R1CS equivalent of `Element::vartime_compress_to_field`
     pub(crate) fn compress_to_field(&self) -> Result<FqVar, SynthesisError> {
         // We have affine x, y but our compression formulae are in projective.
