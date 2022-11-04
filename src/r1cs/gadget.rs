@@ -142,34 +142,8 @@ impl AllocVar<Element, Fq> for Decaf377ElementVar {
 
         let ns = cs.into();
         let cs = ns.cs();
-
-        // P = output of f
         let f = || Ok(*f()?.borrow());
-        let P = Self::new_variable_omit_prime_order_check(cs.clone(), f, mode)?;
-        // At this point P might not be a valid decaf point. We need to check
-        // it is before returning.
-        //
-        // One way that is secure but provides stronger constraints than we need:
-        // 1. Encode (out of circuit) to an Fq
-        // 2. Witness the encoded value
-        // 3. Decode (in circuit)
-        //
-        // But a cheaper option is to prove this point is in the
-        // image of the encoding map. We can do so
-        // by checking if the point is even (see section 1.2 Decaf paper):
-
-        // 1. Outside circuit, compute Q = 1/2 * P
-        let Q = Fr::from(2)
-            .inverse()
-            .expect("inverse of 2 should exist in Fr")
-            * P.value()?;
-
-        // 2. Inside the circuit, witness Q
-        let Q_var = AffineVar::new_variable(ns!(cs, "Q_affine"), || Ok(Q.inner), mode)?;
-
-        // 3. Add equality constraint that Q + Q = P
-        (Q_var.clone() + Q_var).enforce_equal(&P.inner)?;
-
+        let P = Self::new_variable_omit_prime_order_check(cs, f, mode)?;
         Ok(P)
     }
 }
@@ -220,26 +194,44 @@ impl CurveVar<Element, Fq> for Decaf377ElementVar {
         f: impl FnOnce() -> Result<Element, SynthesisError>,
         mode: AllocationMode,
     ) -> Result<Self, SynthesisError> {
-        // TODO: Use similar logic as AllocVar
         let ns = cs.into();
         let cs = ns.cs();
 
-        let (x, y) = match f() {
+        match f() {
             Ok(ge) => {
                 let ge: EdwardsAffine = ge.inner.into();
-                (Ok(ge.x), Ok(ge.y))
-            }
-            _ => (
-                Err(SynthesisError::AssignmentMissing),
-                Err(SynthesisError::AssignmentMissing),
-            ),
-        };
+                let P = Self {
+                    inner: AffineVar::new_variable(ns!(cs, "P_affine"), || Ok(ge), mode)?,
+                };
 
-        let x = FqVar::new_variable(ark_relations::ns!(cs, "x"), || x, mode)?;
-        let y = FqVar::new_variable(ark_relations::ns!(cs, "y"), || y, mode)?;
-        Ok(Decaf377ElementVar {
-            inner: AffineVar::new(x, y),
-        })
+                // At this point P might not be a valid decaf point. We need to check
+                // it is before returning.
+                //
+                // One way that is secure but provides stronger constraints than we need:
+                // 1. Encode (out of circuit) to an Fq
+                // 2. Witness the encoded value
+                // 3. Decode (in circuit)
+                //
+                // But a cheaper option is to prove this point is in the
+                // image of the encoding map. We can do so
+                // by checking if the point is even (see section 1.2 Decaf paper):
+
+                // 1. Outside circuit, compute Q = 1/2 * P
+                let Q = Fr::from(2)
+                    .inverse()
+                    .expect("inverse of 2 should exist in Fr")
+                    * P.value()?;
+
+                // 2. Inside the circuit, witness Q
+                let Q_var = AffineVar::new_variable(ns!(cs, "Q_affine"), || Ok(Q.inner), mode)?;
+
+                // 3. Add equality constraint that Q + Q = P
+                (Q_var.clone() + Q_var).enforce_equal(&P.inner)?;
+
+                Ok(P)
+            }
+            _ => Err(SynthesisError::AssignmentMissing),
+        }
     }
 
     fn enforce_prime_order(&self) -> Result<(), SynthesisError> {
