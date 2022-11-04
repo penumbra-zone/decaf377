@@ -6,6 +6,7 @@ use ark_ed_on_bls12_377::{
     constraints::{EdwardsVar, FqVar},
     EdwardsAffine, EdwardsParameters,
 };
+use ark_ff::Field;
 use ark_r1cs_std::{
     alloc::AllocVar, eq::EqGadget, groups::curves::twisted_edwards::AffineVar, prelude::*, R1CSVar,
 };
@@ -13,7 +14,7 @@ use ark_relations::ns;
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 use ark_std::One;
 
-use crate::{r1cs::fqvar_ext::FqVarExtension, AffineElement, Element, Fq};
+use crate::{r1cs::fqvar_ext::FqVarExtension, AffineElement, Element, Fq, Fr};
 
 #[derive(Clone, Debug)]
 /// Represents the R1CS equivalent of a `decaf377::Element`
@@ -160,36 +161,41 @@ impl AllocVar<Element, Fq> for Decaf377ElementVar {
         f: impl FnOnce() -> Result<T, SynthesisError>,
         mode: AllocationMode,
     ) -> Result<Self, SynthesisError> {
-        // Since the closure here can only do operations that are allowed on the `Decaf377ElementVar`,
-        // as the inner `EdwardsVar` is not exposed in the API, we do not need to check again
-        // that the resulting point is valid.
-        //
-        // Compare this with the implementation of this trait for `EdwardsVar`, where they check that the
-        // point is in the right subgroup prior to witnessing.
+        // TODO later: Only check point is valid for witnessing?
+        // Compare this with the implementation of this trait for `EdwardsVar`
+        // where they check that the point is in the right subgroup prior to witnessing.
 
-        // Way that is secure: Encode (out of circuit) to an Fq
-        // Witness the encoded value
-        // and then decode (in circuit)
-        // The resulting variables is what we construct Decaf377ElementVar from
-
-        // Q. What is cheaper? Need to work out formulae to prove this point is in the
-        // image of the encoding map. This is stronger than what we need.
-        // Can do by checking if the point is even (see section 1.2 Decaf paper)
-
-        // P = output of f
-        // Outside circuit, compute Q = 1/2 * P
-        // Inside the circuit, witness Q. Add equality constraint that Q + Q = P
-
-        // Future: Only do for witnessing?
-
-        // The below value should be constructed from the decode method.
-        // i.e. do NOT pass f into the AffineValue::new_variable()
         let ns = cs.into();
         let cs = ns.cs();
+
+        // P = output of f
         let f = || Ok(*f()?.borrow());
-        let point = Self::new_variable_omit_prime_order_check(cs, f, mode)?;
-        Ok(point)
-        // Where is prime subgroup check done?
+        let P = Self::new_variable_omit_prime_order_check(cs.clone(), f, mode)?;
+        // At this point P might not be a valid decaf point. We need to check
+        // it is before returning.
+        //
+        // One way that is secure but provides stronger constraints than we need:
+        // 1. Encode (out of circuit) to an Fq
+        // 2. Witness the encoded value
+        // 3. Decode (in circuit)
+        //
+        // But a cheaper option is to prove this point is in the
+        // image of the encoding map. We can do so
+        // by checking if the point is even (see section 1.2 Decaf paper):
+
+        // 1. Outside circuit, compute Q = 1/2 * P
+        let Q = Fr::from(2)
+            .inverse()
+            .expect("inverse of 2 should exist in Fr")
+            * P.value()?;
+
+        // 2. Inside the circuit, witness Q
+        let Q_var = AffineVar::new_variable(ns!(cs, "Q_affine"), || Ok(Q.inner), mode)?;
+
+        // 3. Add equality constraint that Q + Q = P
+        (Q_var.clone() + Q_var).enforce_equal(&P.inner)?;
+
+        Ok(P)
     }
 }
 
