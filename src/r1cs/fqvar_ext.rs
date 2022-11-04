@@ -6,19 +6,20 @@ use ark_r1cs_std::{eq::EqGadget, prelude::AllocationMode};
 use ark_relations::ns;
 use ark_relations::r1cs::SynthesisError;
 
+use crate::sign::Sign;
 use crate::{Fq, SqrtRatioZeta};
 
-pub trait FqVarExtension {
-    fn abs(&self) -> FqVar;
+pub trait FqVarExtension: Sized {
     fn isqrt(x: FqVar) -> Result<Fq, SynthesisError>;
+
+    // This is similar to the Sign trait in this crate,
+    // however: we need to return `Result<_, SynthesisError>`
+    // everywhere.
+    fn is_nonnegative(&self) -> Result<bool, SynthesisError>;
+    fn abs(self) -> Result<Self, SynthesisError>;
 }
 
 impl FqVarExtension for FqVar {
-    // Remove this in favor of impl Sign for FqVar
-    fn abs(&self) -> FqVar {
-        todo!()
-    }
-
     /// Square root in R1CS
     ///
     /// Returns the result of the sqrt computation (out of circuit)
@@ -37,6 +38,17 @@ impl FqVarExtension for FqVar {
         lhs_var.enforce_equal(&x)?;
         Ok(y)
     }
-}
 
-//impl Sign for FqVar
+    fn is_nonnegative(&self) -> Result<bool, SynthesisError> {
+        let value = self.value()?;
+        Ok(value.is_nonnegative())
+    }
+
+    fn abs(self) -> Result<Self, SynthesisError> {
+        if self.is_nonnegative()? {
+            Ok(self)
+        } else {
+            self.negate()
+        }
+    }
+}

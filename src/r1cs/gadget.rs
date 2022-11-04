@@ -71,13 +71,13 @@ impl Decaf377ElementVar {
         let v_var = FqVar::constant(v);
 
         // 3.
-        let u_2: FqVar = (v_var * u_1).abs();
+        let u_2: FqVar = (v_var * u_1).abs()?;
 
         // 4.
         let u_3 = u_2 * Z - T;
 
         // 5.
-        let s = (A_MINUS_D * v * u_3 * X).abs();
+        let s = (A_MINUS_D * v * u_3 * X).abs()?;
 
         Ok(s)
     }
