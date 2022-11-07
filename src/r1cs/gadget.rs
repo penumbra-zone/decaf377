@@ -43,7 +43,7 @@ impl Decaf377ElementVar {
         // 2.
         let den = u_1.clone() * A_MINUS_D.clone() * X.square()?;
         let one_over_den = den.inverse()?;
-        let v = FqVar::isqrt(one_over_den)?;
+        let (_, v) = FqVar::isqrt(one_over_den)?;
         let v_var = FqVar::constant(v);
 
         // 3.
@@ -57,12 +57,68 @@ impl Decaf377ElementVar {
 
         Ok(s)
     }
+
+    /// R1CS equivalent of `Encoding::vartime_decompress`
+    pub(crate) fn decompress(s: FqVar) -> Result<Decaf377ElementVar, SynthesisError> {
+        let D4 = FqVar::constant(EdwardsParameters::COEFF_D * Fq::from(4u32));
+
+        // 1. TODO: Should check if canonically encoded using ToBitsGadget?
+
+        // 2. Reject if negative.
+        let is_nonnegative = s.is_nonnegative()?;
+        let cs = s.cs();
+        // TODO: Is constant the right allocation mode?
+        let is_nonnegative_var = Boolean::new_variable(
+            ns!(cs, "is_nonnegative"),
+            || Ok(is_nonnegative),
+            AllocationMode::Constant,
+        )?;
+        is_nonnegative_var.enforce_equal(&Boolean::TRUE)?;
+
+        // 3. u_1 <- 1 - s^2
+        let ss = s.square()?;
+        let u_1 = FqVar::one() - ss.clone();
+
+        // 4. u_2 <- u_1^2 - 4d s^2
+        let u_2 = u_1.square()? - D4 * ss.clone();
+
+        // 5. sqrt
+        let den = u_2.clone() * u_1.square()?;
+        let one_over_den = den.inverse()?;
+        let (was_square, v) = FqVar::isqrt(one_over_den)?;
+        let mut v_var = FqVar::constant(v);
+        let was_square_var = Boolean::new_variable(
+            ns!(cs, "is_square"),
+            || Ok(was_square),
+            AllocationMode::Constant,
+        )?;
+        was_square_var.enforce_equal(&Boolean::TRUE)?;
+
+        // 6. Sign check
+        let two_s_u_1 = (FqVar::one() + FqVar::one()) * s * u_1.clone();
+        // In `vartime_decompress`, we check if it's negative prior to taking
+        // the negative, which is effectively the absolute value:
+        v_var = v_var.abs()?;
+
+        // 7. (Extended) Coordinates
+        let x = two_s_u_1 * v.square() * u_2;
+        let y = (FqVar::one() + ss) * v_var * u_1;
+        //let z = FqVar::one();
+        //let t = x.clone() * y.clone();
+
+        // Note that the above are in extended, but we need affine coordinates
+        // for forming `AffineVar` where x = X/Z, y = Y/Z. However Z is
+        // hardcoded to be 1 above, so we can use x and y as is.
+        Ok(Decaf377ElementVar {
+            inner: AffineVar::new(x, y),
+        })
+    }
 }
 
 impl EqGadget<Fq> for Decaf377ElementVar {
     fn is_eq(&self, other: &Self) -> Result<Boolean<Fq>, SynthesisError> {
         // Section 4.5 of Decaf paper: X_1 * Y_2 = X_2 * Y_1
-        // Note that x, y are affine here but projective X = x, Y = y
+        // in extended coordinates, but note that x, y are affine here:
         let X_1 = &self.inner.x;
         let Y_1 = &self.inner.y;
         let X_2 = &other.inner.x;
