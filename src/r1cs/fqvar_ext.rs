@@ -10,7 +10,7 @@ use crate::sign::Sign;
 use crate::{Fq, SqrtRatioZeta};
 
 pub trait FqVarExtension: Sized {
-    fn isqrt(x: FqVar) -> Result<Fq, SynthesisError>;
+    fn isqrt(x: FqVar) -> Result<(bool, Fq), SynthesisError>;
 
     // This is similar to the Sign trait in this crate,
     // however: we need to return `Result<_, SynthesisError>`
@@ -24,10 +24,10 @@ impl FqVarExtension for FqVar {
     ///
     /// Returns the result of the sqrt computation (out of circuit)
     /// and a boolean constraint that `y = sqrt(x)` is known.
-    fn isqrt(x: FqVar) -> Result<Fq, SynthesisError> {
+    fn isqrt(x: FqVar) -> Result<(bool, Fq), SynthesisError> {
         // Out of circuit sqrt computation
         let num = FqVar::constant(Fq::one());
-        let (_, y) = Fq::sqrt_ratio_zeta(&x.value()?, &num.value()?);
+        let (was_square, y) = Fq::sqrt_ratio_zeta(&x.value()?, &num.value()?);
 
         // Add constraints to certify we know the square root of x
         let cs = x.cs();
@@ -36,7 +36,7 @@ impl FqVarExtension for FqVar {
         let lhs_var =
             FqVar::new_variable(ns!(cs, "lhs_sqrt"), || Ok(lhs), AllocationMode::Constant)?;
         lhs_var.enforce_equal(&x)?;
-        Ok(y)
+        Ok((was_square, y))
     }
 
     fn is_nonnegative(&self) -> Result<bool, SynthesisError> {
