@@ -25,7 +25,7 @@ pub struct Decaf377ElementVar {
 
 impl Decaf377ElementVar {
     /// R1CS equivalent of `Element::vartime_compress_to_field`
-    pub(crate) fn compress_to_field(&self) -> Result<FqVar, SynthesisError> {
+    pub fn compress_to_field(&self) -> Result<FqVar, SynthesisError> {
         // We have affine x, y but our compression formulae are in projective.
         let affine_x = &self.inner.x;
         let affine_y = &self.inner.y;
@@ -59,10 +59,11 @@ impl Decaf377ElementVar {
     }
 
     /// R1CS equivalent of `Encoding::vartime_decompress`
-    pub(crate) fn decompress(s: FqVar) -> Result<Decaf377ElementVar, SynthesisError> {
+    pub fn decompress_from_field(s: FqVar) -> Result<Decaf377ElementVar, SynthesisError> {
         let D4 = FqVar::constant(EdwardsParameters::COEFF_D * Fq::from(4u32));
 
-        // 1. TODO: Should check if canonically encoded using ToBitsGadget?
+        // 1. We do not check if canonically encoded here since we know FqVar is already
+        // a valid Fq field element.
 
         // 2. Reject if negative.
         let is_nonnegative = s.is_nonnegative()?;
@@ -131,25 +132,23 @@ impl EqGadget<Fq> for Decaf377ElementVar {
     fn conditional_enforce_equal(
         &self,
         other: &Self,
-        condition: &Boolean<Fq>,
+        should_enforce: &Boolean<Fq>,
     ) -> Result<(), SynthesisError> {
-        self.inner
-            .x
-            .conditional_enforce_equal(&other.inner.x, condition)?;
-        self.inner
-            .y
-            .conditional_enforce_equal(&other.inner.y, condition)?;
-        Ok(())
+        // should_enforce = true
+        //      return self == other
+        // should_enforce = false
+        //      return true
+        self.is_eq(other)?
+            .conditional_enforce_equal(&Boolean::constant(true), should_enforce)
     }
 
     fn conditional_enforce_not_equal(
         &self,
         other: &Self,
-        condition: &Boolean<Fq>,
+        should_enforce: &Boolean<Fq>,
     ) -> Result<(), SynthesisError> {
         self.is_eq(other)?
-            .and(condition)?
-            .enforce_equal(&Boolean::Constant(false))
+            .conditional_enforce_equal(&Boolean::constant(false), should_enforce)
     }
 }
 
@@ -256,12 +255,9 @@ impl CurveVar<Element, Fq> for Decaf377ElementVar {
         match f() {
             Ok(ge) => {
                 let ge: EdwardsAffine = ge.inner.into();
-                let P = Self {
-                    inner: AffineVar::new_variable(ns!(cs, "P_affine"), || Ok(ge), mode)?,
-                };
+                let P = AffineVar::new_variable(ns!(cs, "P_affine"), || Ok(ge), mode)?;
 
-                // At this point P might not be a valid decaf point. We need to check
-                // it is before returning.
+                // At this point P might not be a valid representative of a decaf point.
                 //
                 // One way that is secure but provides stronger constraints than we need:
                 // 1. Encode (out of circuit) to an Fq
@@ -279,12 +275,12 @@ impl CurveVar<Element, Fq> for Decaf377ElementVar {
                     * P.value()?;
 
                 // 2. Inside the circuit, witness Q
-                let Q_var = AffineVar::new_variable(ns!(cs, "Q_affine"), || Ok(Q.inner), mode)?;
+                let Q_var = AffineVar::new_variable(ns!(cs, "Q_affine"), || Ok(Q), mode)?;
 
                 // 3. Add equality constraint that Q + Q = P
-                (Q_var.clone() + Q_var).enforce_equal(&P.inner)?;
+                (Q_var.clone() + Q_var).enforce_equal(&P)?;
 
-                Ok(P)
+                Ok(Self { inner: P })
             }
             _ => Err(SynthesisError::AssignmentMissing),
         }

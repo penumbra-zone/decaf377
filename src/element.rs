@@ -14,8 +14,7 @@ impl ProjectiveCurve for Element {
     // trait used in the R1CS feature. The `ProjectiveCurve` trait requires
     // an affine representation of `Element` to be defined, and `AffineCurve`
     // to be implemented on that type.
-
-    const COFACTOR: &'static [u64] = EdwardsProjective::COFACTOR;
+    const COFACTOR: &'static [u64] = &[1];
 
     type ScalarField = Fr;
 
@@ -24,9 +23,7 @@ impl ProjectiveCurve for Element {
     type Affine = AffineElement;
 
     fn prime_subgroup_generator() -> Self {
-        Element {
-            inner: EdwardsProjective::prime_subgroup_generator(),
-        }
+        crate::basepoint()
     }
 
     fn batch_normalization(v: &mut [Self]) {
@@ -51,8 +48,7 @@ impl ProjectiveCurve for Element {
 }
 
 impl AffineCurve for AffineElement {
-    // TODO: Set cofactor to identity in `AffineCurve` and `ProjectiveCurve`?
-    const COFACTOR: &'static [u64] = EdwardsAffine::COFACTOR;
+    const COFACTOR: &'static [u64] = &[1];
 
     type ScalarField = Fr;
 
@@ -61,9 +57,7 @@ impl AffineCurve for AffineElement {
     type Projective = Element;
 
     fn prime_subgroup_generator() -> Self {
-        AffineElement {
-            inner: EdwardsAffine::prime_subgroup_generator(),
-        }
+        crate::basepoint().into()
     }
 
     fn from_random_bytes(bytes: &[u8]) -> Option<Self> {
