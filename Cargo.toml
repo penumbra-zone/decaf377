@@ -23,16 +23,22 @@ ark-serialize = "0.3"
 ark-bls12-377 = "0.3"
 ark-ed-on-bls12-377 = { version = "0.3", features = ["r1cs"] }
 ark-groth16 = { version = "0.3", optional=true }
+ark-snark = { version = "0.3", optional=true }
 zeroize = "1.4"
 
 [features]
-r1cs = ["ark-r1cs-std", "ark-groth16"]
+default = []
+r1cs = ["ark-r1cs-std", "ark-groth16", "ark-snark"]
 
 [dev-dependencies]
 proptest = "1"
 criterion = { version = "0.3", features=["html_reports"] }
 rand_core = { version = "0.6.3", features = ["getrandom"] }
 rand_chacha = "0.3"
+
+[[test]]
+name = "groth16_gadgets"
+required-features = ["r1cs"]
 
 [[bench]]
 name = "sqrt"
