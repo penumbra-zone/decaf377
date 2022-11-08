@@ -5,9 +5,13 @@ use ark_r1cs_std::{
     uint8::UInt8,
     ToBitsGadget,
 };
-use ark_relations::r1cs::ConstraintSynthesizer;
+use ark_relations::r1cs::{ConstraintSynthesizer, ToConstraintField};
 use ark_snark::SNARK;
-use decaf377::{basepoint, r1cs::Decaf377ElementVar, Bls12_377, Element, Fq};
+use decaf377::{
+    basepoint,
+    r1cs::{Decaf377ElementVar, FqVar},
+    Bls12_377, Element, Fq, Fr,
+};
 use rand_core::OsRng;
 
 struct DiscreteLogCircuit {
@@ -15,7 +19,7 @@ struct DiscreteLogCircuit {
     scalar: [u8; 32],
 
     // Public input
-    public: Element,
+    pub public: Element,
 }
 
 impl ConstraintSynthesizer<Fq> for DiscreteLogCircuit {
@@ -28,7 +32,6 @@ impl ConstraintSynthesizer<Fq> for DiscreteLogCircuit {
 
         // 2. Add public input variable
         let public_var = Decaf377ElementVar::new_input(cs.clone(), || Ok(self.public))?;
-
         let basepoint_var = Decaf377ElementVar::new_constant(cs, basepoint())?;
         // 3. Add constraint that scalar * Basepoint = public
         let test_public = basepoint_var.scalar_mul_le(witness_vars.to_bits_le()?.iter())?;
@@ -42,7 +45,6 @@ impl DiscreteLogCircuit {
     fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
         let scalar = [0u8; 32];
         let public = Element::default();
-
         let circuit = DiscreteLogCircuit { scalar, public };
         let (pk, vk) = Groth16::circuit_specific_setup(circuit, &mut OsRng)
             .expect("can perform circuit specific setup");
@@ -51,6 +53,26 @@ impl DiscreteLogCircuit {
 }
 
 #[test]
-fn proof_test() {
+fn proof_happy_path() {
     let (pk, vk) = DiscreteLogCircuit::generate_test_parameters();
+    let mut rng = OsRng;
+
+    let mut scalar = [0u8; 32];
+    scalar[0] = 2;
+    let public = Fr::from(2) * basepoint();
+    // let public_input = public.vartime_compress_to_field();
+
+    // Prover POV
+    let circuit = DiscreteLogCircuit { scalar, public };
+    let proof = Groth16::prove(&pk, circuit, &mut rng)
+        .map_err(|_| anyhow::anyhow!("invalid proof"))
+        .expect("can generate proof");
+
+    // Verifier POV
+    let processed_pvk = Groth16::process_vk(&vk).expect("can process verifying key");
+    let public_inputs = public.to_field_elements().unwrap();
+    let proof_result = Groth16::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof);
+
+    // TODO: verify method in SNARK trait requires the public inputs to all be Fq...
+    // assert!(proof_result.is_ok());
 }
