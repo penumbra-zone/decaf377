@@ -269,10 +269,13 @@ impl CurveVar<Element, Fq> for Decaf377ElementVar {
                 // by checking if the point is even (see section 1.2 Decaf paper):
 
                 // 1. Outside circuit, compute Q = 1/2 * P
-                let Q = Fr::from(2)
+                let half = Fr::from(2)
                     .inverse()
-                    .expect("inverse of 2 should exist in Fr")
-                    * P.value()?;
+                    .expect("inverse of 2 should exist in Fr");
+                // To do scalar mul between `Fr` and `GroupProjective`, need to
+                // use `std::ops::MulAssign`
+                let mut Q = P.value()?.clone();
+                Q *= half;
 
                 // 2. Inside the circuit, witness Q
                 let Q_var = AffineVar::new_variable(ns!(cs, "Q_affine"), || Ok(Q), mode)?;
