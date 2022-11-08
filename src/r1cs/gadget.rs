@@ -9,9 +9,10 @@ use ark_ed_on_bls12_377::{
 use ark_ff::Field;
 use ark_r1cs_std::{
     alloc::AllocVar, eq::EqGadget, groups::curves::twisted_edwards::AffineVar, prelude::*, R1CSVar,
+    ToConstraintFieldGadget,
 };
 use ark_relations::ns;
-use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
+use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError, ToConstraintField};
 use ark_std::One;
 
 use crate::{r1cs::fqvar_ext::FqVarExtension, AffineElement, Element, Fq, Fr};
@@ -274,7 +275,7 @@ impl CurveVar<Element, Fq> for Decaf377ElementVar {
                     .expect("inverse of 2 should exist in Fr");
                 // To do scalar mul between `Fr` and `GroupProjective`, need to
                 // use `std::ops::MulAssign`
-                let mut Q = P.value()?.clone();
+                let mut Q = ge.clone();
                 Q *= half;
 
                 // 2. Inside the circuit, witness Q
@@ -302,5 +303,11 @@ impl CurveVar<Element, Fq> for Decaf377ElementVar {
     fn negate(&self) -> Result<Self, SynthesisError> {
         let negated = self.inner.negate()?;
         Ok(Self { inner: negated })
+    }
+}
+
+impl ToConstraintField<Fq> for Element {
+    fn to_field_elements(&self) -> Option<Vec<Fq>> {
+        Some(vec![self.vartime_compress_to_field()])
     }
 }
