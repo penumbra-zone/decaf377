@@ -18,12 +18,12 @@ use crate::{r1cs::fqvar_ext::FqVarExtension, AffineElement, Element, Fq, Fr};
 
 #[derive(Clone, Debug)]
 /// Represents the R1CS equivalent of a `decaf377::Element`
-pub struct Decaf377ElementVar {
+pub struct ElementVar {
     /// Inner type is an alias for `AffineVar<EdwardsParameters, FqVar>`
     pub(crate) inner: EdwardsVar,
 }
 
-impl Decaf377ElementVar {
+impl ElementVar {
     /// R1CS equivalent of `Element::vartime_compress_to_field`
     pub fn compress_to_field(&self) -> Result<FqVar, SynthesisError> {
         // We have affine x, y but our compression formulae are in projective.
@@ -59,7 +59,7 @@ impl Decaf377ElementVar {
     }
 
     /// R1CS equivalent of `Encoding::vartime_decompress`
-    pub fn decompress_from_field(s: FqVar) -> Result<Decaf377ElementVar, SynthesisError> {
+    pub fn decompress_from_field(s: FqVar) -> Result<ElementVar, SynthesisError> {
         let D4 = FqVar::constant(EdwardsParameters::COEFF_D * Fq::from(4u32));
 
         // 1. We do not check if canonically encoded here since we know FqVar is already
@@ -110,13 +110,13 @@ impl Decaf377ElementVar {
         // Note that the above are in extended, but we need affine coordinates
         // for forming `AffineVar` where x = X/Z, y = Y/Z. However Z is
         // hardcoded to be 1 above, so we can use x and y as is.
-        Ok(Decaf377ElementVar {
+        Ok(ElementVar {
             inner: AffineVar::new(x, y),
         })
     }
 }
 
-impl EqGadget<Fq> for Decaf377ElementVar {
+impl EqGadget<Fq> for ElementVar {
     fn is_eq(&self, other: &Self) -> Result<Boolean<Fq>, SynthesisError> {
         // Section 4.5 of Decaf paper: X_1 * Y_2 = X_2 * Y_1
         // in extended coordinates, but note that x, y are affine here:
@@ -152,7 +152,7 @@ impl EqGadget<Fq> for Decaf377ElementVar {
     }
 }
 
-impl R1CSVar<Fq> for Decaf377ElementVar {
+impl R1CSVar<Fq> for ElementVar {
     type Value = Element;
 
     fn cs(&self) -> ConstraintSystemRef<Fq> {
@@ -168,7 +168,7 @@ impl R1CSVar<Fq> for Decaf377ElementVar {
     }
 }
 
-impl CondSelectGadget<Fq> for Decaf377ElementVar {
+impl CondSelectGadget<Fq> for ElementVar {
     fn conditionally_select(
         cond: &Boolean<Fq>,
         true_value: &Self,
@@ -177,7 +177,7 @@ impl CondSelectGadget<Fq> for Decaf377ElementVar {
         let x = cond.select(&true_value.inner.x, &false_value.inner.x)?;
         let y = cond.select(&true_value.inner.y, &false_value.inner.y)?;
 
-        Ok(Decaf377ElementVar {
+        Ok(ElementVar {
             inner: EdwardsVar::new(x, y),
         })
     }
@@ -185,7 +185,7 @@ impl CondSelectGadget<Fq> for Decaf377ElementVar {
 
 // This lets us use `new_constant`, `new_input` (public), or `new_witness` to add
 // decaf elements to an R1CS constraint system.
-impl AllocVar<Element, Fq> for Decaf377ElementVar {
+impl AllocVar<Element, Fq> for ElementVar {
     fn new_variable<T: std::borrow::Borrow<Element>>(
         cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
         f: impl FnOnce() -> Result<T, SynthesisError>,
@@ -252,7 +252,7 @@ impl AllocVar<Element, Fq> for Decaf377ElementVar {
     }
 }
 
-impl AllocVar<AffineElement, Fq> for Decaf377ElementVar {
+impl AllocVar<AffineElement, Fq> for ElementVar {
     fn new_variable<T: Borrow<AffineElement>>(
         cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
         f: impl FnOnce() -> Result<T, SynthesisError>,
@@ -262,7 +262,7 @@ impl AllocVar<AffineElement, Fq> for Decaf377ElementVar {
     }
 }
 
-impl ToBitsGadget<Fq> for Decaf377ElementVar {
+impl ToBitsGadget<Fq> for ElementVar {
     fn to_bits_le(&self) -> Result<Vec<Boolean<Fq>>, SynthesisError> {
         let compressed_fq = self.compress_to_field()?;
         let encoded_bits = compressed_fq.to_bits_le()?;
@@ -270,7 +270,7 @@ impl ToBitsGadget<Fq> for Decaf377ElementVar {
     }
 }
 
-impl ToBytesGadget<Fq> for Decaf377ElementVar {
+impl ToBytesGadget<Fq> for ElementVar {
     fn to_bytes(&self) -> Result<Vec<UInt8<Fq>>, SynthesisError> {
         let compressed_fq = self.compress_to_field()?;
         let encoded_bytes = compressed_fq.to_bytes()?;
@@ -278,9 +278,9 @@ impl ToBytesGadget<Fq> for Decaf377ElementVar {
     }
 }
 
-impl<'a> GroupOpsBounds<'a, Element, Decaf377ElementVar> for Decaf377ElementVar {}
+impl<'a> GroupOpsBounds<'a, Element, ElementVar> for ElementVar {}
 
-impl CurveVar<Element, Fq> for Decaf377ElementVar {
+impl CurveVar<Element, Fq> for ElementVar {
     fn zero() -> Self {
         Self {
             inner: AffineVar::<EdwardsParameters, FqVar>::zero(),
