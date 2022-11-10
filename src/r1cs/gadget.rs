@@ -9,7 +9,6 @@ use ark_ed_on_bls12_377::{
 use ark_ff::Field;
 use ark_r1cs_std::{
     alloc::AllocVar, eq::EqGadget, groups::curves::twisted_edwards::AffineVar, prelude::*, R1CSVar,
-    ToConstraintFieldGadget,
 };
 use ark_relations::ns;
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError, ToConstraintField};
@@ -192,15 +191,64 @@ impl AllocVar<Element, Fq> for Decaf377ElementVar {
         f: impl FnOnce() -> Result<T, SynthesisError>,
         mode: AllocationMode,
     ) -> Result<Self, SynthesisError> {
-        // TODO later: Only check point is valid for witnessing?
-        // Compare this with the implementation of this trait for `EdwardsVar`
-        // where they check that the point is in the right subgroup prior to witnessing.
-
         let ns = cs.into();
         let cs = ns.cs();
         let f = || Ok(*f()?.borrow());
-        let P = Self::new_variable_omit_prime_order_check(cs, f, mode)?;
-        Ok(P)
+        let group_projective_point = f()?;
+
+        // `new_variable` should *not* allocate any new variables or constraints in `cs` when
+        // the mode is `AllocationMode::Constant` (see `AllocVar::new_constant`).
+        //
+        // Compare this with the implementation of this trait for `EdwardsVar`
+        // where they check that the point is in the right subgroup prior to witnessing.
+        match mode {
+            AllocationMode::Constant => Ok(Self {
+                inner: EdwardsVar::new_variable_omit_prime_order_check(
+                    cs,
+                    || Ok(group_projective_point.inner),
+                    mode,
+                )?,
+            }),
+            AllocationMode::Input => Ok(Self {
+                inner: EdwardsVar::new_variable_omit_prime_order_check(
+                    cs,
+                    || Ok(group_projective_point.inner),
+                    mode,
+                )?,
+            }),
+            AllocationMode::Witness => {
+                let ge: EdwardsAffine = group_projective_point.inner.into();
+                let P = AffineVar::new_variable(ns!(cs, "P_affine"), || Ok(ge), mode)?;
+
+                // At this point P might not be a valid representative of a decaf point.
+                //
+                // One way that is secure but provides stronger constraints than we need:
+                // 1. Encode (out of circuit) to an Fq
+                // 2. Witness the encoded value
+                // 3. Decode (in circuit)
+                //
+                // But a cheaper option is to prove this point is in the
+                // image of the encoding map. We can do so
+                // by checking if the point is even (see section 1.2 Decaf paper):
+
+                // 1. Outside circuit, compute Q = 1/2 * P
+                let half = Fr::from(2)
+                    .inverse()
+                    .expect("inverse of 2 should exist in Fr");
+                // To do scalar mul between `Fr` and `GroupProjective`, need to
+                // use `std::ops::MulAssign`
+                let mut Q = ge;
+                Q *= half;
+
+                // 2. Inside the circuit, witness Q
+                let Q_var = AffineVar::new_variable(ns!(cs, "Q_affine"), || Ok(Q), mode)?;
+
+                // 3. Add equality constraint that Q + Q = P
+                (Q_var.clone() + Q_var).enforce_equal(&P)?;
+
+                Ok(Self { inner: P })
+            }
+        }
     }
 }
 
@@ -255,35 +303,7 @@ impl CurveVar<Element, Fq> for Decaf377ElementVar {
 
         match f() {
             Ok(ge) => {
-                let ge: EdwardsAffine = ge.inner.into();
-                let P = AffineVar::new_variable(ns!(cs, "P_affine"), || Ok(ge), mode)?;
-
-                // At this point P might not be a valid representative of a decaf point.
-                //
-                // One way that is secure but provides stronger constraints than we need:
-                // 1. Encode (out of circuit) to an Fq
-                // 2. Witness the encoded value
-                // 3. Decode (in circuit)
-                //
-                // But a cheaper option is to prove this point is in the
-                // image of the encoding map. We can do so
-                // by checking if the point is even (see section 1.2 Decaf paper):
-
-                // 1. Outside circuit, compute Q = 1/2 * P
-                let half = Fr::from(2)
-                    .inverse()
-                    .expect("inverse of 2 should exist in Fr");
-                // To do scalar mul between `Fr` and `GroupProjective`, need to
-                // use `std::ops::MulAssign`
-                let mut Q = ge.clone();
-                Q *= half;
-
-                // 2. Inside the circuit, witness Q
-                let Q_var = AffineVar::new_variable(ns!(cs, "Q_affine"), || Ok(Q), mode)?;
-
-                // 3. Add equality constraint that Q + Q = P
-                (Q_var.clone() + Q_var).enforce_equal(&P)?;
-
+                let P = AffineVar::new_variable_omit_prime_order_check(cs, || Ok(ge.inner), mode)?;
                 Ok(Self { inner: P })
             }
             _ => Err(SynthesisError::AssignmentMissing),
@@ -308,6 +328,6 @@ impl CurveVar<Element, Fq> for Decaf377ElementVar {
 
 impl ToConstraintField<Fq> for Element {
     fn to_field_elements(&self) -> Option<Vec<Fq>> {
-        Some(vec![self.vartime_compress_to_field()])
+        self.inner.to_field_elements()
     }
 }
