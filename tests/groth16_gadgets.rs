@@ -1,4 +1,4 @@
-use ark_groth16::{Groth16, Proof, ProvingKey, VerifyingKey};
+use ark_groth16::{Groth16, ProvingKey, VerifyingKey};
 
 use ark_r1cs_std::{
     prelude::{AllocVar, CurveVar, EqGadget},
@@ -7,11 +7,7 @@ use ark_r1cs_std::{
 };
 use ark_relations::r1cs::{ConstraintSynthesizer, ToConstraintField};
 use ark_snark::SNARK;
-use decaf377::{
-    basepoint,
-    r1cs::{Decaf377ElementVar, FqVar},
-    Bls12_377, Element, Fq, Fr,
-};
+use decaf377::{basepoint, r1cs::Decaf377ElementVar, Bls12_377, Element, Fq, Fr};
 use rand_core::OsRng;
 
 struct DiscreteLogCircuit {
@@ -60,7 +56,6 @@ fn proof_happy_path() {
     let mut scalar = [0u8; 32];
     scalar[0] = 2;
     let public = Fr::from(2) * basepoint();
-    // let public_input = public.vartime_compress_to_field();
 
     // Prover POV
     let circuit = DiscreteLogCircuit { scalar, public };
@@ -71,8 +66,36 @@ fn proof_happy_path() {
     // Verifier POV
     let processed_pvk = Groth16::process_vk(&vk).expect("can process verifying key");
     let public_inputs = public.to_field_elements().unwrap();
-    let proof_result = Groth16::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof);
+    dbg!(public_inputs.len());
+    let proof_result =
+        Groth16::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
 
-    // TODO: verify method in SNARK trait requires the public inputs to all be Fq...
-    // assert!(proof_result.is_ok());
+    assert!(proof_result);
+}
+
+#[test]
+fn proof_unhappy_path() {
+    let (pk, vk) = DiscreteLogCircuit::generate_test_parameters();
+    let mut rng = OsRng;
+
+    let mut scalar = [0u8; 32];
+    scalar[0] = 2;
+    let public = Fr::from(2) * basepoint();
+
+    let wrong_public = Fr::from(666) * basepoint();
+
+    // Prover POV
+    let circuit = DiscreteLogCircuit { scalar, public };
+    let proof = Groth16::prove(&pk, circuit, &mut rng)
+        .map_err(|_| anyhow::anyhow!("invalid proof"))
+        .expect("can generate proof");
+
+    // Verifier POV
+    let processed_pvk = Groth16::process_vk(&vk).expect("can process verifying key");
+    let public_inputs = wrong_public.to_field_elements().unwrap();
+    dbg!(public_inputs.len());
+    let proof_result =
+        Groth16::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
+
+    assert!(!proof_result);
 }
