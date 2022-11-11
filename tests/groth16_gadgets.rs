@@ -5,14 +5,14 @@ use proptest::prelude::*;
 use ark_r1cs_std::{
     prelude::{AllocVar, CurveVar, EqGadget},
     uint8::UInt8,
-    R1CSVar, ToBitsGadget,
+    ToBitsGadget,
 };
 use ark_relations::r1cs::{ConstraintSynthesizer, ToConstraintField};
 use ark_snark::SNARK;
 use decaf377::{
     basepoint,
     r1cs::{ElementVar, FqVar},
-    Bls12_377, Element, Encoding, FieldExt, Fq, Fr,
+    Bls12_377, Element, Fq, Fr,
 };
 use rand_core::OsRng;
 
@@ -231,11 +231,9 @@ impl ConstraintSynthesizer<Fq> for DecompressionCircuit {
         // 2. Add public input variable
         let public_var = ElementVar::new_input(cs, || Ok(self.point))?;
 
-        dbg!(public_var.value());
-
         // 3. Add decompression constraints
         let test_public = ElementVar::decompress_from_field(witness_var, self.field_element)?;
-        dbg!(test_public.value());
+        public_var.enforce_equal(&test_public)?;
 
         Ok(())
     }
@@ -243,13 +241,8 @@ impl ConstraintSynthesizer<Fq> for DecompressionCircuit {
 
 impl DecompressionCircuit {
     fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
-        let base_point = Fr::from(100) * decaf377::basepoint();
-        let field_element = base_point.vartime_compress_to_field();
-        let bytes = field_element.to_bytes();
-        let encoding = Encoding(bytes);
-        let point = encoding
-            .vartime_decompress()
-            .expect("should be able to decompress a valid point");
+        let point = Fr::from(100) * decaf377::basepoint();
+        let field_element = point.vartime_compress_to_field();
         let circuit = DecompressionCircuit {
             point,
             field_element,
@@ -260,13 +253,15 @@ impl DecompressionCircuit {
     }
 }
 
-#[test]
-fn groth16_decompression_proof_happy_path() {
-    let (pk, vk) = DecompressionCircuit::generate_test_parameters();
-    let mut rng = OsRng;
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(10))]
+    #[test]
+        fn groth16_decompression_proof_happy_path(scalar in (1..65536)) {
+            let (pk, vk) = DecompressionCircuit::generate_test_parameters();
+            let mut rng = OsRng;
 
-    // Prover POV
-    let point = Fr::from(666) * decaf377::basepoint();
+            // Prover POV
+            let point = Fr::from(scalar) * decaf377::basepoint();
     let field_element = point.vartime_compress_to_field();
     let circuit = DecompressionCircuit {
         point,
@@ -284,14 +279,17 @@ fn groth16_decompression_proof_happy_path() {
 
     assert!(proof_result);
 }
+}
 
-#[test]
-fn groth16_decompression_proof_unhappy_path() {
-    let (pk, vk) = DecompressionCircuit::generate_test_parameters();
-    let mut rng = OsRng;
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(10))]
+    #[test]
+        fn groth16_decompression_proof_unhappy_path(scalar in (1..65536)) {
+            let (pk, vk) = DecompressionCircuit::generate_test_parameters();
+            let mut rng = OsRng;
 
-    // Prover POV
-    let point = Fr::from(666) * decaf377::basepoint();
+            // Prover POV
+            let point = Fr::from(scalar) * decaf377::basepoint();
     let field_element = point.vartime_compress_to_field();
     let circuit = DecompressionCircuit {
         point,
@@ -303,11 +301,10 @@ fn groth16_decompression_proof_unhappy_path() {
 
     // Verifier POV
     let processed_pvk = Groth16::process_vk(&vk).expect("can process verifying key");
-    let public_inputs = (Fr::from(600) * decaf377::basepoint())
-        .to_field_elements()
-        .unwrap();
+    let public_inputs = (Fr::from(600) * decaf377::basepoint()).to_field_elements().unwrap();
     let proof_result =
         Groth16::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
 
     assert!(!proof_result);
+}
 }

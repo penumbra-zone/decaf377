@@ -135,12 +135,16 @@ impl ElementVar {
         v_var = v_var.abs(v)?;
 
         // 7. (Extended) Coordinates
-        let x_var = two_s_u_1_var * v.square() * u_2_var;
-        let y_var = (FqVar::one() + ss) * v_var * u_1_var;
-        //let z = FqVar::one();
-        //let t = x.clone() * y.clone();
+        // let x_var = two_s_u_1_var * v.square() * u_2_var;
+        // let y_var = (FqVar::one() + ss) * v_var * u_1_var;
+        // let z = FqVar::one();
+        // let t = x.clone() * y.clone();
         let x = two_s_u_1 * v.square() * u_2;
         let y = (Fq::one() + ss) * v * u_1;
+
+        // Witness x, y
+        let x_var = FqVar::new_witness(cs.clone(), || Ok(x))?;
+        let y_var = FqVar::new_witness(cs, || Ok(y))?;
 
         // Note that the above are in extended, but we need affine coordinates
         // for forming `AffineVar` where x = X/Z, y = Y/Z. However Z is
