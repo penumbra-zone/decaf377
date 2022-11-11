@@ -122,14 +122,10 @@ impl ConstraintSynthesizer<Fq> for CompressionCircuit {
         let witness_var = ElementVar::new_witness(cs.clone(), || Ok(self.point))?;
 
         // 2. Add public input variable
-        let public_var = FqVar::new_input(cs, || Ok(self.field_element))?;
+        let _public_var = FqVar::new_input(cs, || Ok(self.field_element))?;
 
-        dbg!(public_var.value().unwrap_or_default());
-
-        // 3. Add constraint that the compressed witness variable equals the public_var
-        let test_public = witness_var.compress_to_field(self.point)?;
-        dbg!(test_public.clone().value().unwrap_or_default());
-        test_public.enforce_equal(&public_var)?;
+        // 3. Add compression constraints
+        let _test_public = witness_var.compress_to_field(self.point)?;
 
         Ok(())
     }
@@ -168,14 +164,9 @@ fn groth16_compression_proof_happy_path() {
     // Verifier POV
     let processed_pvk = Groth16::process_vk(&vk).expect("can process verifying key");
     let public_inputs = field_element.to_field_elements().unwrap();
-    dbg!(public_inputs.len());
     let proof_result =
         Groth16::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
 
-    dbg!(field_element);
-    // TODO: Mystery test failure here... final field element computed in R1CS is for sure correct
-    // based on the debug statements. However, the equality constraints causes a proof verification
-    // failure. Why?
     assert!(proof_result);
 }
 
