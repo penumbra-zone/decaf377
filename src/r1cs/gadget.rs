@@ -58,11 +58,8 @@ impl ElementVar {
 
         // 2.
         let den_var = u_1_var.clone() * A_MINUS_D_VAR.clone() * X_var.square()?;
-        let one_over_den_var = den_var.inverse()?;
-        let one_over_den = (u_1 * A_MINUS_D * X.square())
-            .inverse()
-            .expect("inverse should exist for valid decaf points");
-        let (_, v) = FqVar::isqrt(one_over_den, one_over_den_var)?;
+        let den = u_1 * A_MINUS_D * X.square();
+        let (_, v) = FqVar::isqrt(den, den_var)?;
         let v_var = FqVar::new_witness(self.cs(), || Ok(v))?;
 
         // 3.
@@ -113,13 +110,9 @@ impl ElementVar {
         let u_2_var = u_1_var.square()? - D4_VAR * ss_var.clone();
 
         // 5. sqrt
-        let den = u_2 * u_1.square();
-        let one_over_den = den
-            .inverse()
-            .expect("inverse should exist for valid decaf points");
         let den_var = u_2_var.clone() * u_1_var.square()?;
-        let one_over_den_var = den_var.inverse()?;
-        let (was_square, mut v) = FqVar::isqrt(one_over_den, one_over_den_var)?;
+        let den = u_2 * u_1.square();
+        let (was_square, mut v) = FqVar::isqrt(den, den_var)?;
         let mut v_var = FqVar::constant(v);
         let was_square_var = Boolean::new_variable(
             ns!(cs, "is_square"),
