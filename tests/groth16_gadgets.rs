@@ -1,5 +1,6 @@
-use ark_ff::One;
+use ark_ff::PrimeField;
 use ark_groth16::{Groth16, ProvingKey, VerifyingKey};
+use proptest::prelude::*;
 
 use ark_r1cs_std::{
     prelude::{AllocVar, CurveVar, EqGadget},
@@ -53,56 +54,70 @@ impl DiscreteLogCircuit {
     }
 }
 
-#[test]
-fn groth16_dl_proof_happy_path() {
-    let (pk, vk) = DiscreteLogCircuit::generate_test_parameters();
-    let mut rng = OsRng;
-
-    let mut scalar = [0u8; 32];
-    scalar[0] = 2;
-    let public = Fr::from(2) * basepoint();
-
-    // Prover POV
-    let circuit = DiscreteLogCircuit { scalar, public };
-    let proof = Groth16::prove(&pk, circuit, &mut rng)
-        .map_err(|_| anyhow::anyhow!("invalid proof"))
-        .expect("can generate proof");
-
-    // Verifier POV
-    let processed_pvk = Groth16::process_vk(&vk).expect("can process verifying key");
-    let public_inputs = public.to_field_elements().unwrap();
-    dbg!(public_inputs.len());
-    let proof_result =
-        Groth16::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
-
-    assert!(proof_result);
+fn scalar_strategy_random() -> BoxedStrategy<[u8; 32]> {
+    any::<[u8; 32]>().prop_map(|x| x).boxed()
 }
 
+// fn fq_strategy() -> BoxedStrategy<Fq> {
+//     any::<[u8; 32]>()
+//         .prop_map(|bytes| Fq::from_le_bytes_mod_order(&bytes[..]))
+//         .boxed()
+// }
+
+proptest! {
+#![proptest_config(ProptestConfig::with_cases(5))]
 #[test]
-fn groth16_dl_proof_unhappy_path() {
-    let (pk, vk) = DiscreteLogCircuit::generate_test_parameters();
-    let mut rng = OsRng;
+fn groth16_dl_proof_happy_path(small_scalar in any::<u8>()) {
+        let (pk, vk) = DiscreteLogCircuit::generate_test_parameters();
+        let mut rng = OsRng;
 
-    let mut scalar = [0u8; 32];
-    scalar[0] = 2;
-    let public = Fr::from(2) * basepoint();
+        let mut scalar = [0u8; 32];
+        scalar[0] = small_scalar;
+        let public = Fr::from(small_scalar) * basepoint();
 
-    let wrong_public = Fr::from(666) * basepoint();
+        // Prover POV
+        let circuit = DiscreteLogCircuit { scalar, public };
+        let proof = Groth16::prove(&pk, circuit, &mut rng)
+            .map_err(|_| anyhow::anyhow!("invalid proof"))
+            .expect("can generate proof");
 
-    // Prover POV
-    let circuit = DiscreteLogCircuit { scalar, public };
-    let proof = Groth16::prove(&pk, circuit, &mut rng)
-        .map_err(|_| anyhow::anyhow!("invalid proof"))
-        .expect("can generate proof");
+        // Verifier POV
+        let processed_pvk = Groth16::process_vk(&vk).expect("can process verifying key");
+        let public_inputs = public.to_field_elements().unwrap();
+        let proof_result =
+            Groth16::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
 
-    // Verifier POV
-    let processed_pvk = Groth16::process_vk(&vk).expect("can process verifying key");
-    let public_inputs = wrong_public.to_field_elements().unwrap();
-    dbg!(public_inputs.len());
-    let proof_result =
-        Groth16::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
+        assert!(proof_result);
+    }
+}
 
-    assert!(!proof_result);
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(5))]
+    #[test]
+    fn groth16_dl_proof_unhappy_path(small_scalar in any::<u8>()) {
+        let (pk, vk) = DiscreteLogCircuit::generate_test_parameters();
+        let mut rng = OsRng;
+
+        let mut scalar = [0u8; 32];
+        scalar[0] = small_scalar;
+        let public = Fr::from(small_scalar) * basepoint();
+
+        let wrong_public = Fr::from(666) * basepoint();
+
+        // Prover POV
+        let circuit = DiscreteLogCircuit { scalar, public };
+        let proof = Groth16::prove(&pk, circuit, &mut rng)
+            .map_err(|_| anyhow::anyhow!("invalid proof"))
+            .expect("can generate proof");
+
+        // Verifier POV
+        let processed_pvk = Groth16::process_vk(&vk).expect("can process verifying key");
+        let public_inputs = wrong_public.to_field_elements().unwrap();
+        let proof_result =
+            Groth16::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
+
+        assert!(!proof_result);
+    }
 }
 
 struct CompressionCircuit {
