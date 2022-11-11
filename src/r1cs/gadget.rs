@@ -14,7 +14,9 @@ use ark_relations::ns;
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError, ToConstraintField};
 use ark_std::One;
 
-use crate::{r1cs::fqvar_ext::FqVarExtension, sign::Sign, AffineElement, Element, Fq, Fr};
+use crate::{
+    r1cs::fqvar_ext::FqVarExtension, sign::Sign, AffineElement, Element, Fq, Fr, SqrtRatioZeta,
+};
 
 #[derive(Clone, Debug)]
 /// Represents the R1CS equivalent of a `decaf377::Element`
@@ -73,10 +75,10 @@ impl ElementVar {
         // 5.
         let s_without_abs = A_MINUS_D * v * u_3 * X;
         let s = s_without_abs.abs();
-        let s_var = (A_MINUS_D_VAR * v_var * u_3_var * X_var).abs(s_without_abs)?;
-
-        dbg!(s);
-        dbg!(s_var.value());
+        // let s_var = (A_MINUS_D_VAR * v_var * u_3_var * X_var).abs(s_without_abs)?;
+        // We could do the above, instead here we just witness s (can improve efficiency here by removing
+        // some of the R1CS steps above).
+        let s_var = FqVar::new_witness(self.cs(), || Ok(s))?;
 
         Ok(s_var)
     }
@@ -261,31 +263,36 @@ impl AllocVar<Element, Fq> for ElementVar {
                 //
                 // One way that is secure but provides stronger constraints than we need:
                 // 1. Encode (out of circuit) to an Fq
+                let field_element = group_projective_point.vartime_compress_to_field();
+
                 // 2. Witness the encoded value
+                let compressed_P_var = FqVar::new_witness(cs, || Ok(field_element))?;
+
                 // 3. Decode (in circuit)
-                //
-                // But a cheaper option is to prove this point is in the
+                // let decoded_var =
+                //     ElementVar::decompress_from_field(compressed_P_var, field_element)?;
+                // TODO: a cheaper option is to prove this point is in the
                 // image of the encoding map. We can do so
-                // by checking if the point is even (see section 1.2 Decaf paper):
+                // by checking if the point is even (see section 1.2 Decaf paper).
+                //
+                // // 1. Outside circuit, compute Q = 1/2 * P
+                // let half = Fr::from(2)
+                //     .inverse()
+                //     .expect("inverse of 2 should exist in Fr");
+                // // To do scalar mul between `Fr` and `GroupProjective`, need to
+                // // use `std::ops::MulAssign`
+                // let mut Q = group_projective_point.inner;
+                // Q *= half;
 
-                // 1. Outside circuit, compute Q = 1/2 * P
-                let half = Fr::from(2)
-                    .inverse()
-                    .expect("inverse of 2 should exist in Fr");
-                // To do scalar mul between `Fr` and `GroupProjective`, need to
-                // use `std::ops::MulAssign`
-                let mut Q = group_projective_point.inner;
-                Q *= half;
+                // // 2. Inside the circuit, witness Q
+                // let Q_var = AffineVar::new_variable_omit_prime_order_check(
+                //     ns!(cs, "Q_affine"),
+                //     || Ok(Q),
+                //     mode,
+                // )?;
 
-                // 2. Inside the circuit, witness Q
-                let Q_var = AffineVar::new_variable_omit_prime_order_check(
-                    ns!(cs, "Q_affine"),
-                    || Ok(Q),
-                    mode,
-                )?;
-
-                // 3. Add equality constraint that Q + Q = P
-                (Q_var.clone() + Q_var).enforce_equal(&P_var)?;
+                // // 3. Add equality constraint that Q + Q = P
+                // (Q_var.clone() + Q_var).enforce_equal(&P_var)?;
 
                 Ok(Self { inner: P_var })
             }

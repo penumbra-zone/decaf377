@@ -58,12 +58,6 @@ fn scalar_strategy_random() -> BoxedStrategy<[u8; 32]> {
     any::<[u8; 32]>().prop_map(|x| x).boxed()
 }
 
-// fn fq_strategy() -> BoxedStrategy<Fq> {
-//     any::<[u8; 32]>()
-//         .prop_map(|bytes| Fq::from_le_bytes_mod_order(&bytes[..]))
-//         .boxed()
-// }
-
 proptest! {
 #![proptest_config(ProptestConfig::with_cases(5))]
 #[test]
@@ -135,10 +129,11 @@ impl ConstraintSynthesizer<Fq> for CompressionCircuit {
         let witness_var = ElementVar::new_witness(cs.clone(), || Ok(self.point))?;
 
         // 2. Add public input variable
-        let _public_var = FqVar::new_input(cs, || Ok(self.field_element))?;
+        let public_var = FqVar::new_input(cs, || Ok(self.field_element))?;
 
         // 3. Add compression constraints
-        let _test_public = witness_var.compress_to_field(self.point)?;
+        let test_public = witness_var.compress_to_field(self.point)?;
+        public_var.enforce_equal(&test_public)?;
 
         Ok(())
     }
@@ -146,7 +141,9 @@ impl ConstraintSynthesizer<Fq> for CompressionCircuit {
 
 impl CompressionCircuit {
     fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
-        let point = Fr::from(100) * decaf377::basepoint();
+        //let point = Fr::from(100) * decaf377::basepoint();
+        let point = Fr::from(2) * decaf377::basepoint();
+        //let point = Element::default();
         let field_element = point.vartime_compress_to_field();
         let circuit = CompressionCircuit {
             point,
@@ -158,54 +155,61 @@ impl CompressionCircuit {
     }
 }
 
+proptest! {
+#![proptest_config(ProptestConfig::with_cases(10))]
 #[test]
-fn groth16_compression_proof_happy_path() {
-    let (pk, vk) = CompressionCircuit::generate_test_parameters();
-    let mut rng = OsRng;
+    fn groth16_compression_proof_happy_path(scalar in (1..65536)) {
+        let (pk, vk) = CompressionCircuit::generate_test_parameters();
+        let mut rng = OsRng;
 
-    // Prover POV
-    let point = Fr::from(666) * decaf377::basepoint();
-    let field_element = point.vartime_compress_to_field();
-    let circuit = CompressionCircuit {
-        point,
-        field_element,
-    };
-    let proof = Groth16::prove(&pk, circuit, &mut rng)
-        .map_err(|_| anyhow::anyhow!("invalid proof"))
-        .expect("can generate proof");
+        // Prover POV
+        let point = Fr::from(scalar) * decaf377::basepoint();
+        let field_element = point.vartime_compress_to_field();
+        let circuit = CompressionCircuit {
+            point,
+            field_element,
+        };
+        let proof = Groth16::prove(&pk, circuit, &mut rng)
+            .map_err(|_| anyhow::anyhow!("invalid proof"))
+            .expect("can generate proof");
 
-    // Verifier POV
-    let processed_pvk = Groth16::process_vk(&vk).expect("can process verifying key");
-    let public_inputs = field_element.to_field_elements().unwrap();
-    let proof_result =
-        Groth16::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
+        // Verifier POV
+        let processed_pvk = Groth16::process_vk(&vk).expect("can process verifying key");
+        let public_inputs = field_element.to_field_elements().unwrap();
+        let proof_result =
+            Groth16::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
 
-    assert!(proof_result);
+        assert!(proof_result);
+    }
 }
 
+proptest! {
+#![proptest_config(ProptestConfig::with_cases(10))]
 #[test]
-fn groth16_compression_proof_unhappy_path() {
-    let (pk, vk) = CompressionCircuit::generate_test_parameters();
-    let mut rng = OsRng;
+    fn groth16_compression_proof_unhappy_path(scalar in (1..65536)) {
+        let (pk, vk) = CompressionCircuit::generate_test_parameters();
+        let mut rng = OsRng;
 
-    // Prover POV
-    let point = Fr::from(666) * decaf377::basepoint();
-    let field_element = point.vartime_compress_to_field();
-    let circuit = CompressionCircuit {
-        point,
-        field_element,
-    };
-    let proof = Groth16::prove(&pk, circuit, &mut rng)
-        .map_err(|_| anyhow::anyhow!("invalid proof"))
-        .expect("can generate proof");
+        // Prover POV
+        let point = Fr::from(scalar) * decaf377::basepoint();
+        let field_element = point.vartime_compress_to_field();
+        let circuit = CompressionCircuit {
+            point,
+            field_element,
+        };
+        let proof = Groth16::prove(&pk, circuit, &mut rng)
+            .map_err(|_| anyhow::anyhow!("invalid proof"))
+            .expect("can generate proof");
 
-    // Verifier POV
-    let processed_pvk = Groth16::process_vk(&vk).expect("can process verifying key");
-    let public_inputs = (Fq::from(2)).to_field_elements().unwrap();
-    let proof_result =
-        Groth16::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
+        // Verifier POV
+        let processed_pvk = Groth16::process_vk(&vk).expect("can process verifying key");
+        let wrong_scalar = scalar + 1;
+        let public_inputs = (Fq::from(wrong_scalar)).to_field_elements().unwrap();
+        let proof_result =
+            Groth16::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
 
-    assert!(!proof_result);
+        assert!(!proof_result);
+    }
 }
 
 struct DecompressionCircuit {
