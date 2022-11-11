@@ -967,3 +967,16 @@ testElligator(Decaf377Point, 100)
 testElligatorDeterministic(Decaf377Point)
 test(Decaf377Point,16,True)
 testDecaf377DecodeSadPath()
+
+def test_r1cs_encoding_map_method():
+    for scalar in range(100000):
+        # P is our test point
+        P = scalar * Decaf377Point.base()
+        Q = (1/2) * P;
+        try:
+            assert Q + Q == P
+        except AssertionError:
+            print(P)
+            raise
+
+#test_r1cs_encoding_map_method()
