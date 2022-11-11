@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 use std::borrow::Borrow;
 
-use ark_ec::{group, AffineCurve, TEModelParameters};
+use ark_ec::{AffineCurve, TEModelParameters};
 use ark_ed_on_bls12_377::{
     constraints::{EdwardsVar, FqVar},
     EdwardsAffine, EdwardsParameters,
@@ -18,6 +18,9 @@ use crate::{r1cs::fqvar_ext::FqVarExtension, sign::Sign, AffineElement, Element,
 
 #[derive(Clone, Debug)]
 /// Represents the R1CS equivalent of a `decaf377::Element`
+///
+/// Generally the suffix -`Var` will indicate that the type or variable
+/// represents in R1CS.
 pub struct ElementVar {
     /// Inner type is an alias for `AffineVar<EdwardsParameters, FqVar>`
     pub(crate) inner: EdwardsVar,
@@ -31,53 +34,54 @@ impl ElementVar {
     /// through `T::value()`.
     pub fn compress_to_field(&self, native: Element) -> Result<FqVar, SynthesisError> {
         // We have affine x, y but our compression formulae are in projective.
-        let affine_x = &self.inner.x;
-        let affine_y = &self.inner.y;
-        // In the following formulae, "native" will refer to the out-of-circuit
-        // element.
-        let affine_native: AffineElement = native.into();
+        let affine_x_var = &self.inner.x;
+        let affine_y_var = &self.inner.y;
+        let affine: AffineElement = native.into();
 
-        let X = affine_x;
+        let X_var = affine_x_var;
         // We treat Z at a constant.
-        let Y = affine_y;
-        let Z = FqVar::one();
-        let T = X * Y;
+        let Y_var = affine_y_var;
+        let Z_var = FqVar::one();
+        let T_var = X_var * Y_var;
 
-        let native_X = affine_native.inner.x;
-        let native_Y = affine_native.inner.y;
-        let native_Z = Fq::one();
-        let native_T = native_X * native_Y;
+        let X = affine.inner.x;
+        let Y = affine.inner.y;
+        let Z = Fq::one();
+        let T = X * Y;
 
         let A_MINUS_D = EdwardsParameters::COEFF_A - EdwardsParameters::COEFF_D;
         let A_MINUS_D_VAR = FqVar::new_constant(self.cs(), A_MINUS_D)?;
 
         // 1.
-        let u_1 = (X.clone() + T.clone()) * (X.clone() - T.clone());
-        let native_u_1 = (native_X + native_T) * (native_X - native_T);
+        let u_1_var = (X_var.clone() + T_var.clone()) * (X_var.clone() - T_var.clone());
+        let u_1 = (X + T) * (X - T);
 
         // 2.
-        let den = u_1.clone() * A_MINUS_D * X.square()?;
-        let one_over_den = den.inverse()?;
-        let native_one_over_den = (native_u_1 * A_MINUS_D * native_X.square())
+        let den_var = u_1_var.clone() * A_MINUS_D_VAR.clone() * X_var.square()?;
+        let one_over_den_var = den_var.inverse()?;
+        let one_over_den = (u_1 * A_MINUS_D * X.square())
             .inverse()
             .expect("inverse should exist for valid decaf points");
-        let (_, v) = FqVar::isqrt(native_one_over_den, one_over_den)?;
+        let (_, v) = FqVar::isqrt(one_over_den, one_over_den_var)?;
         let v_var = FqVar::new_witness(self.cs(), || Ok(v))?;
 
         // 3.
-        let native_u_2 = (v * native_u_1).abs();
-        let u_2: FqVar = (v_var.clone() * u_1).abs(v * native_u_1)?;
+        let u_2 = (v * u_1).abs();
+        let u_2_var: FqVar = (v_var.clone() * u_1_var).abs(v * u_1)?;
 
         // 4.
-        let native_u_3 = native_u_2 * native_Z - native_T;
-        let u_3 = u_2 * Z.clone() - T;
+        let u_3 = u_2 * Z - T;
+        let u_3_var = u_2_var * Z_var.clone() - T_var;
 
         // 5.
-        let native_s_without_abs = A_MINUS_D * v * native_u_3 * native_X;
-        //let native_s = native_s_without_abs.abs();
-        let s = (A_MINUS_D_VAR * v_var * u_3 * X).abs(native_s_without_abs)?;
+        let s_without_abs = A_MINUS_D * v * u_3 * X;
+        let s = s_without_abs.abs();
+        let s_var = (A_MINUS_D_VAR * v_var * u_3_var * X_var).abs(s_without_abs)?;
 
-        Ok(s)
+        dbg!(s);
+        dbg!(s_var.value());
+
+        Ok(s_var)
     }
 
     /// R1CS equivalent of `Encoding::vartime_decompress`
