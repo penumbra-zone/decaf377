@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 use std::borrow::Borrow;
 
-use ark_ec::{AffineCurve, TEModelParameters};
+use ark_ec::{group, AffineCurve, TEModelParameters};
 use ark_ed_on_bls12_377::{
     constraints::{EdwardsVar, FqVar},
     EdwardsAffine, EdwardsParameters,
@@ -14,7 +14,7 @@ use ark_relations::ns;
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError, ToConstraintField};
 use ark_std::One;
 
-use crate::{r1cs::fqvar_ext::FqVarExtension, AffineElement, Element, Fq, Fr};
+use crate::{r1cs::fqvar_ext::FqVarExtension, sign::Sign, AffineElement, Element, Fq, Fr};
 
 #[derive(Clone, Debug)]
 /// Represents the R1CS equivalent of a `decaf377::Element`
@@ -25,35 +25,57 @@ pub struct ElementVar {
 
 impl ElementVar {
     /// R1CS equivalent of `Element::vartime_compress_to_field`
-    pub fn compress_to_field(&self) -> Result<FqVar, SynthesisError> {
+    ///
+    /// Requires the `Element` of the `ElementVar` to be passed to it.
+    /// This is because during the setup phase, we cannot access assignments
+    /// through `T::value()`.
+    pub fn compress_to_field(&self, native: Element) -> Result<FqVar, SynthesisError> {
         // We have affine x, y but our compression formulae are in projective.
         let affine_x = &self.inner.x;
         let affine_y = &self.inner.y;
+        // In the following formulae, "native" will refer to the out-of-circuit
+        // element.
+        let affine_native: AffineElement = native.into();
 
         let X = affine_x;
         // We treat Z at a constant.
-        let Z = FqVar::constant(Fq::one());
-        let T = affine_x * affine_y;
+        let Y = affine_y;
+        let Z = FqVar::one();
+        let T = X * Y;
 
-        let A_MINUS_D = FqVar::constant(EdwardsParameters::COEFF_A - EdwardsParameters::COEFF_D);
+        let native_X = affine_native.inner.x;
+        let native_Y = affine_native.inner.y;
+        let native_Z = Fq::one();
+        let native_T = native_X * native_Y;
+
+        let A_MINUS_D = EdwardsParameters::COEFF_A - EdwardsParameters::COEFF_D;
+        let A_MINUS_D_VAR = FqVar::new_constant(self.cs(), A_MINUS_D)?;
 
         // 1.
-        let u_1 = (X + T.clone()) * (X - T.clone());
+        let u_1 = (X.clone() + T.clone()) * (X.clone() - T.clone());
+        let native_u_1 = (native_X + native_T) * (native_X - native_T);
 
         // 2.
-        let den = u_1.clone() * A_MINUS_D.clone() * X.square()?;
+        let den = u_1.clone() * A_MINUS_D * X.square()?;
         let one_over_den = den.inverse()?;
-        let (_, v) = FqVar::isqrt(one_over_den)?;
-        let v_var = FqVar::constant(v);
+        let native_one_over_den = (native_u_1 * A_MINUS_D * native_X.square())
+            .inverse()
+            .expect("inverse should exist for valid decaf points");
+        let (_, v) = FqVar::isqrt(native_one_over_den, one_over_den)?;
+        let v_var = FqVar::new_witness(self.cs(), || Ok(v))?;
 
         // 3.
-        let u_2: FqVar = (v_var * u_1).abs()?;
+        let native_u_2 = (v * native_u_1).abs();
+        let u_2: FqVar = (v_var.clone() * u_1).abs(v * native_u_1)?;
 
         // 4.
-        let u_3 = u_2 * Z - T;
+        let native_u_3 = native_u_2 * native_Z - native_T;
+        let u_3 = u_2 * Z.clone() - T;
 
         // 5.
-        let s = (A_MINUS_D * v * u_3 * X).abs()?;
+        let native_s_without_abs = A_MINUS_D * v * native_u_3 * native_X;
+        //let native_s = native_s_without_abs.abs();
+        let s = (A_MINUS_D_VAR * v_var * u_3 * X).abs(native_s_without_abs)?;
 
         Ok(s)
     }
@@ -65,8 +87,10 @@ impl ElementVar {
         // 1. We do not check if canonically encoded here since we know FqVar is already
         // a valid Fq field element.
 
+        // TODO: rename s_var? s should be out of circuit
         // 2. Reject if negative.
-        let is_nonnegative = s.is_nonnegative()?;
+        // TODO FIX THE BELOW
+        let is_nonnegative = s.is_nonnegative(Fq::one())?;
         let cs = s.cs();
         // TODO: Is constant the right allocation mode?
         let is_nonnegative_var = Boolean::new_variable(
@@ -86,7 +110,8 @@ impl ElementVar {
         // 5. sqrt
         let den = u_2.clone() * u_1.square()?;
         let one_over_den = den.inverse()?;
-        let (was_square, v) = FqVar::isqrt(one_over_den)?;
+        // TOFIX NEXT: Fq::one() should be replaced with the correct native x
+        let (was_square, v) = FqVar::isqrt(Fq::one(), one_over_den)?;
         let mut v_var = FqVar::constant(v);
         let was_square_var = Boolean::new_variable(
             ns!(cs, "is_square"),
@@ -99,7 +124,8 @@ impl ElementVar {
         let two_s_u_1 = (FqVar::one() + FqVar::one()) * s * u_1.clone();
         // In `vartime_decompress`, we check if it's negative prior to taking
         // the negative, which is effectively the absolute value:
-        v_var = v_var.abs()?;
+        // FIX: pass in v out of circuit
+        v_var = v_var.abs(Fq::one())?;
 
         // 7. (Extended) Coordinates
         let x = two_s_u_1 * v.square() * u_2;
@@ -217,10 +243,14 @@ impl AllocVar<Element, Fq> for ElementVar {
                 )?,
             }),
             AllocationMode::Witness => {
-                let ge: EdwardsAffine = group_projective_point.inner.into();
-                let P = AffineVar::new_variable(ns!(cs, "P_affine"), || Ok(ge), mode)?;
+                //let ge: EdwardsAffine = group_projective_point.inner.into();
+                let P_var = AffineVar::new_variable_omit_prime_order_check(
+                    ns!(cs, "P_affine"),
+                    || Ok(group_projective_point.inner),
+                    mode,
+                )?;
 
-                // At this point P might not be a valid representative of a decaf point.
+                // At this point `P_var` might not be a valid representative of a decaf point.
                 //
                 // One way that is secure but provides stronger constraints than we need:
                 // 1. Encode (out of circuit) to an Fq
@@ -237,16 +267,20 @@ impl AllocVar<Element, Fq> for ElementVar {
                     .expect("inverse of 2 should exist in Fr");
                 // To do scalar mul between `Fr` and `GroupProjective`, need to
                 // use `std::ops::MulAssign`
-                let mut Q = ge;
+                let mut Q = group_projective_point.inner;
                 Q *= half;
 
                 // 2. Inside the circuit, witness Q
-                let Q_var = AffineVar::new_variable(ns!(cs, "Q_affine"), || Ok(Q), mode)?;
+                let Q_var = AffineVar::new_variable_omit_prime_order_check(
+                    ns!(cs, "Q_affine"),
+                    || Ok(Q),
+                    mode,
+                )?;
 
                 // 3. Add equality constraint that Q + Q = P
-                (Q_var.clone() + Q_var).enforce_equal(&P)?;
+                (Q_var.clone() + Q_var).enforce_equal(&P_var)?;
 
-                Ok(Self { inner: P })
+                Ok(Self { inner: P_var })
             }
         }
     }
@@ -264,7 +298,7 @@ impl AllocVar<AffineElement, Fq> for ElementVar {
 
 impl ToBitsGadget<Fq> for ElementVar {
     fn to_bits_le(&self) -> Result<Vec<Boolean<Fq>>, SynthesisError> {
-        let compressed_fq = self.compress_to_field()?;
+        let compressed_fq = self.inner.to_bits_le()?;
         let encoded_bits = compressed_fq.to_bits_le()?;
         Ok(encoded_bits)
     }
@@ -272,7 +306,7 @@ impl ToBitsGadget<Fq> for ElementVar {
 
 impl ToBytesGadget<Fq> for ElementVar {
     fn to_bytes(&self) -> Result<Vec<UInt8<Fq>>, SynthesisError> {
-        let compressed_fq = self.compress_to_field()?;
+        let compressed_fq = self.inner.to_bytes()?;
         let encoded_bytes = compressed_fq.to_bytes()?;
         Ok(encoded_bytes)
     }
