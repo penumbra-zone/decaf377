@@ -81,37 +81,41 @@ impl ElementVar {
     }
 
     /// R1CS equivalent of `Encoding::vartime_decompress`
-    pub fn decompress_from_field(s: FqVar) -> Result<ElementVar, SynthesisError> {
-        let D4 = FqVar::constant(EdwardsParameters::COEFF_D * Fq::from(4u32));
+    pub fn decompress_from_field(s_var: FqVar, s: Fq) -> Result<ElementVar, SynthesisError> {
+        let D4: Fq = EdwardsParameters::COEFF_D * Fq::from(4u32);
+        let D4_VAR = FqVar::constant(D4);
 
         // 1. We do not check if canonically encoded here since we know FqVar is already
         // a valid Fq field element.
 
-        // TODO: rename s_var? s should be out of circuit
         // 2. Reject if negative.
-        // TODO FIX THE BELOW
-        let is_nonnegative = s.is_nonnegative(Fq::one())?;
-        let cs = s.cs();
-        // TODO: Is constant the right allocation mode?
+        let is_nonnegative = s_var.is_nonnegative(s)?;
+        let cs = s_var.cs();
         let is_nonnegative_var = Boolean::new_variable(
             ns!(cs, "is_nonnegative"),
             || Ok(is_nonnegative),
-            AllocationMode::Constant,
+            AllocationMode::Witness,
         )?;
         is_nonnegative_var.enforce_equal(&Boolean::TRUE)?;
 
         // 3. u_1 <- 1 - s^2
-        let ss = s.square()?;
-        let u_1 = FqVar::one() - ss.clone();
+        let ss = s.square();
+        let ss_var = s_var.square()?;
+        let u_1 = Fq::one() - ss;
+        let u_1_var = FqVar::one() - ss_var.clone();
 
         // 4. u_2 <- u_1^2 - 4d s^2
-        let u_2 = u_1.square()? - D4 * ss.clone();
+        let u_2 = u_1.square() - D4 * ss;
+        let u_2_var = u_1_var.square()? - D4_VAR * ss_var.clone();
 
         // 5. sqrt
-        let den = u_2.clone() * u_1.square()?;
-        let one_over_den = den.inverse()?;
-        // TOFIX NEXT: Fq::one() should be replaced with the correct native x
-        let (was_square, v) = FqVar::isqrt(Fq::one(), one_over_den)?;
+        let den = u_2 * u_1.square();
+        let one_over_den = den
+            .inverse()
+            .expect("inverse should exist for valid decaf points");
+        let den_var = u_2_var.clone() * u_1_var.square()?;
+        let one_over_den_var = den_var.inverse()?;
+        let (was_square, mut v) = FqVar::isqrt(one_over_den, one_over_den_var)?;
         let mut v_var = FqVar::constant(v);
         let was_square_var = Boolean::new_variable(
             ns!(cs, "is_square"),
@@ -121,23 +125,29 @@ impl ElementVar {
         was_square_var.enforce_equal(&Boolean::TRUE)?;
 
         // 6. Sign check
-        let two_s_u_1 = (FqVar::one() + FqVar::one()) * s * u_1.clone();
+        let two_s_u_1 = Fq::from(2) * s * u_1;
+        let check = two_s_u_1 * v;
+        if check.is_negative() {
+            v = -v;
+        }
+        let two_s_u_1_var = (FqVar::one() + FqVar::one()) * s_var * u_1_var.clone();
         // In `vartime_decompress`, we check if it's negative prior to taking
         // the negative, which is effectively the absolute value:
-        // FIX: pass in v out of circuit
-        v_var = v_var.abs(Fq::one())?;
+        v_var = v_var.abs(v)?;
 
         // 7. (Extended) Coordinates
-        let x = two_s_u_1 * v.square() * u_2;
-        let y = (FqVar::one() + ss) * v_var * u_1;
+        let x_var = two_s_u_1_var * v.square() * u_2_var;
+        let y_var = (FqVar::one() + ss) * v_var * u_1_var;
         //let z = FqVar::one();
         //let t = x.clone() * y.clone();
+        let x = two_s_u_1 * v.square() * u_2;
+        let y = (Fq::one() + ss) * v * u_1;
 
         // Note that the above are in extended, but we need affine coordinates
         // for forming `AffineVar` where x = X/Z, y = Y/Z. However Z is
         // hardcoded to be 1 above, so we can use x and y as is.
         Ok(ElementVar {
-            inner: AffineVar::new(x, y),
+            inner: AffineVar::new(x_var, y_var),
         })
     }
 }

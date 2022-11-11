@@ -209,15 +209,16 @@ impl ConstraintSynthesizer<Fq> for DecompressionCircuit {
         cs: ark_relations::r1cs::ConstraintSystemRef<Fq>,
     ) -> ark_relations::r1cs::Result<()> {
         // 1. Add witness variable
-        let witness_var = FqVar::new_input(cs.clone(), || Ok(self.field_element))?;
+        let witness_var = FqVar::new_witness(cs.clone(), || Ok(self.field_element))?;
 
         // 2. Add public input variable
-        let public_var = ElementVar::new_witness(cs, || Ok(self.point))?;
+        let public_var = ElementVar::new_input(cs, || Ok(self.point))?;
 
-        dbg!(public_var.value().unwrap_or_default());
+        dbg!(public_var.value());
 
         // 3. Add decompression constraints
-        let _test_public = ElementVar::decompress_from_field(witness_var)?;
+        let test_public = ElementVar::decompress_from_field(witness_var, self.field_element)?;
+        dbg!(test_public.value());
 
         Ok(())
     }
@@ -240,4 +241,56 @@ impl DecompressionCircuit {
             .expect("can perform circuit specific setup");
         (pk, vk)
     }
+}
+
+#[test]
+fn groth16_decompression_proof_happy_path() {
+    let (pk, vk) = DecompressionCircuit::generate_test_parameters();
+    let mut rng = OsRng;
+
+    // Prover POV
+    let point = Fr::from(666) * decaf377::basepoint();
+    let field_element = point.vartime_compress_to_field();
+    let circuit = DecompressionCircuit {
+        point,
+        field_element,
+    };
+    let proof = Groth16::prove(&pk, circuit, &mut rng)
+        .map_err(|_| anyhow::anyhow!("invalid proof"))
+        .expect("can generate proof");
+
+    // Verifier POV
+    let processed_pvk = Groth16::process_vk(&vk).expect("can process verifying key");
+    let public_inputs = point.to_field_elements().unwrap();
+    let proof_result =
+        Groth16::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
+
+    assert!(proof_result);
+}
+
+#[test]
+fn groth16_decompression_proof_unhappy_path() {
+    let (pk, vk) = DecompressionCircuit::generate_test_parameters();
+    let mut rng = OsRng;
+
+    // Prover POV
+    let point = Fr::from(666) * decaf377::basepoint();
+    let field_element = point.vartime_compress_to_field();
+    let circuit = DecompressionCircuit {
+        point,
+        field_element,
+    };
+    let proof = Groth16::prove(&pk, circuit, &mut rng)
+        .map_err(|_| anyhow::anyhow!("invalid proof"))
+        .expect("can generate proof");
+
+    // Verifier POV
+    let processed_pvk = Groth16::process_vk(&vk).expect("can process verifying key");
+    let public_inputs = (Fr::from(600) * decaf377::basepoint())
+        .to_field_elements()
+        .unwrap();
+    let proof_result =
+        Groth16::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
+
+    assert!(!proof_result);
 }
