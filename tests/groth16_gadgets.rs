@@ -67,13 +67,12 @@ fn scalar_strategy_random() -> BoxedStrategy<[u8; 32]> {
 proptest! {
 #![proptest_config(ProptestConfig::with_cases(5))]
 #[test]
-fn groth16_dl_proof_happy_path(small_scalar in any::<u8>()) {
+fn groth16_dl_proof_happy_path(scalar_arr in scalar_strategy_random()) {
         let (pk, vk) = DiscreteLogCircuit::generate_test_parameters();
         let mut rng = OsRng;
 
-        let mut scalar = [0u8; 32];
-        scalar[0] = small_scalar;
-        let public = Fr::from(small_scalar) * basepoint();
+        let scalar = scalar_arr;
+        let public = Fr::from_le_bytes_mod_order(&scalar_arr[..]) * basepoint();
 
         // Prover POV
         let circuit = DiscreteLogCircuit { scalar, public };
@@ -94,13 +93,12 @@ fn groth16_dl_proof_happy_path(small_scalar in any::<u8>()) {
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(5))]
     #[test]
-    fn groth16_dl_proof_unhappy_path(small_scalar in any::<u8>()) {
+    fn groth16_dl_proof_unhappy_path(scalar_arr in scalar_strategy_random()) {
         let (pk, vk) = DiscreteLogCircuit::generate_test_parameters();
         let mut rng = OsRng;
 
-        let mut scalar = [0u8; 32];
-        scalar[0] = small_scalar;
-        let public = Fr::from(small_scalar) * basepoint();
+        let scalar = scalar_arr;
+        let public = Fr::from_le_bytes_mod_order(&scalar_arr[..]) * basepoint();
 
         let wrong_public = Fr::from(666) * basepoint();
 
