@@ -11,7 +11,7 @@ use ark_snark::SNARK;
 use decaf377::{
     basepoint,
     r1cs::{ElementVar, FqVar},
-    Bls12_377, Element, FieldExt, Fq, Fr,
+    Bls12_377, Element, Encoding, FieldExt, Fq, Fr,
 };
 use rand_core::OsRng;
 
@@ -188,9 +188,56 @@ fn groth16_compression_proof_unhappy_path() {
 
     // Verifier POV
     let processed_pvk = Groth16::process_vk(&vk).expect("can process verifying key");
-    let public_inputs = (Fq::one()).to_field_elements().unwrap();
+    let public_inputs = (Fq::from(2)).to_field_elements().unwrap();
     let proof_result =
         Groth16::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
 
     assert!(!proof_result);
+}
+
+struct DecompressionCircuit {
+    // Witness
+    field_element: Fq,
+
+    // Public input
+    pub point: Element,
+}
+
+impl ConstraintSynthesizer<Fq> for DecompressionCircuit {
+    fn generate_constraints(
+        self,
+        cs: ark_relations::r1cs::ConstraintSystemRef<Fq>,
+    ) -> ark_relations::r1cs::Result<()> {
+        // 1. Add witness variable
+        let witness_var = FqVar::new_input(cs.clone(), || Ok(self.field_element))?;
+
+        // 2. Add public input variable
+        let public_var = ElementVar::new_witness(cs, || Ok(self.point))?;
+
+        dbg!(public_var.value().unwrap_or_default());
+
+        // 3. Add decompression constraints
+        let _test_public = ElementVar::decompress_from_field(witness_var)?;
+
+        Ok(())
+    }
+}
+
+impl DecompressionCircuit {
+    fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
+        let base_point = Fr::from(100) * decaf377::basepoint();
+        let field_element = base_point.vartime_compress_to_field();
+        let bytes = field_element.to_bytes();
+        let encoding = Encoding(bytes);
+        let point = encoding
+            .vartime_decompress()
+            .expect("should be able to decompress a valid point");
+        let circuit = DecompressionCircuit {
+            point,
+            field_element,
+        };
+        let (pk, vk) = Groth16::circuit_specific_setup(circuit, &mut OsRng)
+            .expect("can perform circuit specific setup");
+        (pk, vk)
+    }
 }
