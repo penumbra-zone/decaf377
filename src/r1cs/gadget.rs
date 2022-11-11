@@ -266,6 +266,7 @@ impl AllocVar<Element, Fq> for ElementVar {
                 // At this point `P_var` might not be a valid representative of a decaf point.
                 //
                 // One way that is secure but provides stronger constraints than we need:
+                //
                 // 1. Encode (out of circuit) to an Fq
                 let field_element = group_projective_point.vartime_compress_to_field();
 
@@ -273,32 +274,13 @@ impl AllocVar<Element, Fq> for ElementVar {
                 let compressed_P_var = FqVar::new_witness(cs, || Ok(field_element))?;
 
                 // 3. Decode (in circuit)
-                // let decoded_var =
-                //     ElementVar::decompress_from_field(compressed_P_var, field_element)?;
-                // TODO: a cheaper option is to prove this point is in the
-                // image of the encoding map. We can do so
-                // by checking if the point is even (see section 1.2 Decaf paper).
-                //
-                // // 1. Outside circuit, compute Q = 1/2 * P
-                // let half = Fr::from(2)
-                //     .inverse()
-                //     .expect("inverse of 2 should exist in Fr");
-                // // To do scalar mul between `Fr` and `GroupProjective`, need to
-                // // use `std::ops::MulAssign`
-                // let mut Q = group_projective_point.inner;
-                // Q *= half;
+                let decoded_var =
+                    ElementVar::decompress_from_field(compressed_P_var, field_element)?;
 
-                // // 2. Inside the circuit, witness Q
-                // let Q_var = AffineVar::new_variable_omit_prime_order_check(
-                //     ns!(cs, "Q_affine"),
-                //     || Ok(Q),
-                //     mode,
-                // )?;
+                let P_element_var = Self { inner: P_var };
+                decoded_var.enforce_equal(&P_element_var)?;
 
-                // // 3. Add equality constraint that Q + Q = P
-                // (Q_var.clone() + Q_var).enforce_equal(&P_var)?;
-
-                Ok(Self { inner: P_var })
+                Ok(P_element_var)
             }
         }
     }
