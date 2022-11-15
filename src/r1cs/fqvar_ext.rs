@@ -1,9 +1,8 @@
 use ark_ed_on_bls12_377::constraints::FqVar;
-use ark_ff::{One, Zero};
+use ark_ff::One;
+use ark_r1cs_std::eq::EqGadget;
 use ark_r1cs_std::prelude::{AllocVar, Boolean, FieldVar};
 use ark_r1cs_std::R1CSVar;
-use ark_r1cs_std::{eq::EqGadget, prelude::AllocationMode};
-use ark_relations::ns;
 use ark_relations::r1cs::SynthesisError;
 
 use crate::sign::Sign;
