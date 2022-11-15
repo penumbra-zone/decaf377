@@ -2,10 +2,10 @@ use ark_ed_on_bls12_377::constraints::FqVar;
 use ark_ff::One;
 use ark_r1cs_std::eq::EqGadget;
 use ark_r1cs_std::prelude::{AllocVar, Boolean, FieldVar};
-use ark_r1cs_std::R1CSVar;
+use ark_r1cs_std::select::CondSelectGadget;
+use ark_r1cs_std::{R1CSVar, ToBitsGadget};
 use ark_relations::r1cs::SynthesisError;
 
-use crate::sign::Sign;
 use crate::{constants::ZETA, Fq, SqrtRatioZeta};
 
 pub trait FqVarExtension: Sized {
@@ -15,10 +15,9 @@ pub trait FqVarExtension: Sized {
     // however: we need to return `Result<_, SynthesisError>`
     // everywhere and we need to pass in the out-of-circuit field
     // element.
-    fn is_negative(&self) -> Result<bool, SynthesisError>;
-    fn is_nonnegative(&self, value: Fq) -> Result<bool, SynthesisError>;
-    fn abs(self, value: Fq) -> Result<Self, SynthesisError>;
-    // TODO: Remove value: Fq from everything
+    fn is_negative(&self) -> Result<Boolean<Fq>, SynthesisError>;
+    fn is_nonnegative(&self) -> Result<Boolean<Fq>, SynthesisError>;
+    fn abs(self) -> Result<Self, SynthesisError>;
 }
 
 impl FqVarExtension for FqVar {
@@ -67,21 +66,29 @@ impl FqVarExtension for FqVar {
         Ok((was_square_var, y_var))
     }
 
-    fn is_negative(&self) -> Result<bool, SynthesisError> {
-        todo!()
-        // TODO: Witness and return Boolean
+    fn is_negative(&self) -> Result<Boolean<Fq>, SynthesisError> {
+        Ok(self.is_nonnegative()?.not())
     }
 
-    fn is_nonnegative(&self, value: Fq) -> Result<bool, SynthesisError> {
-        // TODO: Add constraints here for not in circuit
-        Ok(value.is_nonnegative())
-    }
+    fn is_nonnegative(&self) -> Result<Boolean<Fq>, SynthesisError> {
+        let bitvars = self.to_bits_le()?;
 
-    fn abs(self, value: Fq) -> Result<Self, SynthesisError> {
-        if self.is_nonnegative(value)? {
-            Ok(self)
-        } else {
-            self.negate()
+        // bytes[0] & 1 == 0
+        let true_var = Boolean::<Fq>::TRUE;
+        let false_var = Boolean::<Fq>::FALSE;
+        let mut is_nonnegative_var = true_var.clone();
+        // Check first 8 bits
+        for _ in 0..8 {
+            let lhs = bitvars[0].and(&true_var.clone())?;
+            let this_loop_var = lhs.is_eq(&false_var)?;
+            is_nonnegative_var = is_nonnegative_var.and(&this_loop_var)?;
         }
+        Ok(is_nonnegative_var)
+    }
+
+    fn abs(self) -> Result<Self, SynthesisError> {
+        let absolute_value =
+            FqVar::conditionally_select(&self.is_nonnegative()?, &self, &self.negate()?)?;
+        Ok(absolute_value)
     }
 }
