@@ -15,7 +15,10 @@ use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError, ToConstraintField
 use ark_std::One;
 
 use crate::{
-    r1cs::fqvar_ext::FqVarExtension, sign::Sign, AffineElement, Element, Fq, Fr, SqrtRatioZeta,
+    constants::{ONE, TWO, ZETA},
+    r1cs::fqvar_ext::FqVarExtension,
+    sign::Sign,
+    AffineElement, Element, Fq, Fr, SqrtRatioZeta,
 };
 
 #[derive(Clone, Debug)]
@@ -152,6 +155,90 @@ impl ElementVar {
         Ok(ElementVar {
             inner: AffineVar::new(x_var, y_var),
         })
+    }
+
+    /// R1CS equivalent of `Element::elligator_map`
+    pub(crate) fn elligator_map(r_0: &Fq, r_0_var: &FqVar) -> Result<ElementVar, SynthesisError> {
+        let cs = r_0_var.cs();
+
+        let A = EdwardsParameters::COEFF_A;
+        let D = EdwardsParameters::COEFF_D;
+        let A_VAR = FqVar::new_constant(cs.clone(), A)?;
+        let D_VAR = FqVar::new_constant(cs.clone(), D)?;
+        let ZETA_VAR = FqVar::new_constant(cs.clone(), *ZETA)?;
+
+        let r = *ZETA * r_0.square();
+        let r_var = ZETA_VAR * r_0_var.square()?;
+
+        let den = (D * r - (D - A)) * ((D - A) * r - D);
+        let den_var = (D_VAR.clone() * r_var.clone() - (D_VAR.clone() - A_VAR.clone()))
+            * ((D_VAR.clone() - A_VAR.clone()) * r_var.clone() - D_VAR.clone());
+        let num = (r + *ONE) * (A - *TWO * D);
+        let num_var =
+            (r_var + FqVar::one()) * (A_VAR.clone() - (FqVar::one() + FqVar::one()) * D_VAR);
+
+        let x = num * den;
+        let x_var = num_var * den_var;
+        let (iss, mut isri) = FqVar::isqrt(x, x_var)?;
+        let mut isri_var = FqVar::new_witness(cs.clone(), || Ok(isri))?;
+
+        let sgn;
+        let twiddle;
+        if iss {
+            // Case 1
+            sgn = *ONE;
+            twiddle = *ONE;
+        } else {
+            // Case 2
+            sgn = -(*ONE);
+            twiddle = *r_0;
+        }
+        let iss_var = Boolean::new_witness(cs.clone(), || Ok(iss))?;
+        let mut sgn_var;
+        let mut twiddle_var;
+        //TODO flatten
+        if iss {
+            sgn_var = FqVar::one();
+            twiddle_var = FqVar::one();
+        } else {
+            sgn_var = (FqVar::one()).negate()?;
+            twiddle_var = r_0_var.clone();
+        }
+
+        isri *= twiddle;
+        isri_var *= twiddle_var;
+
+        let mut s = isri * num;
+        // let mut s_var = isri_var * num_var;
+        let t = -(sgn) * isri * s * (r - *ONE) * (A - *TWO * D).square() - *ONE;
+        // let t_var = sgn_var.negate()?
+        //     * isri_var
+        //     * s_var
+        //     * (r_var - FqVar::one())
+        //     * (A_VAR - (FqVar::one() + FqVar::one()) * D_VAR).square()?
+        //     - FqVar::one();
+
+        // Witness (s,t) from the Jacobi quartic representation
+        let s_var = FqVar::new_witness(cs.clone(), || Ok(s))?;
+        let t_var = FqVar::new_witness(cs, || Ok(t))?;
+
+        // Convert to affine from Jacobi quartic
+        // See commit cce38644d3343d9f7c46772dc2b945a9d17756d7
+        let affine_x_num = (FqVar::one() + FqVar::one()) * s_var.clone();
+        let affine_x_den = FqVar::one() + A_VAR.clone() * s_var.square()?;
+        let affine_x_var = affine_x_num * affine_x_den.inverse()?;
+        let affine_y_num = FqVar::one() - A_VAR * s_var.square()?;
+        let affine_y_den = t_var;
+        let affine_y_var = affine_y_num * affine_y_den.inverse()?;
+
+        Ok(ElementVar {
+            inner: AffineVar::new(affine_x_var, affine_y_var),
+        })
+    }
+
+    /// Maps a field element to a decaf377 `ElementVar` suitable for CDH challenges.
+    pub fn encode_to_curve(r: &Fq, r_var: &FqVar) -> Result<ElementVar, SynthesisError> {
+        ElementVar::elligator_map(r, r_var)
     }
 }
 
