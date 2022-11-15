@@ -9,14 +9,16 @@ use crate::sign::Sign;
 use crate::{constants::ZETA, Fq, SqrtRatioZeta};
 
 pub trait FqVarExtension: Sized {
-    fn isqrt(x: Fq, x_var: FqVar) -> Result<(bool, Fq), SynthesisError>;
+    fn isqrt(&self) -> Result<(bool, Fq), SynthesisError>;
 
     // This is similar to the Sign trait in this crate,
     // however: we need to return `Result<_, SynthesisError>`
     // everywhere and we need to pass in the out-of-circuit field
     // element.
+    fn is_negative(&self) -> Result<bool, SynthesisError>;
     fn is_nonnegative(&self, value: Fq) -> Result<bool, SynthesisError>;
     fn abs(self, value: Fq) -> Result<Self, SynthesisError>;
+    // TODO: Remove value: Fq from everything
 }
 
 impl FqVarExtension for FqVar {
@@ -27,11 +29,14 @@ impl FqVarExtension for FqVar {
     /// - Case 2: `(true, 0)` if `num` is zero;
     /// - Case 3: `(false, 0)` if `den` is zero;
     /// - Case 4: `(false, sqrt(zeta*num/den))` if `num` and `den` are both nonzero and `num/den` is nonsquare;
-    fn isqrt(x: Fq, x_var: FqVar) -> Result<(bool, Fq), SynthesisError> {
+    fn isqrt(&self) -> Result<(bool, Fq), SynthesisError> {
+        // During mode `SynthesisMode::Setup`, value() will not provide a field element.
+        let x = self.value().unwrap_or(Fq::one());
+
         // Out of circuit sqrt computation
         let (was_square, y) = Fq::sqrt_ratio_zeta(&Fq::one(), &x);
 
-        let cs = x_var.cs();
+        let cs = self.cs();
         let was_square_var = Boolean::new_witness(cs.clone(), || Ok(was_square))?;
         let y_squared_var = FqVar::new_witness(cs.clone(), || Ok(y * y))?;
 
@@ -40,13 +45,13 @@ impl FqVarExtension for FqVar {
         //
         // Case 3: `(false, 0)` if `den` is zero
         let was_not_square_var = was_square_var.not();
-        let x_var_is_zero = x_var.is_eq(&FqVar::zero())?;
+        let x_var_is_zero = self.is_eq(&FqVar::zero())?;
         let in_case_3 = was_not_square_var.and(&x_var_is_zero)?;
         // Certify the return value y is 0.
         y_squared_var.conditional_enforce_equal(&FqVar::zero(), &in_case_3)?;
 
         // Case 1: `(true, sqrt(num/den))` if `num` and `den` are both nonzero and `num/den` is square
-        let x_var_inv = x_var.inverse()?;
+        let x_var_inv = self.inverse()?;
         let in_case_1 = was_square_var;
         // Certify the return value y is sqrt(1/x)
         y_squared_var.conditional_enforce_equal(&x_var_inv, &in_case_1)?;
@@ -58,10 +63,17 @@ impl FqVarExtension for FqVar {
         // Certify the return value y is sqrt(zeta * 1/x)
         y_squared_var.conditional_enforce_equal(&zeta_times_one_over_x_var, &in_case_4)?;
 
+        // TODO: Witness values and return Boolean and FqVar
         Ok((was_square, y))
     }
 
+    fn is_negative(&self) -> Result<bool, SynthesisError> {
+        todo!()
+        // TODO: Witness and return Boolean
+    }
+
     fn is_nonnegative(&self, value: Fq) -> Result<bool, SynthesisError> {
+        // TODO: Add constraints here for not in circuit
         Ok(value.is_nonnegative())
     }
 

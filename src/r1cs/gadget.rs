@@ -64,7 +64,7 @@ impl ElementVar {
         // 2.
         let den_var = u_1_var.clone() * A_MINUS_D_VAR.clone() * X_var.square()?;
         let den = u_1 * A_MINUS_D * X.square();
-        let (_, v) = FqVar::isqrt(den, den_var)?;
+        let (_, v) = den_var.isqrt()?;
         let v_var = FqVar::new_witness(self.cs(), || Ok(v))?;
 
         // 3.
@@ -117,7 +117,7 @@ impl ElementVar {
         // 5. sqrt
         let den_var = u_2_var.clone() * u_1_var.square()?;
         let den = u_2 * u_1.square();
-        let (was_square, mut v) = FqVar::isqrt(den, den_var)?;
+        let (was_square, mut v) = den_var.isqrt()?;
         let mut v_var = FqVar::constant(v);
         let was_square_var = Boolean::new_variable(
             ns!(cs, "is_square"),
@@ -158,52 +158,45 @@ impl ElementVar {
     }
 
     /// R1CS equivalent of `Element::elligator_map`
-    pub(crate) fn elligator_map(r_0: &Fq, r_0_var: &FqVar) -> Result<ElementVar, SynthesisError> {
+    pub(crate) fn elligator_map(r_0_var: &FqVar) -> Result<ElementVar, SynthesisError> {
         let cs = r_0_var.cs();
 
-        let A = EdwardsParameters::COEFF_A;
-        let D = EdwardsParameters::COEFF_D;
-        let A_VAR = FqVar::new_constant(cs.clone(), A)?;
-        let D_VAR = FqVar::new_constant(cs.clone(), D)?;
+        let A_VAR = FqVar::new_constant(cs.clone(), EdwardsParameters::COEFF_A)?;
+        let D_VAR = FqVar::new_constant(cs.clone(), EdwardsParameters::COEFF_D)?;
         let ZETA_VAR = FqVar::new_constant(cs.clone(), *ZETA)?;
 
-        let r = *ZETA * r_0.square();
         let r_var = ZETA_VAR * r_0_var.square()?;
 
-        let den = (D * r - (D - A)) * ((D - A) * r - D);
         let den_var = (D_VAR.clone() * r_var.clone() - (D_VAR.clone() - A_VAR.clone()))
             * ((D_VAR.clone() - A_VAR.clone()) * r_var.clone() - D_VAR.clone());
-        let num = (r + *ONE) * (A - *TWO * D);
-        let num_var =
-            (r_var + FqVar::one()) * (A_VAR.clone() - (FqVar::one() + FqVar::one()) * D_VAR);
+        let num_var = (r_var.clone() + FqVar::one())
+            * (A_VAR.clone() - (FqVar::one() + FqVar::one()) * D_VAR.clone());
 
-        let x = num * den;
-        let x_var = num_var * den_var;
-        let (iss, mut isri) = FqVar::isqrt(x, x_var)?;
+        let x_var = num_var.clone() * den_var;
+        let (iss, mut isri) = x_var.isqrt()?;
+        let iss_var = Boolean::new_witness(cs.clone(), || Ok(iss))?;
+        let mut isri_var = FqVar::new_witness(cs.clone(), || Ok(isri))?;
 
-        let sgn;
-        let twiddle;
-        if iss {
-            // Case 1
-            sgn = *ONE;
-            twiddle = *ONE;
-        } else {
-            // Case 2
-            sgn = -(*ONE);
-            twiddle = *r_0;
-        }
-        isri *= twiddle;
+        // Case 1: iss is true, then sgn and twiddle are both 1
+        // Case 2: iss is false, then sgn is -1 and twiddle is r_0
+        let sgn_var =
+            FqVar::conditionally_select(&iss_var, &FqVar::one(), &(FqVar::one()).negate()?)?;
+        let twiddle_var = FqVar::conditionally_select(&iss_var, &FqVar::one(), &r_0_var)?;
 
-        let mut s = isri * num;
-        let t = -(sgn) * isri * s * (r - *ONE) * (A - *TWO * D).square() - *ONE;
+        isri_var *= twiddle_var;
 
-        if s.is_negative() == iss {
-            s = -s
-        }
+        let mut s_var = isri_var.clone() * num_var;
+        let t_var = sgn_var.negate()?
+            * isri_var
+            * s_var.clone()
+            * (r_var - FqVar::one())
+            * (A_VAR.clone() - (FqVar::one() + FqVar::one()) * D_VAR).square()?
+            - FqVar::one();
 
-        // Witness (s,t) from the Jacobi quartic representation
-        let s_var = FqVar::new_witness(cs.clone(), || Ok(s))?;
-        let t_var = FqVar::new_witness(cs, || Ok(t))?;
+        let is_negative_var = Boolean::new_witness(cs.clone(), || Ok(s_var.is_negative()?))?;
+        let cond_negate = is_negative_var.is_eq(&iss_var)?;
+        // if s.is_negative() == iss { s = -s }
+        s_var = FqVar::conditionally_select(&cond_negate, &s_var.negate()?, &s_var)?;
 
         // Convert to affine from Jacobi quartic
         // See commit cce38644d3343d9f7c46772dc2b945a9d17756d7
@@ -220,8 +213,8 @@ impl ElementVar {
     }
 
     /// Maps a field element to a decaf377 `ElementVar` suitable for CDH challenges.
-    pub fn encode_to_curve(r: &Fq, r_var: &FqVar) -> Result<ElementVar, SynthesisError> {
-        ElementVar::elligator_map(r, r_var)
+    pub fn encode_to_curve(r_var: &FqVar) -> Result<ElementVar, SynthesisError> {
+        ElementVar::elligator_map(r_var)
     }
 }
 
