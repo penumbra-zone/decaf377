@@ -22,7 +22,7 @@ ark-ff = "0.3"
 ark-serialize = "0.3"
 ark-bls12-377 = "0.3"
 ark-ed-on-bls12-377 = { version = "0.3", features = ["r1cs"] }
-ark-groth16 = { version = "0.3", optional=true }
+ark-groth16 = { version = "0.3", optional=true, features = ["print-trace"] }
 ark-snark = { version = "0.3", optional=true }
 zeroize = "1.4"
 
