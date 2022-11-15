@@ -18,7 +18,7 @@ use crate::{
     constants::{ONE, TWO, ZETA},
     r1cs::fqvar_ext::FqVarExtension,
     sign::Sign,
-    AffineElement, Element, Fq, Fr, SqrtRatioZeta,
+    AffineElement, Element, Fq,
 };
 
 #[derive(Clone, Debug)]
@@ -73,7 +73,7 @@ impl ElementVar {
 
         // 4.
         let u_3 = u_2 * Z - T;
-        let u_3_var = u_2_var * Z_var.clone() - T_var;
+        let _u_3_var = u_2_var * Z_var.clone() - T_var;
 
         // 5.
         let s_without_abs = A_MINUS_D * v * u_3 * X;
@@ -132,7 +132,7 @@ impl ElementVar {
         if check.is_negative() {
             v = -v;
         }
-        let two_s_u_1_var = (FqVar::one() + FqVar::one()) * s_var * u_1_var.clone();
+        let _two_s_u_1_var = (FqVar::one() + FqVar::one()) * s_var * u_1_var.clone();
         // In `vartime_decompress`, we check if it's negative prior to taking
         // the negative, which is effectively the absolute value:
         v_var = v_var.abs(v)?;
