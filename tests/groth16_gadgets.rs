@@ -362,7 +362,7 @@ impl ConstraintSynthesizer<Fq> for ElligatorCircuit {
         let public_var = ElementVar::new_input(cs, || Ok(self.point))?;
 
         // 3. Add elligator constraints
-        let test_public = ElementVar::encode_to_curve(&self.field_element, &witness_var)?;
+        let test_public = ElementVar::encode_to_curve(&witness_var)?;
         public_var.enforce_equal(&test_public)?;
 
         Ok(())
