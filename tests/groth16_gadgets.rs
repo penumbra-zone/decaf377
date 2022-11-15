@@ -59,32 +59,6 @@ fn scalar_strategy_random() -> BoxedStrategy<[u8; 32]> {
     any::<[u8; 32]>().prop_map(|x| x).boxed()
 }
 
-#[test]
-fn groth16_dl_proof_happy_path_simple() {
-    let (pk, vk) = DiscreteLogCircuit::generate_test_parameters();
-    let mut rng = OsRng;
-
-    let mut scalar_arr = [0u8; 32];
-    scalar_arr[0] = 2;
-    let scalar = scalar_arr;
-    let public = Fr::from_le_bytes_mod_order(&scalar_arr[..]) * basepoint();
-
-    // Prover POV
-    let circuit = DiscreteLogCircuit { scalar, public };
-    dbg!(circuit.clone().num_constraints_and_instance_variables());
-    let proof = Groth16::prove(&pk, circuit, &mut rng)
-        .map_err(|_| anyhow::anyhow!("invalid proof"))
-        .expect("can generate proof");
-
-    // Verifier POV
-    let processed_pvk = Groth16::process_vk(&vk).expect("can process verifying key");
-    let public_inputs = public.to_field_elements().unwrap();
-    let proof_result =
-        Groth16::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
-
-    assert!(proof_result);
-}
-
 proptest! {
 #![proptest_config(ProptestConfig::with_cases(5))]
 #[test]
@@ -160,7 +134,7 @@ impl ConstraintSynthesizer<Fq> for CompressionCircuit {
         let public_var = FqVar::new_input(cs, || Ok(self.field_element))?;
 
         // 3. Add compression constraints
-        let test_public = witness_var.compress_to_field(self.point)?;
+        let test_public = witness_var.compress_to_field()?;
         public_var.enforce_equal(&test_public)?;
 
         Ok(())
@@ -263,7 +237,7 @@ impl ConstraintSynthesizer<Fq> for DecompressionCircuit {
         let public_var = ElementVar::new_input(cs, || Ok(self.point))?;
 
         // 3. Add decompression constraints
-        let test_public = ElementVar::decompress_from_field(witness_var, self.field_element)?;
+        let test_public = ElementVar::decompress_from_field(witness_var)?;
         public_var.enforce_equal(&test_public)?;
 
         Ok(())
