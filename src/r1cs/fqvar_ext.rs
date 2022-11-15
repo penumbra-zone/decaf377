@@ -13,8 +13,7 @@ pub trait FqVarExtension: Sized {
 
     // This is similar to the Sign trait in this crate,
     // however: we need to return `Result<_, SynthesisError>`
-    // everywhere and we need to pass in the out-of-circuit field
-    // element.
+    // everywhere.
     fn is_negative(&self) -> Result<Boolean<Fq>, SynthesisError>;
     fn is_nonnegative(&self) -> Result<Boolean<Fq>, SynthesisError>;
     fn abs(self) -> Result<Self, SynthesisError>;

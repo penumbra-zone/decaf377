@@ -6,20 +6,13 @@ use ark_ed_on_bls12_377::{
     constraints::{EdwardsVar, FqVar},
     EdwardsAffine, EdwardsParameters,
 };
-use ark_ff::Field;
 use ark_r1cs_std::{
     alloc::AllocVar, eq::EqGadget, groups::curves::twisted_edwards::AffineVar, prelude::*, R1CSVar,
 };
 use ark_relations::ns;
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError, ToConstraintField};
-use ark_std::One;
 
-use crate::{
-    constants::{ONE, TWO, ZETA},
-    r1cs::fqvar_ext::FqVarExtension,
-    sign::Sign,
-    AffineElement, Element, Fq,
-};
+use crate::{constants::ZETA, r1cs::fqvar_ext::FqVarExtension, AffineElement, Element, Fq};
 
 #[derive(Clone, Debug)]
 /// Represents the R1CS equivalent of a `decaf377::Element`
@@ -33,15 +26,10 @@ pub struct ElementVar {
 
 impl ElementVar {
     /// R1CS equivalent of `Element::vartime_compress_to_field`
-    ///
-    /// Requires the `Element` of the `ElementVar` to be passed to it.
-    /// This is because during the setup phase, we cannot access assignments
-    /// through `T::value()`.
-    pub fn compress_to_field(&self, native: Element) -> Result<FqVar, SynthesisError> {
+    pub fn compress_to_field(&self) -> Result<FqVar, SynthesisError> {
         // We have affine x, y but our compression formulae are in projective.
         let affine_x_var = &self.inner.x;
         let affine_y_var = &self.inner.y;
-        let affine: AffineElement = native.into();
 
         let X_var = affine_x_var;
         // We treat Z at a constant.
@@ -49,47 +37,32 @@ impl ElementVar {
         let Z_var = FqVar::one();
         let T_var = X_var * Y_var;
 
-        let X = affine.inner.x;
-        let Y = affine.inner.y;
-        let Z = Fq::one();
-        let T = X * Y;
-
-        let A_MINUS_D = EdwardsParameters::COEFF_A - EdwardsParameters::COEFF_D;
-        let A_MINUS_D_VAR = FqVar::new_constant(self.cs(), A_MINUS_D)?;
+        let A_MINUS_D_VAR = FqVar::new_constant(
+            self.cs(),
+            EdwardsParameters::COEFF_A - EdwardsParameters::COEFF_D,
+        )?;
 
         // 1.
         let u_1_var = (X_var.clone() + T_var.clone()) * (X_var.clone() - T_var.clone());
-        let u_1 = (X + T) * (X - T);
 
         // 2.
         let den_var = u_1_var.clone() * A_MINUS_D_VAR.clone() * X_var.square()?;
-        let den = u_1 * A_MINUS_D * X.square();
         let (_, v_var) = den_var.isqrt()?;
-        // temp until we rework abs
-        use crate::SqrtRatioZeta;
-        let (_, v) = Fq::sqrt_ratio_zeta(&Fq::one(), &den);
 
         // 3.
-        let u_2 = (v * u_1).abs();
         let u_2_var: FqVar = (v_var.clone() * u_1_var).abs()?;
 
         // 4.
-        let u_3 = u_2 * Z - T;
-        let _u_3_var = u_2_var * Z_var.clone() - T_var;
+        let u_3_var = u_2_var * Z_var - T_var;
 
         // 5.
-        let s_without_abs = A_MINUS_D * v * u_3 * X;
-        let s = s_without_abs.abs();
-        // let s_var = (A_MINUS_D_VAR * v_var * u_3_var * X_var).abs(s_without_abs)?;
-        // We could do the above, instead here we just witness s (can improve efficiency here by removing
-        // some of the R1CS steps above).
-        let s_var = FqVar::new_witness(self.cs(), || Ok(s))?;
+        let s_var = (A_MINUS_D_VAR * v_var * u_3_var * X_var).abs()?;
 
         Ok(s_var)
     }
 
     /// R1CS equivalent of `Encoding::vartime_decompress`
-    pub fn decompress_from_field(s_var: FqVar, s: Fq) -> Result<ElementVar, SynthesisError> {
+    pub fn decompress_from_field(s_var: FqVar) -> Result<ElementVar, SynthesisError> {
         let D4: Fq = EdwardsParameters::COEFF_D * Fq::from(4u32);
         let D4_VAR = FqVar::constant(D4);
 
@@ -98,50 +71,30 @@ impl ElementVar {
 
         // 2. Reject if negative.
         let is_nonnegative_var = s_var.is_nonnegative()?;
-        let cs = s_var.cs();
         is_nonnegative_var.enforce_equal(&Boolean::TRUE)?;
 
         // 3. u_1 <- 1 - s^2
-        let ss = s.square();
         let ss_var = s_var.square()?;
-        let u_1 = Fq::one() - ss;
         let u_1_var = FqVar::one() - ss_var.clone();
 
         // 4. u_2 <- u_1^2 - 4d s^2
-        let u_2 = u_1.square() - D4 * ss;
         let u_2_var = u_1_var.square()? - D4_VAR * ss_var.clone();
 
         // 5. sqrt
         let den_var = u_2_var.clone() * u_1_var.square()?;
-        let den = u_2 * u_1.square();
         let (was_square_var, mut v_var) = den_var.isqrt()?;
-        // temp until we rework abs
-        use crate::SqrtRatioZeta;
-        let (_, mut v) = Fq::sqrt_ratio_zeta(&Fq::one(), &den);
         was_square_var.enforce_equal(&Boolean::TRUE)?;
 
         // 6. Sign check
-        let two_s_u_1 = Fq::from(2) * s * u_1;
-        let check = two_s_u_1 * v;
-        if check.is_negative() {
-            v = -v;
-        }
         let two_s_u_1_var = (FqVar::one() + FqVar::one()) * s_var * u_1_var.clone();
-        // In `vartime_decompress`, we check if it's negative prior to taking
-        // the negative, which is effectively the absolute value:
-        v_var = v_var.abs()?;
+        let check_var = two_s_u_1_var.clone() * v_var.clone();
+        v_var = FqVar::conditionally_select(&check_var.is_negative()?, &v_var.negate()?, &v_var)?;
 
         // 7. (Extended) Coordinates
-        let x_var = two_s_u_1_var * v.square() * u_2_var;
-        let y_var = (FqVar::one() + ss) * v_var * u_1_var;
-        // let z = FqVar::one();
+        let x_var = two_s_u_1_var * v_var.square()? * u_2_var;
+        let y_var = (FqVar::one() + ss_var) * v_var * u_1_var;
+        // // let z = FqVar::one();
         // let t = x.clone() * y.clone();
-        let x = two_s_u_1 * v.square() * u_2;
-        let y = (Fq::one() + ss) * v * u_1;
-
-        // Witness x, y
-        let x_var = FqVar::new_witness(cs.clone(), || Ok(x))?;
-        let y_var = FqVar::new_witness(cs, || Ok(y))?;
 
         // Note that the above are in extended, but we need affine coordinates
         // for forming `AffineVar` where x = X/Z, y = Y/Z. However Z is
@@ -329,8 +282,7 @@ impl AllocVar<Element, Fq> for ElementVar {
                 let compressed_P_var = FqVar::new_witness(cs, || Ok(field_element))?;
 
                 // 3. Decode (in circuit)
-                let decoded_var =
-                    ElementVar::decompress_from_field(compressed_P_var, field_element)?;
+                let decoded_var = ElementVar::decompress_from_field(compressed_P_var)?;
 
                 let P_element_var = Self { inner: P_var };
                 decoded_var.enforce_equal(&P_element_var)?;
