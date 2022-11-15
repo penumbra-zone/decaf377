@@ -180,7 +180,6 @@ impl ElementVar {
         let x = num * den;
         let x_var = num_var * den_var;
         let (iss, mut isri) = FqVar::isqrt(x, x_var)?;
-        let mut isri_var = FqVar::new_witness(cs.clone(), || Ok(isri))?;
 
         let sgn;
         let twiddle;
@@ -193,30 +192,14 @@ impl ElementVar {
             sgn = -(*ONE);
             twiddle = *r_0;
         }
-        let iss_var = Boolean::new_witness(cs.clone(), || Ok(iss))?;
-        let mut sgn_var;
-        let mut twiddle_var;
-        //TODO flatten
-        if iss {
-            sgn_var = FqVar::one();
-            twiddle_var = FqVar::one();
-        } else {
-            sgn_var = (FqVar::one()).negate()?;
-            twiddle_var = r_0_var.clone();
-        }
-
         isri *= twiddle;
-        isri_var *= twiddle_var;
 
         let mut s = isri * num;
-        // let mut s_var = isri_var * num_var;
         let t = -(sgn) * isri * s * (r - *ONE) * (A - *TWO * D).square() - *ONE;
-        // let t_var = sgn_var.negate()?
-        //     * isri_var
-        //     * s_var
-        //     * (r_var - FqVar::one())
-        //     * (A_VAR - (FqVar::one() + FqVar::one()) * D_VAR).square()?
-        //     - FqVar::one();
+
+        if s.is_negative() == iss {
+            s = -s
+        }
 
         // Witness (s,t) from the Jacobi quartic representation
         let s_var = FqVar::new_witness(cs.clone(), || Ok(s))?;

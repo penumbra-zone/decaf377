@@ -27,7 +27,7 @@ ark-snark = { version = "0.3", optional=true }
 zeroize = "1.4"
 
 [features]
-default = ["r1cs"]
+default = []
 r1cs = ["ark-r1cs-std", "ark-groth16", "ark-snark"]
 
 [dev-dependencies]
