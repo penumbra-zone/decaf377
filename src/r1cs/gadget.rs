@@ -64,8 +64,10 @@ impl ElementVar {
         // 2.
         let den_var = u_1_var.clone() * A_MINUS_D_VAR.clone() * X_var.square()?;
         let den = u_1 * A_MINUS_D * X.square();
-        let (_, v) = den_var.isqrt()?;
-        let v_var = FqVar::new_witness(self.cs(), || Ok(v))?;
+        let (_, v_var) = den_var.isqrt()?;
+        // temp until we rework abs
+        use crate::SqrtRatioZeta;
+        let (_, v) = Fq::sqrt_ratio_zeta(&Fq::one(), &den);
 
         // 3.
         let u_2 = (v * u_1).abs();
@@ -117,13 +119,10 @@ impl ElementVar {
         // 5. sqrt
         let den_var = u_2_var.clone() * u_1_var.square()?;
         let den = u_2 * u_1.square();
-        let (was_square, mut v) = den_var.isqrt()?;
-        let mut v_var = FqVar::constant(v);
-        let was_square_var = Boolean::new_variable(
-            ns!(cs, "is_square"),
-            || Ok(was_square),
-            AllocationMode::Constant,
-        )?;
+        let (was_square_var, mut v_var) = den_var.isqrt()?;
+        // temp until we rework abs
+        use crate::SqrtRatioZeta;
+        let (_, mut v) = Fq::sqrt_ratio_zeta(&Fq::one(), &den);
         was_square_var.enforce_equal(&Boolean::TRUE)?;
 
         // 6. Sign check
@@ -173,9 +172,7 @@ impl ElementVar {
             * (A_VAR.clone() - (FqVar::one() + FqVar::one()) * D_VAR.clone());
 
         let x_var = num_var.clone() * den_var;
-        let (iss, mut isri) = x_var.isqrt()?;
-        let iss_var = Boolean::new_witness(cs.clone(), || Ok(iss))?;
-        let mut isri_var = FqVar::new_witness(cs.clone(), || Ok(isri))?;
+        let (iss_var, mut isri_var) = x_var.isqrt()?;
 
         // Case 1: iss is true, then sgn and twiddle are both 1
         // Case 2: iss is false, then sgn is -1 and twiddle is r_0

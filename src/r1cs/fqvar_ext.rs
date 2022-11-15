@@ -9,7 +9,7 @@ use crate::sign::Sign;
 use crate::{constants::ZETA, Fq, SqrtRatioZeta};
 
 pub trait FqVarExtension: Sized {
-    fn isqrt(&self) -> Result<(bool, Fq), SynthesisError>;
+    fn isqrt(&self) -> Result<(Boolean<Fq>, FqVar), SynthesisError>;
 
     // This is similar to the Sign trait in this crate,
     // however: we need to return `Result<_, SynthesisError>`
@@ -29,7 +29,7 @@ impl FqVarExtension for FqVar {
     /// - Case 2: `(true, 0)` if `num` is zero;
     /// - Case 3: `(false, 0)` if `den` is zero;
     /// - Case 4: `(false, sqrt(zeta*num/den))` if `num` and `den` are both nonzero and `num/den` is nonsquare;
-    fn isqrt(&self) -> Result<(bool, Fq), SynthesisError> {
+    fn isqrt(&self) -> Result<(Boolean<Fq>, FqVar), SynthesisError> {
         // During mode `SynthesisMode::Setup`, value() will not provide a field element.
         let x = self.value().unwrap_or(Fq::one());
 
@@ -38,7 +38,8 @@ impl FqVarExtension for FqVar {
 
         let cs = self.cs();
         let was_square_var = Boolean::new_witness(cs.clone(), || Ok(was_square))?;
-        let y_squared_var = FqVar::new_witness(cs.clone(), || Ok(y * y))?;
+        let y_var = FqVar::new_witness(cs.clone(), || Ok(y))?;
+        let y_squared_var = y_var.square()?;
 
         // The below is a flattened version of the four cases above, excluding case 2 since `num` is hardcoded
         // to be one.
@@ -52,7 +53,7 @@ impl FqVarExtension for FqVar {
 
         // Case 1: `(true, sqrt(num/den))` if `num` and `den` are both nonzero and `num/den` is square
         let x_var_inv = self.inverse()?;
-        let in_case_1 = was_square_var;
+        let in_case_1 = was_square_var.clone();
         // Certify the return value y is sqrt(1/x)
         y_squared_var.conditional_enforce_equal(&x_var_inv, &in_case_1)?;
 
@@ -63,8 +64,7 @@ impl FqVarExtension for FqVar {
         // Certify the return value y is sqrt(zeta * 1/x)
         y_squared_var.conditional_enforce_equal(&zeta_times_one_over_x_var, &in_case_4)?;
 
-        // TODO: Witness values and return Boolean and FqVar
-        Ok((was_square, y))
+        Ok((was_square_var, y_var))
     }
 
     fn is_negative(&self) -> Result<bool, SynthesisError> {
