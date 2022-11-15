@@ -308,3 +308,101 @@ proptest! {
     assert!(!proof_result);
 }
 }
+
+struct ElligatorCircuit {
+    // Witness
+    field_element: Fq,
+
+    // Public input
+    pub point: Element,
+}
+
+impl ConstraintSynthesizer<Fq> for ElligatorCircuit {
+    fn generate_constraints(
+        self,
+        cs: ark_relations::r1cs::ConstraintSystemRef<Fq>,
+    ) -> ark_relations::r1cs::Result<()> {
+        // 1. Add witness variable
+        let witness_var = FqVar::new_witness(cs.clone(), || Ok(self.field_element))?;
+
+        // 2. Add public input variable
+        let public_var = ElementVar::new_input(cs, || Ok(self.point))?;
+
+        // 3. Add elligator constraints
+        let test_public = ElementVar::encode_to_curve(&self.field_element, &witness_var)?;
+        public_var.enforce_equal(&test_public)?;
+
+        Ok(())
+    }
+}
+
+impl ElligatorCircuit {
+    fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
+        let field_element = Fq::from(100);
+        let point = Element::encode_to_curve(&field_element);
+        let circuit = ElligatorCircuit {
+            point,
+            field_element,
+        };
+        let (pk, vk) = Groth16::circuit_specific_setup(circuit, &mut OsRng)
+            .expect("can perform circuit specific setup");
+        (pk, vk)
+    }
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(10))]
+#[test]
+fn groth16_elligator_proof_happy_path(scalar in (1..65536)) {
+    let (pk, vk) = ElligatorCircuit::generate_test_parameters();
+    let mut rng = OsRng;
+
+    // Prover POV
+    let field_element = Fq::from(scalar);
+    let point = Element::encode_to_curve(&field_element);
+    let circuit = ElligatorCircuit {
+        point,
+        field_element,
+    };
+    let proof = Groth16::prove(&pk, circuit, &mut rng)
+        .map_err(|_| anyhow::anyhow!("invalid proof"))
+        .expect("can generate proof");
+
+    // Verifier POV
+    let processed_pvk = Groth16::process_vk(&vk).expect("can process verifying key");
+    let public_inputs = point.to_field_elements().unwrap();
+    let proof_result =
+        Groth16::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
+
+    assert!(proof_result);
+}
+        }
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(10))]
+#[test]
+fn groth16_elligator_proof_unhappy_path(scalar in (1..65536)) {
+    let (pk, vk) = ElligatorCircuit::generate_test_parameters();
+    let mut rng = OsRng;
+
+    // Prover POV
+    let field_element = Fq::from(scalar);
+    let point = Element::encode_to_curve(&field_element);
+    let circuit = ElligatorCircuit {
+        point,
+        field_element,
+    };
+    let proof = Groth16::prove(&pk, circuit, &mut rng)
+        .map_err(|_| anyhow::anyhow!("invalid proof"))
+        .expect("can generate proof");
+
+    // Verifier POV
+    let wrong_point = Fr::from(scalar + 1) * decaf377::basepoint();
+    let processed_pvk = Groth16::process_vk(&vk).expect("can process verifying key");
+    let public_inputs = wrong_point.to_field_elements().unwrap();
+    let proof_result =
+        Groth16::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
+
+    assert!(!proof_result);
+}
+}
