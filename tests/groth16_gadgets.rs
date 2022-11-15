@@ -11,11 +11,12 @@ use ark_relations::r1cs::{ConstraintSynthesizer, ToConstraintField};
 use ark_snark::SNARK;
 use decaf377::{
     basepoint,
-    r1cs::{ElementVar, FqVar},
+    r1cs::{CountConstraints, ElementVar, FqVar},
     Bls12_377, Element, Fq, Fr,
 };
 use rand_core::OsRng;
 
+#[derive(Clone)]
 struct DiscreteLogCircuit {
     // Witness
     scalar: [u8; 32],
@@ -56,6 +57,32 @@ impl DiscreteLogCircuit {
 
 fn scalar_strategy_random() -> BoxedStrategy<[u8; 32]> {
     any::<[u8; 32]>().prop_map(|x| x).boxed()
+}
+
+#[test]
+fn groth16_dl_proof_happy_path_simple() {
+    let (pk, vk) = DiscreteLogCircuit::generate_test_parameters();
+    let mut rng = OsRng;
+
+    let mut scalar_arr = [0u8; 32];
+    scalar_arr[0] = 2;
+    let scalar = scalar_arr;
+    let public = Fr::from_le_bytes_mod_order(&scalar_arr[..]) * basepoint();
+
+    // Prover POV
+    let circuit = DiscreteLogCircuit { scalar, public };
+    dbg!(circuit.clone().num_constraints_and_instance_variables());
+    let proof = Groth16::prove(&pk, circuit, &mut rng)
+        .map_err(|_| anyhow::anyhow!("invalid proof"))
+        .expect("can generate proof");
+
+    // Verifier POV
+    let processed_pvk = Groth16::process_vk(&vk).expect("can process verifying key");
+    let public_inputs = public.to_field_elements().unwrap();
+    let proof_result =
+        Groth16::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
+
+    assert!(proof_result);
 }
 
 proptest! {
@@ -112,6 +139,7 @@ proptest! {
     }
 }
 
+#[derive(Clone)]
 struct CompressionCircuit {
     // Witness
     point: Element,
@@ -169,6 +197,8 @@ proptest! {
             point,
             field_element,
         };
+        dbg!(circuit.clone().num_constraints_and_instance_variables());
+
         let proof = Groth16::prove(&pk, circuit, &mut rng)
             .map_err(|_| anyhow::anyhow!("invalid proof"))
             .expect("can generate proof");
@@ -212,6 +242,7 @@ proptest! {
     }
 }
 
+#[derive(Clone)]
 struct DecompressionCircuit {
     // Witness
     field_element: Fq,
@@ -267,6 +298,8 @@ proptest! {
         point,
         field_element,
     };
+    dbg!(circuit.clone().num_constraints_and_instance_variables());
+
     let proof = Groth16::prove(&pk, circuit, &mut rng)
         .map_err(|_| anyhow::anyhow!("invalid proof"))
         .expect("can generate proof");
