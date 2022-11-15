@@ -71,7 +71,7 @@ impl ElementVar {
 
         // 3.
         let u_2 = (v * u_1).abs();
-        let u_2_var: FqVar = (v_var.clone() * u_1_var).abs(v * u_1)?;
+        let u_2_var: FqVar = (v_var.clone() * u_1_var).abs()?;
 
         // 4.
         let u_3 = u_2 * Z - T;
@@ -97,13 +97,8 @@ impl ElementVar {
         // a valid Fq field element.
 
         // 2. Reject if negative.
-        let is_nonnegative = s_var.is_nonnegative(s)?;
+        let is_nonnegative_var = s_var.is_nonnegative()?;
         let cs = s_var.cs();
-        let is_nonnegative_var = Boolean::new_variable(
-            ns!(cs, "is_nonnegative"),
-            || Ok(is_nonnegative),
-            AllocationMode::Witness,
-        )?;
         is_nonnegative_var.enforce_equal(&Boolean::TRUE)?;
 
         // 3. u_1 <- 1 - s^2
@@ -131,14 +126,14 @@ impl ElementVar {
         if check.is_negative() {
             v = -v;
         }
-        let _two_s_u_1_var = (FqVar::one() + FqVar::one()) * s_var * u_1_var.clone();
+        let two_s_u_1_var = (FqVar::one() + FqVar::one()) * s_var * u_1_var.clone();
         // In `vartime_decompress`, we check if it's negative prior to taking
         // the negative, which is effectively the absolute value:
-        v_var = v_var.abs(v)?;
+        v_var = v_var.abs()?;
 
         // 7. (Extended) Coordinates
-        // let x_var = two_s_u_1_var * v.square() * u_2_var;
-        // let y_var = (FqVar::one() + ss) * v_var * u_1_var;
+        let x_var = two_s_u_1_var * v.square() * u_2_var;
+        let y_var = (FqVar::one() + ss) * v_var * u_1_var;
         // let z = FqVar::one();
         // let t = x.clone() * y.clone();
         let x = two_s_u_1 * v.square() * u_2;
@@ -190,7 +185,7 @@ impl ElementVar {
             * (A_VAR.clone() - (FqVar::one() + FqVar::one()) * D_VAR).square()?
             - FqVar::one();
 
-        let is_negative_var = Boolean::new_witness(cs.clone(), || Ok(s_var.is_negative()?))?;
+        let is_negative_var = s_var.is_negative()?;
         let cond_negate = is_negative_var.is_eq(&iss_var)?;
         // if s.is_negative() == iss { s = -s }
         s_var = FqVar::conditionally_select(&cond_negate, &s_var.negate()?, &s_var)?;
