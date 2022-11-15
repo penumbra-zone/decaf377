@@ -316,6 +316,7 @@ proptest! {
 }
 }
 
+#[derive(Clone)]
 struct ElligatorCircuit {
     // Witness
     field_element: Fq,
@@ -371,6 +372,8 @@ fn groth16_elligator_proof_happy_path(scalar in (1..65536)) {
         point,
         field_element,
     };
+    dbg!(circuit.clone().num_constraints_and_instance_variables());
+
     let proof = Groth16::prove(&pk, circuit, &mut rng)
         .map_err(|_| anyhow::anyhow!("invalid proof"))
         .expect("can generate proof");
