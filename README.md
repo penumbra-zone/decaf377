@@ -1,5 +1,10 @@
 # decaf377
 
+[![Crates.io][crates-badge]][crates-url]
+
+[crates-badge]: https://img.shields.io/crates/v/decaf377.svg
+[crates-url]: https://crates.io/crates/decaf377
+
 Many zero-knowledge protocols require a cryptographic group that can be used
 inside of an arithmetic circuit. This is accomplished by defining an “embedded”
 elliptic curve whose base field is the scalar field of the proving curve used
