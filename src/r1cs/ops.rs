@@ -1,6 +1,6 @@
 use std::ops::{Add, AddAssign, Sub, SubAssign};
 
-use crate::{r1cs::gadget::ElementVar, Element};
+use crate::{r1cs::element::ElementVar, Element};
 
 impl Add for ElementVar {
     type Output = ElementVar;
