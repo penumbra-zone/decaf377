@@ -10,8 +10,9 @@ use ark_r1cs_std::{
     alloc::AllocVar, eq::EqGadget, groups::curves::twisted_edwards::AffineVar, prelude::*, R1CSVar,
 };
 use ark_relations::ns;
-use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError, ToConstraintField};
+use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 
+use crate::r1cs::lazy::LazyElementVar;
 use crate::{constants::ZETA, r1cs::fqvar_ext::FqVarExtension, AffineElement, Element, Fq};
 
 #[derive(Clone, Debug)]
@@ -20,88 +21,21 @@ use crate::{constants::ZETA, r1cs::fqvar_ext::FqVarExtension, AffineElement, Ele
 /// Generally the suffix -`Var` will indicate that the type or variable
 /// represents in R1CS.
 pub struct ElementVar {
-    /// Inner type is an alias for `AffineVar<EdwardsParameters, FqVar>`
-    pub(crate) inner: EdwardsVar,
+    pub(crate) inner: LazyElementVar,
 }
 
 impl ElementVar {
     /// R1CS equivalent of `Element::vartime_compress_to_field`
     pub fn compress_to_field(&self) -> Result<FqVar, SynthesisError> {
-        // We have affine x, y but our compression formulae are in projective.
-        let affine_x_var = &self.inner.x;
-        let affine_y_var = &self.inner.y;
-
-        let X_var = affine_x_var;
-        // We treat Z at a constant.
-        let Y_var = affine_y_var;
-        let Z_var = FqVar::one();
-        let T_var = X_var * Y_var;
-
-        let A_MINUS_D_VAR = FqVar::new_constant(
-            self.cs(),
-            EdwardsParameters::COEFF_A - EdwardsParameters::COEFF_D,
-        )?;
-
-        // 1.
-        let u_1_var = (X_var.clone() + T_var.clone()) * (X_var.clone() - T_var.clone());
-
-        // 2.
-        let den_var = u_1_var.clone() * A_MINUS_D_VAR.clone() * X_var.square()?;
-        let (_, v_var) = den_var.isqrt()?;
-
-        // 3.
-        let u_2_var: FqVar = (v_var.clone() * u_1_var).abs()?;
-
-        // 4.
-        let u_3_var = u_2_var * Z_var - T_var;
-
-        // 5.
-        let s_var = (A_MINUS_D_VAR * v_var * u_3_var * X_var).abs()?;
-
-        Ok(s_var)
+        self.inner.element()?.compress_to_field()
     }
 
     /// R1CS equivalent of `Encoding::vartime_decompress`
     pub fn decompress_from_field(s_var: FqVar) -> Result<ElementVar, SynthesisError> {
-        let D4: Fq = EdwardsParameters::COEFF_D * Fq::from(4u32);
-        let D4_VAR = FqVar::constant(D4);
-
-        // 1. We do not check if canonically encoded here since we know FqVar is already
-        // a valid Fq field element.
-
-        // 2. Reject if negative.
-        let is_nonnegative_var = s_var.is_nonnegative()?;
-        is_nonnegative_var.enforce_equal(&Boolean::TRUE)?;
-
-        // 3. u_1 <- 1 - s^2
-        let ss_var = s_var.square()?;
-        let u_1_var = FqVar::one() - ss_var.clone();
-
-        // 4. u_2 <- u_1^2 - 4d s^2
-        let u_2_var = u_1_var.square()? - D4_VAR * ss_var.clone();
-
-        // 5. sqrt
-        let den_var = u_2_var.clone() * u_1_var.square()?;
-        let (was_square_var, mut v_var) = den_var.isqrt()?;
-        was_square_var.enforce_equal(&Boolean::TRUE)?;
-
-        // 6. Sign check
-        let two_s_u_1_var = (FqVar::one() + FqVar::one()) * s_var * u_1_var.clone();
-        let check_var = two_s_u_1_var.clone() * v_var.clone();
-        v_var = FqVar::conditionally_select(&check_var.is_negative()?, &v_var.negate()?, &v_var)?;
-
-        // 7. (Extended) Coordinates
-        let x_var = two_s_u_1_var * v_var.square()? * u_2_var;
-        let y_var = (FqVar::one() + ss_var) * v_var * u_1_var;
-        // // let z = FqVar::one();
-        // let t = x.clone() * y.clone();
-
-        // Note that the above are in extended, but we need affine coordinates
-        // for forming `AffineVar` where x = X/Z, y = Y/Z. However Z is
-        // hardcoded to be 1 above, so we can use x and y as is.
-        Ok(ElementVar {
-            inner: AffineVar::new(x_var, y_var),
-        })
+        let inner = LazyElementVar::new_from_encoding(s_var);
+        // This enforces that the encoding is valid.
+        inner.element()?;
+        Ok(Self { inner })
     }
 
     /// R1CS equivalent of `Element::elligator_map`
@@ -364,11 +298,5 @@ impl CurveVar<Element, Fq> for ElementVar {
     fn negate(&self) -> Result<Self, SynthesisError> {
         let negated = self.inner.negate()?;
         Ok(Self { inner: negated })
-    }
-}
-
-impl ToConstraintField<Fq> for Element {
-    fn to_field_elements(&self) -> Option<Vec<Fq>> {
-        self.inner.to_field_elements()
     }
 }

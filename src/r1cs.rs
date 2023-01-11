@@ -1,11 +1,14 @@
+pub mod element;
 pub mod fqvar_ext;
-pub mod gadget;
+mod inner;
+mod lazy;
 pub mod ops;
 
 pub use ark_ed_on_bls12_377::constraints::FqVar;
-pub use gadget::ElementVar;
+use ark_ff::ToConstraintField;
+pub use element::ElementVar;
 
-use crate::Fq;
+use crate::{Element, Fq};
 use ark_relations::r1cs::{
     ConstraintSynthesizer, ConstraintSystem, OptimizationGoal, SynthesisMode,
 };
@@ -25,3 +28,9 @@ pub trait CountConstraints: ConstraintSynthesizer<Fq> + Sized {
 }
 
 impl<T> CountConstraints for T where T: ConstraintSynthesizer<Fq> + Sized {}
+
+impl ToConstraintField<Fq> for Element {
+    fn to_field_elements(&self) -> Option<Vec<Fq>> {
+        self.inner.to_field_elements()
+    }
+}
