@@ -68,7 +68,6 @@ impl LazyElementVar {
 mod tests {
     use crate::{Element, Fq};
     use ark_bls12_377::Bls12_377;
-    use ark_ff::UniformRand;
     use ark_groth16::{Groth16, ProvingKey, VerifyingKey};
     use ark_r1cs_std::prelude::AllocVar;
     use ark_relations::r1cs::ConstraintSynthesizer;
@@ -90,7 +89,7 @@ mod tests {
         ) -> ark_relations::r1cs::Result<()> {
             let encoding_var = FqVar::new_witness(cs, || Ok(self.encoding))?;
             let lazy_var = LazyElementVar::new_from_encoding(encoding_var);
-            let element_var = lazy_var.element()?;
+            let _element_var = lazy_var.element()?;
             Ok(())
         }
     }
@@ -98,7 +97,7 @@ mod tests {
     impl TestCircuit {
         fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
             let element = Element::default();
-            let encoding = element.compress_to_field();
+            let encoding = element.vartime_compress_to_field();
             let circuit = TestCircuit { encoding };
             let (pk, vk) = Groth16::circuit_specific_setup(circuit, &mut OsRng)
                 .expect("can perform circuit specific setup");
@@ -108,11 +107,11 @@ mod tests {
 
     #[test]
     fn lazy_element_var_evaluation() {
-        let (pk, vk) = TestCircuit::generate_test_parameters();
+        let (pk, _) = TestCircuit::generate_test_parameters();
         let mut rng = OsRng;
         let test_circuit = TestCircuit {
-            encoding: Element::default().compress_to_field(),
+            encoding: Element::default().vartime_compress_to_field(),
         };
-        let proof = Groth16::prove(&pk, test_circuit, &mut rng).expect("can generate proof");
+        Groth16::prove(&pk, test_circuit, &mut rng).expect("can generate proof");
     }
 }

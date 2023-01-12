@@ -111,7 +111,7 @@ impl ElementVar {
 
         let A_VAR = FqVar::new_constant(cs.clone(), EdwardsParameters::COEFF_A)?;
         let D_VAR = FqVar::new_constant(cs.clone(), EdwardsParameters::COEFF_D)?;
-        let ZETA_VAR = FqVar::new_constant(cs.clone(), *ZETA)?;
+        let ZETA_VAR = FqVar::new_constant(cs, *ZETA)?;
 
         let r_var = ZETA_VAR * r_0_var.square()?;
 
@@ -127,7 +127,7 @@ impl ElementVar {
         // Case 2: iss is false, then sgn is -1 and twiddle is r_0
         let sgn_var =
             FqVar::conditionally_select(&iss_var, &FqVar::one(), &(FqVar::one()).negate()?)?;
-        let twiddle_var = FqVar::conditionally_select(&iss_var, &FqVar::one(), &r_0_var)?;
+        let twiddle_var = FqVar::conditionally_select(&iss_var, &FqVar::one(), r_0_var)?;
 
         isri_var *= twiddle_var;
 
@@ -156,11 +156,6 @@ impl ElementVar {
         Ok(ElementVar {
             inner: AffineVar::new(affine_x_var, affine_y_var),
         })
-    }
-
-    /// Maps a field element to a decaf377 `ElementVar` suitable for CDH challenges.
-    pub fn encode_to_curve(r_var: &FqVar) -> Result<ElementVar, SynthesisError> {
-        ElementVar::elligator_map(r_var)
     }
 }
 
