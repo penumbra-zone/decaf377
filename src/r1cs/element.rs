@@ -1,19 +1,17 @@
 #![allow(non_snake_case)]
 use std::borrow::Borrow;
 
-use ark_ec::{AffineCurve, TEModelParameters};
+use ark_ec::AffineCurve;
 use ark_ed_on_bls12_377::{
     constraints::{EdwardsVar, FqVar},
-    EdwardsAffine, EdwardsParameters,
+    EdwardsAffine,
 };
-use ark_r1cs_std::{
-    alloc::AllocVar, eq::EqGadget, groups::curves::twisted_edwards::AffineVar, prelude::*, R1CSVar,
-};
-use ark_relations::ns;
+use ark_r1cs_std::{alloc::AllocVar, eq::EqGadget, prelude::*, R1CSVar};
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 
+use crate::r1cs::inner::ElementVar as InnerElementVar;
 use crate::r1cs::lazy::LazyElementVar;
-use crate::{constants::ZETA, r1cs::fqvar_ext::FqVarExtension, AffineElement, Element, Fq};
+use crate::{AffineElement, Element, Fq};
 
 #[derive(Clone, Debug)]
 /// Represents the R1CS equivalent of a `decaf377::Element`
@@ -40,74 +38,21 @@ impl ElementVar {
 
     /// R1CS equivalent of `Element::elligator_map`
     pub(crate) fn elligator_map(r_0_var: &FqVar) -> Result<ElementVar, SynthesisError> {
-        let cs = r_0_var.cs();
-
-        let A_VAR = FqVar::new_constant(cs.clone(), EdwardsParameters::COEFF_A)?;
-        let D_VAR = FqVar::new_constant(cs.clone(), EdwardsParameters::COEFF_D)?;
-        let ZETA_VAR = FqVar::new_constant(cs.clone(), *ZETA)?;
-
-        let r_var = ZETA_VAR * r_0_var.square()?;
-
-        let den_var = (D_VAR.clone() * r_var.clone() - (D_VAR.clone() - A_VAR.clone()))
-            * ((D_VAR.clone() - A_VAR.clone()) * r_var.clone() - D_VAR.clone());
-        let num_var = (r_var.clone() + FqVar::one())
-            * (A_VAR.clone() - (FqVar::one() + FqVar::one()) * D_VAR.clone());
-
-        let x_var = num_var.clone() * den_var;
-        let (iss_var, mut isri_var) = x_var.isqrt()?;
-
-        // Case 1: iss is true, then sgn and twiddle are both 1
-        // Case 2: iss is false, then sgn is -1 and twiddle is r_0
-        let sgn_var =
-            FqVar::conditionally_select(&iss_var, &FqVar::one(), &(FqVar::one()).negate()?)?;
-        let twiddle_var = FqVar::conditionally_select(&iss_var, &FqVar::one(), &r_0_var)?;
-
-        isri_var *= twiddle_var;
-
-        let mut s_var = isri_var.clone() * num_var;
-        let t_var = sgn_var.negate()?
-            * isri_var
-            * s_var.clone()
-            * (r_var - FqVar::one())
-            * (A_VAR.clone() - (FqVar::one() + FqVar::one()) * D_VAR).square()?
-            - FqVar::one();
-
-        let is_negative_var = s_var.is_negative()?;
-        let cond_negate = is_negative_var.is_eq(&iss_var)?;
-        // if s.is_negative() == iss { s = -s }
-        s_var = FqVar::conditionally_select(&cond_negate, &s_var.negate()?, &s_var)?;
-
-        // Convert to affine from Jacobi quartic
-        // See commit cce38644d3343d9f7c46772dc2b945a9d17756d7
-        let affine_x_num = (FqVar::one() + FqVar::one()) * s_var.clone();
-        let affine_x_den = FqVar::one() + A_VAR.clone() * s_var.square()?;
-        let affine_x_var = affine_x_num * affine_x_den.inverse()?;
-        let affine_y_num = FqVar::one() - A_VAR * s_var.square()?;
-        let affine_y_den = t_var;
-        let affine_y_var = affine_y_num * affine_y_den.inverse()?;
-
-        Ok(ElementVar {
-            inner: AffineVar::new(affine_x_var, affine_y_var),
+        let inner = InnerElementVar::elligator_map(r_0_var)?;
+        Ok(Self {
+            inner: LazyElementVar::new_from_element(inner),
         })
     }
 
     /// Maps a field element to a decaf377 `ElementVar` suitable for CDH challenges.
     pub fn encode_to_curve(r_var: &FqVar) -> Result<ElementVar, SynthesisError> {
-        ElementVar::elligator_map(r_var)
+        Self::elligator_map(r_var)
     }
 }
 
 impl EqGadget<Fq> for ElementVar {
     fn is_eq(&self, other: &Self) -> Result<Boolean<Fq>, SynthesisError> {
-        // Section 4.5 of Decaf paper: X_1 * Y_2 = X_2 * Y_1
-        // in extended coordinates, but note that x, y are affine here:
-        let X_1 = &self.inner.x;
-        let Y_1 = &self.inner.y;
-        let X_2 = &other.inner.x;
-        let Y_2 = &other.inner.y;
-        let lhs = X_1 * Y_2;
-        let rhs = X_2 * Y_1;
-        lhs.is_eq(&rhs)
+        self.inner.element()?.is_eq(&other.inner.element()?)
     }
 
     fn conditional_enforce_equal(
@@ -137,12 +82,21 @@ impl R1CSVar<Fq> for ElementVar {
     type Value = Element;
 
     fn cs(&self) -> ConstraintSystemRef<Fq> {
-        self.inner.cs()
+        let inner = self
+            .inner
+            .element()
+            .expect("element will exist if ElementVar is allocated");
+        inner.cs()
     }
 
     fn value(&self) -> Result<Self::Value, SynthesisError> {
-        let (x, y) = (self.inner.x.value()?, self.inner.y.value()?);
+        let inner_element = self.inner.element()?;
+        let (x, y) = (
+            inner_element.inner.x.value()?,
+            inner_element.inner.y.value()?,
+        );
         let result = EdwardsAffine::new(x, y);
+
         Ok(Element {
             inner: result.into(),
         })
@@ -155,11 +109,16 @@ impl CondSelectGadget<Fq> for ElementVar {
         true_value: &Self,
         false_value: &Self,
     ) -> Result<Self, SynthesisError> {
-        let x = cond.select(&true_value.inner.x, &false_value.inner.x)?;
-        let y = cond.select(&true_value.inner.y, &false_value.inner.y)?;
+        let true_element = true_value.inner.element()?;
+        let false_element = false_value.inner.element()?;
+        let x = cond.select(&true_element.inner.x, &false_element.inner.x)?;
+        let y = cond.select(&true_element.inner.y, &false_element.inner.y)?;
 
-        Ok(ElementVar {
+        let new_element = InnerElementVar {
             inner: EdwardsVar::new(x, y),
+        };
+        Ok(Self {
+            inner: LazyElementVar::new_from_element(new_element),
         })
     }
 }
@@ -174,56 +133,10 @@ impl AllocVar<Element, Fq> for ElementVar {
     ) -> Result<Self, SynthesisError> {
         let ns = cs.into();
         let cs = ns.cs();
-        let f = || Ok(*f()?.borrow());
-        let group_projective_point = f()?;
-
-        // `new_variable` should *not* allocate any new variables or constraints in `cs` when
-        // the mode is `AllocationMode::Constant` (see `AllocVar::new_constant`).
-        //
-        // Compare this with the implementation of this trait for `EdwardsVar`
-        // where they check that the point is in the right subgroup prior to witnessing.
-        match mode {
-            AllocationMode::Constant => Ok(Self {
-                inner: EdwardsVar::new_variable_omit_prime_order_check(
-                    cs,
-                    || Ok(group_projective_point.inner),
-                    mode,
-                )?,
-            }),
-            AllocationMode::Input => Ok(Self {
-                inner: EdwardsVar::new_variable_omit_prime_order_check(
-                    cs,
-                    || Ok(group_projective_point.inner),
-                    mode,
-                )?,
-            }),
-            AllocationMode::Witness => {
-                //let ge: EdwardsAffine = group_projective_point.inner.into();
-                let P_var = AffineVar::new_variable_omit_prime_order_check(
-                    ns!(cs, "P_affine"),
-                    || Ok(group_projective_point.inner),
-                    mode,
-                )?;
-
-                // At this point `P_var` might not be a valid representative of a decaf point.
-                //
-                // One way that is secure but provides stronger constraints than we need:
-                //
-                // 1. Encode (out of circuit) to an Fq
-                let field_element = group_projective_point.vartime_compress_to_field();
-
-                // 2. Witness the encoded value
-                let compressed_P_var = FqVar::new_witness(cs, || Ok(field_element))?;
-
-                // 3. Decode (in circuit)
-                let decoded_var = ElementVar::decompress_from_field(compressed_P_var)?;
-
-                let P_element_var = Self { inner: P_var };
-                decoded_var.enforce_equal(&P_element_var)?;
-
-                Ok(P_element_var)
-            }
-        }
+        let inner = InnerElementVar::new_variable(cs, f, mode)?;
+        Ok(Self {
+            inner: LazyElementVar::new_from_element(inner),
+        })
     }
 }
 
@@ -239,7 +152,11 @@ impl AllocVar<AffineElement, Fq> for ElementVar {
 
 impl ToBitsGadget<Fq> for ElementVar {
     fn to_bits_le(&self) -> Result<Vec<Boolean<Fq>>, SynthesisError> {
-        let compressed_fq = self.inner.to_bits_le()?;
+        let compressed_fq = self
+            .inner
+            .element()
+            .expect("element will exist")
+            .to_bits_le()?;
         let encoded_bits = compressed_fq.to_bits_le()?;
         Ok(encoded_bits)
     }
@@ -247,7 +164,11 @@ impl ToBitsGadget<Fq> for ElementVar {
 
 impl ToBytesGadget<Fq> for ElementVar {
     fn to_bytes(&self) -> Result<Vec<UInt8<Fq>>, SynthesisError> {
-        let compressed_fq = self.inner.to_bytes()?;
+        let compressed_fq = self
+            .inner
+            .element()
+            .expect("element will exist")
+            .to_bytes()?;
         let encoded_bytes = compressed_fq.to_bytes()?;
         Ok(encoded_bytes)
     }
@@ -257,14 +178,16 @@ impl<'a> GroupOpsBounds<'a, Element, ElementVar> for ElementVar {}
 
 impl CurveVar<Element, Fq> for ElementVar {
     fn zero() -> Self {
+        let new_element = InnerElementVar::zero();
         Self {
-            inner: AffineVar::<EdwardsParameters, FqVar>::zero(),
+            inner: LazyElementVar::new_from_element(new_element),
         }
     }
 
     fn constant(other: Element) -> Self {
+        let new_element = InnerElementVar::constant(other);
         Self {
-            inner: AffineVar::<EdwardsParameters, FqVar>::constant(other.inner),
+            inner: LazyElementVar::new_from_element(new_element),
         }
     }
 
@@ -278,8 +201,11 @@ impl CurveVar<Element, Fq> for ElementVar {
 
         match f() {
             Ok(ge) => {
-                let P = AffineVar::new_variable_omit_prime_order_check(cs, || Ok(ge.inner), mode)?;
-                Ok(Self { inner: P })
+                let new_element =
+                    InnerElementVar::new_variable_omit_prime_order_check(cs, || Ok(ge), mode)?;
+                Ok(Self {
+                    inner: LazyElementVar::new_from_element(new_element),
+                })
             }
             _ => Err(SynthesisError::AssignmentMissing),
         }
@@ -291,12 +217,18 @@ impl CurveVar<Element, Fq> for ElementVar {
     }
 
     fn double_in_place(&mut self) -> Result<(), SynthesisError> {
-        self.inner.double_in_place()?;
+        let mut inner_element = self.inner.element().expect("element will exist");
+        inner_element.double_in_place()?;
+        *self = Self {
+            inner: LazyElementVar::new_from_element(inner_element),
+        };
         Ok(())
     }
 
     fn negate(&self) -> Result<Self, SynthesisError> {
-        let negated = self.inner.negate()?;
-        Ok(Self { inner: negated })
+        let negated = self.inner.element().expect("element will exist").negate()?;
+        Ok(Self {
+            inner: LazyElementVar::new_from_element(negated),
+        })
     }
 }
