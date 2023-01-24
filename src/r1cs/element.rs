@@ -25,7 +25,7 @@ pub struct ElementVar {
 impl ElementVar {
     /// R1CS equivalent of `Element::vartime_compress_to_field`
     pub fn compress_to_field(&self) -> Result<FqVar, SynthesisError> {
-        self.inner.element()?.compress_to_field()
+        self.inner.encoding()
     }
 
     /// R1CS equivalent of `Encoding::vartime_decompress`
