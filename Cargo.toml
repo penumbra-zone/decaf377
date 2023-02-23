@@ -1,6 +1,6 @@
 [package]
 name = "decaf377"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Henry de Valence <hdevalence@hdevalence.ca>", "redshiftzero <jen@penumbra.zone>"]
 description = "A prime-order group designed for use in SNARKs over BLS12-377"
 edition = "2018"
@@ -24,7 +24,7 @@ ark-ff = "0.3"
 ark-serialize = "0.3"
 ark-bls12-377 = "0.3"
 ark-ed-on-bls12-377 = { version = "0.3", features = ["r1cs"] }
-ark-groth16 = { version = "0.3", optional=true, features = ["print-trace"] }
+ark-groth16 = { version = "0.3", optional=true }
 ark-snark = { version = "0.3", optional=true }
 zeroize = "1.4"
 
