@@ -1,5 +1,5 @@
-use ark_ff::PrimeField;
-use ark_groth16::{Groth16, ProvingKey, VerifyingKey};
+use ark_ff::{PrimeField, UniformRand};
+use ark_groth16::{Groth16, Proof, ProvingKey, VerifyingKey};
 use proptest::prelude::*;
 
 use ark_r1cs_std::{
@@ -15,6 +15,13 @@ use decaf377::{
     Bls12_377, Element, Fq, Fr,
 };
 use rand_core::OsRng;
+
+fn element_strategy() -> BoxedStrategy<Element> {
+    any::<[u8; 32]>()
+        .prop_map(|bytes| Fq::from_le_bytes_mod_order(&bytes[..]))
+        .prop_map(|r| Element::encode_to_curve(&r))
+        .boxed()
+}
 
 #[derive(Clone)]
 struct DiscreteLogCircuit {
@@ -157,15 +164,21 @@ impl CompressionCircuit {
     }
 }
 
+fn fr_strategy() -> BoxedStrategy<Fr> {
+    any::<[u8; 32]>()
+        .prop_map(|bytes| Fr::from_le_bytes_mod_order(&bytes[..]))
+        .boxed()
+}
+
 proptest! {
 #![proptest_config(ProptestConfig::with_cases(10))]
 #[test]
-    fn groth16_compression_proof_happy_path(scalar in (1..65536)) {
+    fn groth16_compression_proof_happy_path(scalar in fr_strategy()) {
         let (pk, vk) = CompressionCircuit::generate_test_parameters();
         let mut rng = OsRng;
 
         // Prover POV
-        let point = Fr::from(scalar) * decaf377::basepoint();
+        let point = scalar * decaf377::basepoint();
         let field_element = point.vartime_compress_to_field();
         let circuit = CompressionCircuit {
             point,
@@ -190,12 +203,12 @@ proptest! {
 proptest! {
 #![proptest_config(ProptestConfig::with_cases(10))]
 #[test]
-    fn groth16_compression_proof_unhappy_path(scalar in (1..65536)) {
+    fn groth16_compression_proof_unhappy_path(scalar in fr_strategy()) {
         let (pk, vk) = CompressionCircuit::generate_test_parameters();
         let mut rng = OsRng;
 
         // Prover POV
-        let point = Fr::from(scalar) * decaf377::basepoint();
+        let point = scalar * decaf377::basepoint();
         let field_element = point.vartime_compress_to_field();
         let circuit = CompressionCircuit {
             point,
@@ -207,8 +220,8 @@ proptest! {
 
         // Verifier POV
         let processed_pvk = Groth16::process_vk(&vk).expect("can process verifying key");
-        let wrong_scalar = scalar + 1;
-        let public_inputs = (Fq::from(wrong_scalar)).to_field_elements().unwrap();
+        let wrong_public_input = Fq::rand(&mut rng);
+        let public_inputs = (wrong_public_input).to_field_elements().unwrap();
         let proof_result =
             Groth16::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
 
@@ -261,12 +274,12 @@ impl DecompressionCircuit {
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(10))]
     #[test]
-        fn groth16_decompression_proof_happy_path(scalar in (1..65536)) {
+        fn groth16_decompression_proof_happy_path(scalar in fr_strategy()) {
             let (pk, vk) = DecompressionCircuit::generate_test_parameters();
             let mut rng = OsRng;
 
             // Prover POV
-            let point = Fr::from(scalar) * decaf377::basepoint();
+            let point = scalar * decaf377::basepoint();
     let field_element = point.vartime_compress_to_field();
     let circuit = DecompressionCircuit {
         point,
@@ -291,12 +304,12 @@ proptest! {
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(10))]
     #[test]
-        fn groth16_decompression_proof_unhappy_path(scalar in (1..65536)) {
+        fn groth16_decompression_proof_unhappy_path(scalar in fr_strategy()) {
             let (pk, vk) = DecompressionCircuit::generate_test_parameters();
             let mut rng = OsRng;
 
             // Prover POV
-            let point = Fr::from(scalar) * decaf377::basepoint();
+            let point = scalar * decaf377::basepoint();
     let field_element = point.vartime_compress_to_field();
     let circuit = DecompressionCircuit {
         point,
@@ -358,15 +371,20 @@ impl ElligatorCircuit {
     }
 }
 
+fn fq_strategy() -> BoxedStrategy<Fq> {
+    any::<[u8; 32]>()
+        .prop_map(|bytes| Fq::from_le_bytes_mod_order(&bytes[..]))
+        .boxed()
+}
+
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(10))]
 #[test]
-fn groth16_elligator_proof_happy_path(scalar in (1..65536)) {
+fn groth16_elligator_proof_happy_path(field_element in fq_strategy()) {
     let (pk, vk) = ElligatorCircuit::generate_test_parameters();
     let mut rng = OsRng;
 
     // Prover POV
-    let field_element = Fq::from(scalar);
     let point = Element::encode_to_curve(&field_element);
     let circuit = ElligatorCircuit {
         point,
@@ -391,12 +409,11 @@ fn groth16_elligator_proof_happy_path(scalar in (1..65536)) {
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(10))]
 #[test]
-fn groth16_elligator_proof_unhappy_path(scalar in (1..65536)) {
+fn groth16_elligator_proof_unhappy_path(field_element in fq_strategy()) {
     let (pk, vk) = ElligatorCircuit::generate_test_parameters();
     let mut rng = OsRng;
 
     // Prover POV
-    let field_element = Fq::from(scalar);
     let point = Element::encode_to_curve(&field_element);
     let circuit = ElligatorCircuit {
         point,
@@ -407,12 +424,56 @@ fn groth16_elligator_proof_unhappy_path(scalar in (1..65536)) {
         .expect("can generate proof");
 
     // Verifier POV
-    let wrong_point = Fr::from(scalar + 1) * decaf377::basepoint();
+    let wrong_point = Fr::rand(&mut rng) * decaf377::basepoint();
     let processed_pvk = Groth16::process_vk(&vk).expect("can process verifying key");
     let public_inputs = wrong_point.to_field_elements().unwrap();
     let proof_result =
         Groth16::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
 
     assert!(!proof_result);
+}
+}
+
+#[derive(Clone, Debug)]
+struct PublicElementInput {
+    pub point: Element,
+}
+
+impl ConstraintSynthesizer<Fq> for PublicElementInput {
+    fn generate_constraints(
+        self,
+        cs: ark_relations::r1cs::ConstraintSystemRef<Fq>,
+    ) -> ark_relations::r1cs::Result<()> {
+        // 1. Add public input variable
+        let _public_var = ElementVar::new_input(cs, || Ok(self.point))?;
+
+        Ok(())
+    }
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(10))]
+#[test]
+fn groth16_public_input(point in element_strategy()) {
+    let test_circuit = PublicElementInput {
+        point: decaf377::basepoint(),
+    };
+    let (pk, vk) = Groth16::circuit_specific_setup(test_circuit, &mut OsRng)
+        .expect("can perform circuit specific setup");
+    let mut rng = OsRng;
+
+    // Prover POV
+    let circuit = PublicElementInput { point };
+    let proof: Proof<Bls12_377> = Groth16::prove(&pk, circuit, &mut rng)
+        .map_err(|_| anyhow::anyhow!("invalid proof"))
+        .expect("can generate proof");
+
+    // Verifier POV
+    let processed_pvk = Groth16::process_vk(&vk).expect("can process verifying key");
+    let public_inputs = point.to_field_elements().unwrap();
+    let proof_result =
+        Groth16::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
+
+    assert!(proof_result);
 }
 }
