@@ -1,6 +1,6 @@
 [package]
 name = "decaf377"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Henry de Valence <hdevalence@hdevalence.ca>", "redshiftzero <jen@penumbra.zone>"]
 description = "A prime-order group designed for use in SNARKs over BLS12-377"
 edition = "2018"
