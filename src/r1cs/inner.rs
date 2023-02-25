@@ -252,13 +252,35 @@ impl AllocVar<Element, Fq> for ElementVar {
                     mode,
                 )?,
             }),
-            AllocationMode::Input => Ok(Self {
-                inner: EdwardsVar::new_variable_omit_prime_order_check(
-                    cs,
-                    || Ok(group_projective_point.inner),
-                    mode,
-                )?,
-            }),
+            AllocationMode::Input => {
+                // let P_var = AffineVar::new_variable_omit_prime_order_check(
+                //     ns!(cs, "P_affine"),
+                //     || Ok(group_projective_point.inner),
+                //     mode,
+                // )?;
+
+                // At this point `P_var` might not be a valid representative of a decaf point.
+                //
+                // One way that is secure but provides stronger constraints than we need:
+                //
+                // 1. Encode (out of circuit) to an Fq
+                let field_element = group_projective_point.vartime_compress_to_field();
+
+                // 2. Witness the encoded value
+                let compressed_P_var = FqVar::new_input(cs.clone(), || Ok(field_element))?;
+
+                // 3. Decode (in circuit)
+                let decoded_var = ElementVar::decompress_from_field(compressed_P_var)?;
+
+                Ok(decoded_var)
+                // Ok(Self {
+                //     inner: EdwardsVar::new_variable_omit_prime_order_check(
+                //         cs,
+                //         || Ok(group_projective_point.inner),
+                //         mode,
+                //     )?,
+                // })
+            }
             AllocationMode::Witness => {
                 //let ge: EdwardsAffine = group_projective_point.inner.into();
                 let P_var = AffineVar::new_variable_omit_prime_order_check(
@@ -283,7 +305,7 @@ impl AllocVar<Element, Fq> for ElementVar {
                 let P_element_var = Self { inner: P_var };
                 decoded_var.enforce_equal(&P_element_var)?;
 
-                Ok(P_element_var)
+                Ok(decoded_var)
             }
         }
     }
