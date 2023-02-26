@@ -150,6 +150,21 @@ impl AllocVar<AffineElement, Fq> for ElementVar {
     }
 }
 
+impl AllocVar<Fq, Fq> for ElementVar {
+    fn new_variable<T: Borrow<Fq>>(
+        cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
+        f: impl FnOnce() -> Result<T, SynthesisError>,
+        mode: AllocationMode,
+    ) -> Result<Self, SynthesisError> {
+        let ns = cs.into();
+        let cs = ns.cs();
+        let inner = InnerElementVar::new_variable(cs, f, mode)?;
+        Ok(Self {
+            inner: LazyElementVar::new_from_element(inner),
+        })
+    }
+}
+
 impl ToBitsGadget<Fq> for ElementVar {
     fn to_bits_le(&self) -> Result<Vec<Boolean<Fq>>, SynthesisError> {
         let compressed_fq = self

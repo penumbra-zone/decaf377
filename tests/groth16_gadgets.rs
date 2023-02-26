@@ -41,7 +41,8 @@ impl ConstraintSynthesizer<Fq> for DiscreteLogCircuit {
         let witness_vars = UInt8::new_witness_vec(cs.clone(), &self.scalar)?;
 
         // 2. Add public input variable
-        let public_var = ElementVar::new_input(cs.clone(), || Ok(self.public))?;
+        let compressed_public = self.public.vartime_compress_to_field();
+        let public_var: ElementVar = AllocVar::new_input(cs.clone(), || Ok(compressed_public))?;
         let basepoint_var = ElementVar::new_constant(cs, basepoint())?;
         // 3. Add constraint that scalar * Basepoint = public
         let test_public = basepoint_var.scalar_mul_le(witness_vars.to_bits_le()?.iter())?;
@@ -247,7 +248,8 @@ impl ConstraintSynthesizer<Fq> for DecompressionCircuit {
         let witness_var = FqVar::new_witness(cs.clone(), || Ok(self.field_element))?;
 
         // 2. Add public input variable
-        let public_var = ElementVar::new_input(cs, || Ok(self.point))?;
+        let compressed_public = self.point.vartime_compress_to_field();
+        let public_var: ElementVar = AllocVar::new_input(cs, || Ok(compressed_public))?;
 
         // 3. Add decompression constraints
         let test_public = ElementVar::decompress_from_field(witness_var)?;
@@ -347,7 +349,8 @@ impl ConstraintSynthesizer<Fq> for ElligatorCircuit {
         let witness_var = FqVar::new_witness(cs.clone(), || Ok(self.field_element))?;
 
         // 2. Add public input variable
-        let public_var = ElementVar::new_input(cs, || Ok(self.point))?;
+        let compressed_public = self.point.vartime_compress_to_field();
+        let public_var: ElementVar = AllocVar::new_input(cs, || Ok(compressed_public))?;
 
         // 3. Add elligator constraints
         let test_public = ElementVar::encode_to_curve(&witness_var)?;
@@ -445,7 +448,8 @@ impl ConstraintSynthesizer<Fq> for PublicElementInput {
         cs: ark_relations::r1cs::ConstraintSystemRef<Fq>,
     ) -> ark_relations::r1cs::Result<()> {
         // 1. Add public input variable
-        let _public_var = ElementVar::new_input(cs, || Ok(self.point))?;
+        let compressed_public = self.point.vartime_compress_to_field();
+        let _public_var: ElementVar = AllocVar::new_input(cs, || Ok(compressed_public))?;
 
         Ok(())
     }
