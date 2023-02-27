@@ -349,8 +349,7 @@ impl ConstraintSynthesizer<Fq> for ElligatorCircuit {
         let witness_var = FqVar::new_witness(cs.clone(), || Ok(self.field_element))?;
 
         // 2. Add public input variable
-        let compressed_public = self.point.vartime_compress_to_field();
-        let public_var: ElementVar = AllocVar::new_input(cs, || Ok(compressed_public))?;
+        let public_var: ElementVar = AllocVar::new_input(cs, || Ok(self.point))?;
 
         // 3. Add elligator constraints
         let test_public = ElementVar::encode_to_curve(&witness_var)?;
@@ -448,8 +447,7 @@ impl ConstraintSynthesizer<Fq> for PublicElementInput {
         cs: ark_relations::r1cs::ConstraintSystemRef<Fq>,
     ) -> ark_relations::r1cs::Result<()> {
         // 1. Add public input variable
-        let compressed_public = self.point.vartime_compress_to_field();
-        let _public_var: ElementVar = AllocVar::new_input(cs, || Ok(compressed_public))?;
+        let _public_var: ElementVar = AllocVar::new_input(cs, || Ok(self.point))?;
 
         Ok(())
     }
