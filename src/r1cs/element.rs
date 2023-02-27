@@ -133,10 +133,19 @@ impl AllocVar<Element, Fq> for ElementVar {
     ) -> Result<Self, SynthesisError> {
         let ns = cs.into();
         let cs = ns.cs();
-        let inner = InnerElementVar::new_variable(cs, f, mode)?;
-        Ok(Self {
-            inner: LazyElementVar::new_from_element(inner),
-        })
+        match mode {
+            AllocationMode::Input => {
+                let value: Element = *f()?.borrow();
+                let compressed = value.vartime_compress_to_field();
+                Ok(Self::new_input(cs, || Ok(compressed))?)
+            }
+            _ => {
+                let inner = InnerElementVar::new_variable(cs, f, mode)?;
+                Ok(Self {
+                    inner: LazyElementVar::new_from_element(inner),
+                })
+            }
+        }
     }
 }
 

@@ -253,7 +253,7 @@ impl AllocVar<Element, Fq> for ElementVar {
                 )?,
             }),
             AllocationMode::Input => {
-                unimplemented!()
+                unreachable!()
             }
             AllocationMode::Witness => {
                 //let ge: EdwardsAffine = group_projective_point.inner.into();
