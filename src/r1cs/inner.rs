@@ -226,37 +226,6 @@ impl CondSelectGadget<Fq> for ElementVar {
     }
 }
 
-impl AllocVar<Fq, Fq> for ElementVar {
-    fn new_variable<T: std::borrow::Borrow<Fq>>(
-        cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
-        f: impl FnOnce() -> Result<T, SynthesisError>,
-        mode: AllocationMode,
-    ) -> Result<Self, SynthesisError> {
-        let ns = cs.into();
-        let cs = ns.cs();
-        let f = || Ok(*f()?.borrow());
-        let field_element = f()?;
-
-        // `new_variable` should *not* allocate any new variables or constraints in `cs` when
-        // the mode is `AllocationMode::Constant` (see `AllocVar::new_constant`).
-        match mode {
-            AllocationMode::Constant => unimplemented!(),
-            AllocationMode::Input => {
-                // 1. Witness the encoded value
-                let compressed_P_var = FqVar::new_input(cs, || Ok(field_element))?;
-
-                // 3. Decode (in circuit)
-                let decoded_var = ElementVar::decompress_from_field(compressed_P_var)?;
-
-                Ok(decoded_var)
-            }
-            AllocationMode::Witness => {
-                unimplemented!()
-            }
-        }
-    }
-}
-
 // This lets us use `new_constant`, `new_input` (public), or `new_witness` to add
 // decaf elements to an R1CS constraint system.
 impl AllocVar<Element, Fq> for ElementVar {

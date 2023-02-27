@@ -158,9 +158,9 @@ impl AllocVar<Fq, Fq> for ElementVar {
     ) -> Result<Self, SynthesisError> {
         let ns = cs.into();
         let cs = ns.cs();
-        let inner = InnerElementVar::new_variable(cs, f, mode)?;
+        let compressed = FqVar::new_variable(cs, f, mode)?;
         Ok(Self {
-            inner: LazyElementVar::new_from_element(inner),
+            inner: LazyElementVar::new_from_encoding(compressed),
         })
     }
 }
