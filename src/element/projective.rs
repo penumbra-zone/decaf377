@@ -11,7 +11,7 @@ use crate::{Fq, Fr};
 
 #[derive(Copy, Clone)]
 pub struct Element {
-    pub(crate) inner: EdwardsProjective,
+    pub inner: EdwardsProjective,
 }
 
 impl Hash for Element {
