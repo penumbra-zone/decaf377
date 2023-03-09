@@ -1,3 +1,11 @@
 # 0.1.0
 
 * Initial release.
+
+# 0.1.1
+
+* Fix: Disable `print-trace` feature in R1CS gadgets.
+
+# 0.2.0
+
+* Fix: Use compressed representation for public elements in-circuit.
