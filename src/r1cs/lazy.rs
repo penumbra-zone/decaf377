@@ -37,6 +37,9 @@ impl LazyElementVar {
         if matches!(&*self.inner.borrow(), Inner::Encoding(_)) {
             let encoding = self.encoding()?;
             let element = ElementVar::decompress_from_field(encoding.clone())?;
+            use ark_r1cs_std::R1CSVar;
+            dbg!(encoding.value());
+            dbg!(element.value());
             *self.inner.borrow_mut() = Inner::EncodingAndElement { encoding, element };
         }
         match &*self.inner.borrow() {

@@ -136,6 +136,7 @@ impl AllocVar<Element, Fq> for ElementVar {
         match mode {
             AllocationMode::Input => {
                 let value: Element = *f()?.borrow();
+                dbg!(value.inner);
                 let compressed = value.vartime_compress_to_field();
                 Ok(Self::new_input(cs, || Ok(compressed))?)
             }
@@ -168,9 +169,12 @@ impl AllocVar<Fq, Fq> for ElementVar {
         let ns = cs.into();
         let cs = ns.cs();
         let compressed = FqVar::new_variable(cs, f, mode)?;
-        Ok(Self {
+        dbg!(compressed.value());
+        let element = Self {
             inner: LazyElementVar::new_from_encoding(compressed),
-        })
+        };
+        dbg!(element.value());
+        Ok(element)
     }
 }
 
