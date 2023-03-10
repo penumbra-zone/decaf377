@@ -17,19 +17,24 @@ tracing = "0.1"
 tracing-subscriber = "0.2"
 anyhow = "1.0"
 ark-relations = "0.3"
-ark-r1cs-std = {version = "0.3", optional=true }
-ark-std = "0.3"
-ark-ec = "0.3"
-ark-ff = "0.3"
+ark-r1cs-std = { version = "0.3", optional=true, default-features=false }
+ark-std = { version = "0.3", default-features=false }
+ark-ec = { version = "0.3", default-features=false }
+ark-ff =  { version = "0.3", default-features=false }
 ark-serialize = "0.3"
 ark-bls12-377 = "0.3"
 ark-ed-on-bls12-377 = { version = "0.3", features = ["r1cs"] }
-ark-groth16 = { version = "0.3", optional=true }
+ark-groth16 = { version = "0.3", default-features=false, optional=true }
 ark-snark = { version = "0.3", optional=true }
 zeroize = "1.4"
 
+# This matches what ark-std (a library for no_std compatibility) does, having
+# a default feature of std - without the ark-std std feature, decaf377 doesn't
+# compile
 [features]
-default = []
+default = ["std"]
+std = ["ark-std/std"]
+fast-proofs = ["ark-ff/parallel", "ark-ec/parallel", "ark-groth16/parallel", "ark-std/parallel", "ark-r1cs-std/parallel"]
 r1cs = ["ark-r1cs-std", "ark-groth16", "ark-snark"]
 
 [dev-dependencies]
