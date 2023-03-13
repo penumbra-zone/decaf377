@@ -25,6 +25,12 @@ functionality, and works the same way inside and outside of a circuit.
 More details are available on the [Penumbra
 website](https://protocol.penumbra.zone/main/crypto/decaf377.html).
 
+## Features
+
+* `std`: default, for use in `std` environments,
+* `r1cs`: enables rank-1 constraint system gadgets,
+* `parallel`: enables the use of parallelism.
+
 ## Benchmarks
 
 Run `criterion` benchmarks using:

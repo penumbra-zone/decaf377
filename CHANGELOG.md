@@ -9,3 +9,7 @@
 # 0.2.0
 
 * Fix: Use compressed representation for public elements in-circuit.
+
+# 0.3.0
+
+* Disable internal parallelism

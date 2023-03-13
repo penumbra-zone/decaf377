@@ -1,6 +1,6 @@
 [package]
 name = "decaf377"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Henry de Valence <hdevalence@hdevalence.ca>", "redshiftzero <jen@penumbra.zone>"]
 description = "A prime-order group designed for use in SNARKs over BLS12-377"
 edition = "2018"
@@ -34,7 +34,7 @@ zeroize = "1.4"
 [features]
 default = ["std"]
 std = ["ark-std/std"]
-fast-proofs = ["ark-ff/parallel", "ark-ec/parallel", "ark-groth16/parallel", "ark-std/parallel", "ark-r1cs-std/parallel"]
+parallel = ["ark-ff/parallel", "ark-ec/parallel", "ark-groth16/parallel", "ark-std/parallel", "ark-r1cs-std/parallel"]
 r1cs = ["ark-r1cs-std", "ark-groth16", "ark-snark"]
 
 [dev-dependencies]
