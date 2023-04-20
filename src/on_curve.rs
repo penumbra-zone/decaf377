@@ -1,7 +1,4 @@
-use ark_ec::{
-    models::{twisted_edwards::Projective, twisted_edwards::TECurveConfig},
-    ProjectiveCurve,
-};
+use ark_ec::models::{twisted_edwards::Projective, twisted_edwards::TECurveConfig};
 use ark_ff::{BigInteger, Field, PrimeField, Zero};
 use ark_serialize::CanonicalSerialize;
 
