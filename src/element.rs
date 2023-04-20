@@ -10,7 +10,11 @@ pub mod projective;
 pub use affine::AffineElement;
 pub use projective::Element;
 
-impl Valid for Element {}
+impl Valid for Element {
+    fn check(&self) -> Result<(), ark_serialize::SerializationError> {
+        todo!()
+    }
+}
 
 impl ScalarMul for Element {
     type MulBase = AffineElement;
@@ -62,11 +66,15 @@ impl CurveGroup for Element {
     // This type is supposed to represent an element of the entire elliptic
     // curve group, not just the prime-order subgroup. Since this is decaf,
     // this is just an `Element` again.
-    type FullGroup = Element;
+    type FullGroup = AffineElement;
 
-    fn normalize_batch(v: &mut [Self]) {
+    fn normalize_batch(v: &[Self]) -> Vec<AffineElement> {
         let mut v_inner = v.iter_mut().map(|g| g.inner).collect::<Vec<_>>();
-        EdwardsProjective::normalize_batch(&mut v_inner[..]);
+        let result = EdwardsProjective::normalize_batch(&mut v_inner[..]);
+        result
+            .into_iter()
+            .map(|g| AffineElement { inner: g })
+            .collect::<Vec<_>>()
     }
 
     fn into_affine(self) -> Self::Affine {
@@ -74,7 +82,11 @@ impl CurveGroup for Element {
     }
 }
 
-impl Valid for AffineElement {}
+impl Valid for AffineElement {
+    fn check(&self) -> Result<(), ark_serialize::SerializationError> {
+        todo!()
+    }
+}
 
 impl AffineRepr for AffineElement {
     type Config = EdwardsConfig;
@@ -103,10 +115,7 @@ impl AffineRepr for AffineElement {
         EdwardsAffine::from_random_bytes(bytes).map(|inner| AffineElement { inner })
     }
 
-    fn mul_bigint<S: Into<<Self::ScalarField as ark_ff::PrimeField>::BigInt>>(
-        &self,
-        other: S,
-    ) -> Self::Group {
+    fn mul_bigint(&self, other: impl AsRef<[u64]>) -> Self::Group {
         Element {
             inner: self.inner.mul_bigint(other),
         }

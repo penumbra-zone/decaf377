@@ -1,8 +1,8 @@
 use std::hash::Hash;
 
 use ark_ed_on_bls12_377::EdwardsAffine;
-use ark_ff::Zero;
 use ark_std::fmt::{Display, Formatter, Result as FmtResult};
+use ark_std::Zero;
 
 use zeroize::Zeroize;
 
@@ -25,24 +25,14 @@ impl Default for AffineElement {
     }
 }
 
-impl Zero for AffineElement {
-    fn zero() -> Self {
-        Self::default()
-    }
-
-    fn is_zero(&self) -> bool {
-        self.inner.is_zero()
-    }
-}
-
-impl core::iter::Sum<Self> for AffineElement {
-    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+impl core::iter::Sum<AffineElement> for Element {
+    fn sum<I: Iterator<Item = AffineElement>>(iter: I) -> Self {
         iter.fold(Self::zero(), core::ops::Add::add)
     }
 }
 
-impl<'a> core::iter::Sum<&'a AffineElement> for AffineElement {
-    fn sum<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
+impl<'a> core::iter::Sum<&'a AffineElement> for Element {
+    fn sum<I: Iterator<Item = &'a AffineElement>>(iter: I) -> Self {
         iter.fold(Self::zero(), core::ops::Add::add)
     }
 }
