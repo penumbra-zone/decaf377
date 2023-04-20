@@ -2,7 +2,7 @@
 use std::borrow::Borrow;
 use std::ops::{Add, AddAssign, Sub, SubAssign};
 
-use ark_ec::{AffineCurve, TEModelParameters};
+use ark_ec::{AffineRepr, TEModelParameters};
 use ark_ed_on_bls12_377::{
     constraints::{EdwardsVar, FqVar},
     EdwardsAffine, EdwardsConfig,

@@ -1,4 +1,4 @@
-use ark_ec::{AffineCurve, ProjectiveCurve};
+use ark_ec::{AffineRepr, ProjectiveCurve};
 use ark_ed_on_bls12_377::{EdwardsAffine, EdwardsProjective};
 
 use crate::{Fq, Fr};
@@ -12,7 +12,7 @@ pub use projective::Element;
 impl ProjectiveCurve for Element {
     // We implement `ProjectiveCurve` as it is required by the `CurveVar`
     // trait used in the R1CS feature. The `ProjectiveCurve` trait requires
-    // an affine representation of `Element` to be defined, and `AffineCurve`
+    // an affine representation of `Element` to be defined, and `AffineRepr`
     // to be implemented on that type.
     const COFACTOR: &'static [u64] = &[1];
 
@@ -47,7 +47,7 @@ impl ProjectiveCurve for Element {
     }
 }
 
-impl AffineCurve for AffineElement {
+impl AffineRepr for AffineElement {
     const COFACTOR: &'static [u64] = &[1];
 
     type ScalarField = Fr;
