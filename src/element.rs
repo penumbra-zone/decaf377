@@ -1,5 +1,6 @@
-use ark_ec::{AffineRepr, ProjectiveCurve};
-use ark_ed_on_bls12_377::{EdwardsAffine, EdwardsProjective};
+use ark_ec::{AffineRepr, CurveGroup, Group};
+use ark_ed_on_bls12_377::{EdwardsAffine, EdwardsConfig, EdwardsProjective};
+use ark_serialize::Valid;
 
 use crate::{Fq, Fr};
 
@@ -9,31 +10,10 @@ pub mod projective;
 pub use affine::AffineElement;
 pub use projective::Element;
 
-impl ProjectiveCurve for Element {
-    // We implement `ProjectiveCurve` as it is required by the `CurveVar`
-    // trait used in the R1CS feature. The `ProjectiveCurve` trait requires
-    // an affine representation of `Element` to be defined, and `AffineRepr`
-    // to be implemented on that type.
-    const COFACTOR: &'static [u64] = &[1];
+impl Valid for Element {}
 
+impl Group for Element {
     type ScalarField = Fr;
-
-    type BaseField = Fq;
-
-    type Affine = AffineElement;
-
-    fn prime_subgroup_generator() -> Self {
-        crate::basepoint()
-    }
-
-    fn batch_normalization(v: &mut [Self]) {
-        let mut v_inner = v.iter_mut().map(|g| g.inner).collect::<Vec<_>>();
-        EdwardsProjective::batch_normalization(&mut v_inner[..]);
-    }
-
-    fn is_normalized(&self) -> bool {
-        self.inner.is_normalized()
-    }
 
     fn double_in_place(&mut self) -> &mut Self {
         let inner = *self.inner.double_in_place();
@@ -41,22 +21,64 @@ impl ProjectiveCurve for Element {
         self
     }
 
-    fn add_assign_mixed(&mut self, other: &Self::Affine) {
-        let proj_other: Element = other.into();
-        *self += proj_other;
+    fn generator() -> Self {
+        crate::basepoint()
+    }
+
+    fn mul_bigint(&self, other: impl AsRef<[u64]>) -> Self {
+        let inner = *self.inner.mul_bigint(other);
+        Element { inner }
     }
 }
 
+impl CurveGroup for Element {
+    // We implement `CurveGroup` as it is required by the `CurveVar`
+    // trait used in the R1CS feature. The `ProjectiveCurve` trait requires
+    // an affine representation of `Element` to be defined, and `AffineRepr`
+    // to be implemented on that type.
+    type Config = EdwardsConfig;
+
+    type BaseField = Fq;
+
+    type Affine = AffineElement;
+
+    // This type is supposed to represent an element of the entire elliptic
+    // curve group, not just the prime-order subgroup. Since this is decaf,
+    // this is just an `Element` again.
+    type FullGroup = Element;
+
+    fn normalize_batch(v: &mut [Self]) {
+        let mut v_inner = v.iter_mut().map(|g| g.inner).collect::<Vec<_>>();
+        EdwardsProjective::normalize_batch(&mut v_inner[..]);
+    }
+
+    fn into_affine(self) -> Self::Affine {
+        self.into()
+    }
+}
+
+impl Valid for AffineElement {}
+
 impl AffineRepr for AffineElement {
-    const COFACTOR: &'static [u64] = &[1];
+    type Config = EdwardsConfig;
 
     type ScalarField = Fr;
 
     type BaseField = Fq;
 
-    type Projective = Element;
+    //type Group = Element;
 
-    fn prime_subgroup_generator() -> Self {
+    fn xy(&self) -> (Self::BaseField, Self::BaseField) {
+        self.inner.xy()
+    }
+
+    fn zero() -> Self {
+        AffineElement {
+            inner: EdwardsAffine::zero(),
+        }
+    }
+
+    fn generator() -> Self {
         crate::basepoint().into()
     }
 
@@ -64,25 +86,22 @@ impl AffineRepr for AffineElement {
         EdwardsAffine::from_random_bytes(bytes).map(|inner| AffineElement { inner })
     }
 
-    fn mul<S: Into<<Self::ScalarField as ark_ff::PrimeField>::BigInt>>(
+    fn mul_bigint<S: Into<<Self::ScalarField as ark_ff::PrimeField>::BigInt>>(
         &self,
         other: S,
-    ) -> Self::Projective {
+    ) -> Self::Group {
         Element {
-            inner: self.inner.mul(other),
+            inner: self.inner.mul_bigint(other),
         }
     }
 
-    fn mul_by_cofactor_to_projective(&self) -> Self::Projective {
-        Element {
-            inner: self.inner.mul_by_cofactor_to_projective(),
-        }
+    fn clear_cofactor(&self) -> Self {
+        // This is decaf so we're just returning the same point.
+        self
     }
 
-    fn mul_by_cofactor_inv(&self) -> Self {
-        AffineElement {
-            inner: self.inner.mul_by_cofactor_inv(),
-        }
+    fn mul_by_cofactor_to_group(&self) -> Self::Group {
+        self.into()
     }
 }
 
