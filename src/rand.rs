@@ -6,7 +6,7 @@ use ark_std::rand::{
     Rng,
 };
 
-use crate::{Element, Encoding};
+use crate::{AffineElement, Element, Encoding};
 
 // TODO: Is this the best way to generate point?
 impl Distribution<Element> for Standard {
@@ -17,7 +17,7 @@ impl Distribution<Element> for Standard {
             let test_point = EdwardsProjective::rand(rng);
             let mut bytes = [0u8; 32];
             test_point
-                .serialize(&mut bytes[..])
+                .serialize_compressed(&mut bytes[..])
                 .expect("serialization into array should be infallible");
 
             // 2. Check if valid decaf point. If not continue.
@@ -25,5 +25,12 @@ impl Distribution<Element> for Standard {
                 return p;
             }
         }
+    }
+}
+
+impl Distribution<AffineElement> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> AffineElement {
+        let point = Element::sample(&mut rng);
+        point.into()
     }
 }

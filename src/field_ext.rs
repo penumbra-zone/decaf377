@@ -13,22 +13,22 @@ pub trait FieldExt: Sized {
 impl FieldExt for Fr {
     fn to_bytes(&self) -> [u8; 32] {
         let mut bytes = [0u8; 32];
-        debug_assert_eq!(self.serialized_size(), 32);
-        self.serialize(&mut bytes[..])
+        debug_assert_eq!(self.serialized_size(ark_serialize::Compress::Yes), 32);
+        self.serialize_compressed(&mut bytes[..])
             .expect("serialization into array should be infallible");
         bytes
     }
 
     fn from_bytes(bytes: [u8; 32]) -> Result<Self, EncodingError> {
-        Self::deserialize(&bytes[..]).map_err(|_| EncodingError::InvalidEncoding)
+        Self::deserialize_compressed(&bytes[..]).map_err(|_| EncodingError::InvalidEncoding)
     }
 }
 
 impl FieldExt for Fq {
     fn to_bytes(&self) -> [u8; 32] {
         let mut bytes = [0u8; 32];
-        debug_assert_eq!(self.serialized_size(), 32);
-        self.serialize(&mut bytes[..])
+        debug_assert_eq!(self.serialized_size(ark_serialize::Compress::Yes), 32);
+        self.serialize_compressed(&mut bytes[..])
             .expect("serialization into array should be infallible");
         debug_assert!(bytes[31] >> 5 == 0u8);
 
@@ -42,6 +42,6 @@ impl FieldExt for Fq {
             return Err(EncodingError::InvalidEncoding);
         }
 
-        Self::deserialize(&bytes[..]).map_err(|_| EncodingError::InvalidEncoding)
+        Self::deserialize_compressed(&bytes[..]).map_err(|_| EncodingError::InvalidEncoding)
     }
 }

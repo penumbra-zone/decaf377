@@ -7,7 +7,7 @@ use ark_std::fmt::{Display, Formatter, Result as FmtResult};
 
 use zeroize::Zeroize;
 
-use crate::{Fq, Fr};
+use crate::{AffineElement, Fq, Fr};
 
 #[derive(Copy, Clone)]
 pub struct Element {
@@ -122,6 +122,18 @@ impl core::iter::Sum<Self> for Element {
 }
 
 impl<'a> core::iter::Sum<&'a Element> for Element {
+    fn sum<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
+        iter.fold(Self::zero(), core::ops::Add::add)
+    }
+}
+
+impl core::iter::Sum<AffineElement> for Element {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.fold(Self::zero(), core::ops::Add::add)
+    }
+}
+
+impl<'a> core::iter::Sum<&'a AffineElement> for Element {
     fn sum<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
         iter.fold(Self::zero(), core::ops::Add::add)
     }

@@ -1,4 +1,4 @@
-use ark_ec::{AffineRepr, CurveGroup, Group};
+use ark_ec::{AffineRepr, CurveGroup, Group, ScalarMul, VariableBaseMSM};
 use ark_ed_on_bls12_377::{EdwardsAffine, EdwardsConfig, EdwardsProjective};
 use ark_serialize::Valid;
 
@@ -11,6 +11,23 @@ pub use affine::AffineElement;
 pub use projective::Element;
 
 impl Valid for Element {}
+
+impl ScalarMul for Element {
+    type MulBase = AffineElement;
+
+    const NEGATION_IS_CHEAP: bool = true;
+
+    fn batch_convert_to_mul_base(bases: &[Self]) -> Vec<Self::MulBase> {
+        let mut bases_inner = bases.iter_mut().map(|g| g.inner).collect::<Vec<_>>();
+        let result = EdwardsProjective::batch_convert_to_mul_base(&bases_inner[..]);
+        result
+            .into_iter()
+            .map(|g| AffineElement { inner: g })
+            .collect::<Vec<_>>()
+    }
+}
+
+impl VariableBaseMSM for Element {}
 
 impl Group for Element {
     type ScalarField = Fr;
@@ -26,7 +43,7 @@ impl Group for Element {
     }
 
     fn mul_bigint(&self, other: impl AsRef<[u64]>) -> Self {
-        let inner = *self.inner.mul_bigint(other);
+        let inner = self.inner.mul_bigint(other);
         Element { inner }
     }
 }
@@ -66,9 +83,9 @@ impl AffineRepr for AffineElement {
 
     type BaseField = Fq;
 
-    //type Group = Element;
+    type Group = Element;
 
-    fn xy(&self) -> (Self::BaseField, Self::BaseField) {
+    fn xy(&self) -> Option<(&Self::BaseField, &Self::BaseField)> {
         self.inner.xy()
     }
 
@@ -97,7 +114,7 @@ impl AffineRepr for AffineElement {
 
     fn clear_cofactor(&self) -> Self {
         // This is decaf so we're just returning the same point.
-        self
+        *self
     }
 
     fn mul_by_cofactor_to_group(&self) -> Self::Group {

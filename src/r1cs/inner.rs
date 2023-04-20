@@ -289,7 +289,7 @@ impl AllocVar<AffineElement, Fq> for ElementVar {
         f: impl FnOnce() -> Result<T, SynthesisError>,
         mode: AllocationMode,
     ) -> Result<Self, SynthesisError> {
-        Self::new_variable(cs, || f().map(|b| b.borrow().into_projective()), mode)
+        Self::new_variable(cs, || f().map(|b| b.borrow().into_group()), mode)
     }
 }
 

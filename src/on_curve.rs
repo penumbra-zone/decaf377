@@ -1,3 +1,5 @@
+use std::ops::Mul;
+
 use ark_ec::models::{twisted_edwards::Projective, twisted_edwards::TECurveConfig};
 use ark_ff::{BigInteger, Field, PrimeField, Zero};
 use ark_serialize::CanonicalSerialize;
@@ -22,7 +24,7 @@ impl<P: TECurveConfig> OnCurve for Projective<P> {
         let point_order_2r = {
             let mut r_bytes = [0u8; 32];
             (*constants::R)
-                .serialize(&mut r_bytes[..])
+                .serialize_compressed(&mut r_bytes[..])
                 .expect("serialization into array should be infallible");
             let r = P::ScalarField::from_le_bytes_mod_order(&r_bytes);
             let mut two_r_bigint = r.into_repr();
