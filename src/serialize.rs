@@ -43,7 +43,11 @@ impl FromBytes for AffineElement {
 }
 
 impl CanonicalDeserialize for AffineElement {
-    fn deserialize<R: std::io::Read>(reader: R) -> Result<Self, ark_serialize::SerializationError> {
+    fn deserialize_with_mode<R: Read>(
+        reader: R,
+        compress: ark_serialize::Compress,
+        validate: ark_serialize::Validate,
+    ) -> Result<Self, ark_serialize::SerializationError> {
         let bytes = Encoding::deserialize(reader)?;
         let element: Element = bytes
             .try_into()
@@ -57,9 +61,10 @@ impl CanonicalSerialize for AffineElement {
         32
     }
 
-    fn serialize<W: std::io::Write>(
+    fn serialize_with_mode<W: Write>(
         &self,
-        writer: W,
+        mut writer: W,
+        mode: ark_serialize::Compress,
     ) -> Result<(), ark_serialize::SerializationError> {
         let element: Element = self.into();
         element.vartime_compress().serialize(writer)
