@@ -149,9 +149,10 @@ impl CanonicalSerialize for Encoding {
         32
     }
 
-    fn serialize<W: std::io::Write>(
+    fn serialize_with_mode<W: std::io::Write>(
         &self,
         mut writer: W,
+        mode: ark_serialize::Compress,
     ) -> Result<(), ark_serialize::SerializationError> {
         writer.write_all(&self.0[..])?;
         Ok(())
@@ -163,9 +164,10 @@ impl CanonicalSerialize for Element {
         32
     }
 
-    fn serialize<W: std::io::Write>(
+    fn serialize_with_mode<W: std::io::Write>(
         &self,
-        writer: W,
+        mut writer: W,
+        mode: ark_serialize::Compress,
     ) -> Result<(), ark_serialize::SerializationError> {
         self.vartime_compress().serialize(writer)
     }
@@ -239,8 +241,10 @@ impl From<Element> for [u8; 32] {
 }
 
 impl CanonicalDeserialize for Encoding {
-    fn deserialize<R: std::io::Read>(
-        mut reader: R,
+    fn deserialize_with_mode<R: std::io::Read>(
+        reader: R,
+        compress: ark_serialize::Compress,
+        validate: ark_serialize::Validate,
     ) -> Result<Self, ark_serialize::SerializationError> {
         let mut bytes = [0u8; 32];
         reader.read_exact(&mut bytes[..])?;
@@ -249,7 +253,11 @@ impl CanonicalDeserialize for Encoding {
 }
 
 impl CanonicalDeserialize for Element {
-    fn deserialize<R: std::io::Read>(reader: R) -> Result<Self, ark_serialize::SerializationError> {
+    fn deserialize_with_mode<R: std::io::Read>(
+        reader: R,
+        compress: ark_serialize::Compress,
+        validate: ark_serialize::Validate,
+    ) -> Result<Self, ark_serialize::SerializationError> {
         let bytes = Encoding::deserialize(reader)?;
         bytes
             .try_into()
