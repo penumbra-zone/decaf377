@@ -12,4 +12,8 @@
 
 # 0.3.0
 
-* Disable internal parallelism
+* Disable internal parallelism.
+
+# 0.4.0
+
+* Upgrade to 0.4.x series of Arkworks dependencies.

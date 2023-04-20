@@ -1,7 +1,7 @@
 [package]
 name = "decaf377"
-version = "0.3.0"
-authors = ["Henry de Valence <hdevalence@hdevalence.ca>", "redshiftzero <jen@penumbra.zone>"]
+version = "0.4.0"
+authors = ["Henry de Valence <hdevalence@hdevalence.ca>", "redshiftzero <jen@penumbralabs.xyz>"]
 description = "A prime-order group designed for use in SNARKs over BLS12-377"
 edition = "2018"
 license = "MIT OR Apache-2.0"
