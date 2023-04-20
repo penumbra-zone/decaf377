@@ -1,5 +1,5 @@
 use ark_ec::{
-    models::{twisted_edwards_extended::GroupProjective, TEModelParameters},
+    models::{twisted_edwards::Projective, twisted_edwards::TECurveConfig},
     ProjectiveCurve,
 };
 use ark_ff::{BigInteger, Field, PrimeField, Zero};
@@ -11,7 +11,7 @@ pub trait OnCurve {
     fn is_on_curve(&self) -> bool;
 }
 
-impl<P: TEModelParameters> OnCurve for GroupProjective<P> {
+impl<P: TECurveConfig> OnCurve for Projective<P> {
     #[allow(non_snake_case)]
     fn is_on_curve(&self) -> bool {
         let XX = self.x.square();
@@ -30,7 +30,7 @@ impl<P: TEModelParameters> OnCurve for GroupProjective<P> {
             let r = P::ScalarField::from_le_bytes_mod_order(&r_bytes);
             let mut two_r_bigint = r.into_repr();
             two_r_bigint.mul2();
-            self.mul(two_r_bigint) == GroupProjective::zero()
+            self.mul(two_r_bigint) == Projective::zero()
         };
 
         on_curve && on_segre_embedding && z_non_zero && point_order_2r

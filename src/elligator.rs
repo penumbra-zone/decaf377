@@ -1,5 +1,5 @@
 #![allow(non_snake_case)]
-use ark_ec::models::TEModelParameters;
+use ark_ec::twisted_edwards::TECurveConfig;
 use ark_ed_on_bls12_377::{EdwardsConfig, EdwardsProjective};
 use ark_ff::Field;
 
