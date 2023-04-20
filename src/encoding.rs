@@ -3,7 +3,7 @@
 use std::convert::{TryFrom, TryInto};
 
 use ark_ec::models::TEModelParameters;
-use ark_ed_on_bls12_377::{EdwardsParameters, EdwardsProjective};
+use ark_ed_on_bls12_377::{EdwardsConfig, EdwardsProjective};
 use ark_ff::{Field, One};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 
@@ -35,7 +35,7 @@ impl Encoding {
 
         // This isn't a constant, only because traits don't have const methods
         // yet and multiplication is only implemented as part of the Mul trait.
-        let D4: Fq = EdwardsParameters::COEFF_D * Fq::from(4u32);
+        let D4: Fq = EdwardsConfig::COEFF_D * Fq::from(4u32);
 
         // 1/2. Reject unless s is canonically encoded and nonnegative.
         let s = Fq::deserialize(&self.0[..]).map_err(|_| EncodingError::InvalidEncoding)?;
@@ -89,7 +89,7 @@ impl Element {
     pub fn vartime_compress_to_field(&self) -> Fq {
         // This isn't a constant, only because traits don't have const methods
         // yet and subtraction is only implemented as part of the Sub trait.
-        let A_MINUS_D = EdwardsParameters::COEFF_A - EdwardsParameters::COEFF_D;
+        let A_MINUS_D = EdwardsConfig::COEFF_A - EdwardsConfig::COEFF_D;
         let p = &self.inner;
 
         // 1.

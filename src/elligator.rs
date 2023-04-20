@@ -1,6 +1,6 @@
 #![allow(non_snake_case)]
 use ark_ec::models::TEModelParameters;
-use ark_ed_on_bls12_377::{EdwardsParameters, EdwardsProjective};
+use ark_ed_on_bls12_377::{EdwardsConfig, EdwardsProjective};
 use ark_ff::Field;
 
 use crate::{
@@ -12,8 +12,8 @@ impl Element {
     /// Elligator 2 map to decaf377 point
     fn elligator_map(r_0: &Fq) -> Element {
         // Ref: `Decaf_1_1_Point.elligator` (optimized) in `ristretto.sage`
-        let A = EdwardsParameters::COEFF_A;
-        let D = EdwardsParameters::COEFF_D;
+        let A = EdwardsConfig::COEFF_A;
+        let D = EdwardsConfig::COEFF_D;
 
         let r = *ZETA * r_0.square();
 
@@ -44,8 +44,8 @@ impl Element {
 
         // Convert point to extended projective (X : Y : Z : T)
         let E = *TWO * s;
-        let F = *ONE + EdwardsParameters::COEFF_A * s.square();
-        let G = *ONE - EdwardsParameters::COEFF_A * s.square();
+        let F = *ONE + EdwardsConfig::COEFF_A * s.square();
+        let G = *ONE - EdwardsConfig::COEFF_A * s.square();
         let H = t;
         let result = Element {
             inner: EdwardsProjective::new(E * H, F * G, E * G, F * H),

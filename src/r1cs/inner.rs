@@ -5,7 +5,7 @@ use std::ops::{Add, AddAssign, Sub, SubAssign};
 use ark_ec::{AffineCurve, TEModelParameters};
 use ark_ed_on_bls12_377::{
     constraints::{EdwardsVar, FqVar},
-    EdwardsAffine, EdwardsParameters,
+    EdwardsAffine, EdwardsConfig,
 };
 use ark_r1cs_std::{
     alloc::AllocVar, eq::EqGadget, groups::curves::twisted_edwards::AffineVar, prelude::*, R1CSVar,
@@ -21,7 +21,7 @@ use crate::{constants::ZETA, r1cs::fqvar_ext::FqVarExtension, AffineElement, Ele
 /// Generally the suffix -`Var` will indicate that the type or variable
 /// represents in R1CS.
 pub struct ElementVar {
-    /// Inner type is an alias for `AffineVar<EdwardsParameters, FqVar>`
+    /// Inner type is an alias for `AffineVar<EdwardsConfig, FqVar>`
     pub(crate) inner: EdwardsVar,
 }
 
@@ -38,10 +38,8 @@ impl ElementVar {
         let Z_var = FqVar::one();
         let T_var = X_var * Y_var;
 
-        let A_MINUS_D_VAR = FqVar::new_constant(
-            self.cs(),
-            EdwardsParameters::COEFF_A - EdwardsParameters::COEFF_D,
-        )?;
+        let A_MINUS_D_VAR =
+            FqVar::new_constant(self.cs(), EdwardsConfig::COEFF_A - EdwardsConfig::COEFF_D)?;
 
         // 1.
         let u_1_var = (X_var.clone() + T_var.clone()) * (X_var.clone() - T_var.clone());
@@ -64,7 +62,7 @@ impl ElementVar {
 
     /// R1CS equivalent of `Encoding::vartime_decompress`
     pub fn decompress_from_field(s_var: FqVar) -> Result<ElementVar, SynthesisError> {
-        let D4: Fq = EdwardsParameters::COEFF_D * Fq::from(4u32);
+        let D4: Fq = EdwardsConfig::COEFF_D * Fq::from(4u32);
         let D4_VAR = FqVar::constant(D4);
 
         // 1. We do not check if canonically encoded here since we know FqVar is already
@@ -109,8 +107,8 @@ impl ElementVar {
     pub(crate) fn elligator_map(r_0_var: &FqVar) -> Result<ElementVar, SynthesisError> {
         let cs = r_0_var.cs();
 
-        let A_VAR = FqVar::new_constant(cs.clone(), EdwardsParameters::COEFF_A)?;
-        let D_VAR = FqVar::new_constant(cs.clone(), EdwardsParameters::COEFF_D)?;
+        let A_VAR = FqVar::new_constant(cs.clone(), EdwardsConfig::COEFF_A)?;
+        let D_VAR = FqVar::new_constant(cs.clone(), EdwardsConfig::COEFF_D)?;
         let ZETA_VAR = FqVar::new_constant(cs, *ZETA)?;
 
         let r_var = ZETA_VAR * r_0_var.square()?;
@@ -412,13 +410,13 @@ impl<'a> GroupOpsBounds<'a, Element, ElementVar> for ElementVar {}
 impl CurveVar<Element, Fq> for ElementVar {
     fn zero() -> Self {
         Self {
-            inner: AffineVar::<EdwardsParameters, FqVar>::zero(),
+            inner: AffineVar::<EdwardsConfig, FqVar>::zero(),
         }
     }
 
     fn constant(other: Element) -> Self {
         Self {
-            inner: AffineVar::<EdwardsParameters, FqVar>::constant(other.inner),
+            inner: AffineVar::<EdwardsConfig, FqVar>::constant(other.inner),
         }
     }
 
