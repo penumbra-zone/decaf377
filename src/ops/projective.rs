@@ -1,6 +1,6 @@
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
-use crate::{AffineElement, Element, Fr};
+use crate::{element::projective::Element, AffineElement, Fr};
 
 impl<'a, 'b> Add<&'b Element> for &'a Element {
     type Output = Element;
@@ -106,7 +106,7 @@ impl Neg for Element {
 impl<'b> MulAssign<&'b Fr> for Element {
     // Scalar multiplication is performed through the implementation
     // of `MulAssign` on `EdwardsProjective` which is a type alias for
-    // `Projective<EdwardsConfig>`.
+    // `Group<EdwardsConfig>`.
     fn mul_assign(&mut self, point: &'b Fr) {
         let mut p = self.inner;
         p *= *point;
@@ -190,7 +190,8 @@ impl<'a> Add<&'a AffineElement> for Element {
     type Output = Element;
 
     fn add(self, other: &'a AffineElement) -> Element {
-        &self + other
+        let element_other: Element = other.into();
+        &self + element_other
     }
 }
 
@@ -199,6 +200,34 @@ impl Add<AffineElement> for Element {
 
     fn add(self, other: AffineElement) -> Element {
         &self + &other.into()
+    }
+}
+
+impl Add<AffineElement> for AffineElement {
+    // Required to be `Element` to satisfy type bounds on
+    // `AffineRepr::Group`.
+    type Output = Element;
+
+    fn add(self, other: AffineElement) -> Element {
+        let other_element: Element = other.into();
+        let self_element: Element = other.into();
+        self + other_element
+    }
+}
+
+impl Add<Element> for AffineElement {
+    type Output = Element;
+
+    fn add(self, other: Element) -> Element {
+        &self.into() + &other
+    }
+}
+
+impl<'a> Add<&'a Element> for AffineElement {
+    type Output = Element;
+
+    fn add(self, other: &'a Element) -> Element {
+        &self.into() + other
     }
 }
 
@@ -222,7 +251,8 @@ impl<'a> SubAssign<&'a AffineElement> for Element {
 
 impl SubAssign<AffineElement> for Element {
     fn sub_assign(&mut self, other: AffineElement) {
-        *self -= &other.into();
+        let other_element: Element = other.into();
+        *self -= other_element;
     }
 }
 
@@ -230,7 +260,8 @@ impl<'a> Sub<&'a AffineElement> for Element {
     type Output = Element;
 
     fn sub(self, other: &'a AffineElement) -> Element {
-        &self - other
+        let other_element: Element = other.into();
+        &self - other_element
     }
 }
 
