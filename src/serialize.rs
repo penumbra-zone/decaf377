@@ -1,9 +1,9 @@
 use std::convert::TryInto;
 
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
-use ark_std::io::{Read, Result as IoResult, Write};
+use ark_std::io::{Read, Write};
 
-use crate::{AffineElement, Element, Encoding, FieldExt, Fq};
+use crate::{AffineElement, Element, Encoding};
 
 impl CanonicalDeserialize for AffineElement {
     fn deserialize_with_mode<R: Read>(
@@ -11,7 +11,7 @@ impl CanonicalDeserialize for AffineElement {
         compress: ark_serialize::Compress,
         validate: ark_serialize::Validate,
     ) -> Result<Self, ark_serialize::SerializationError> {
-        let bytes = Encoding::deserialize(reader)?;
+        let bytes = Encoding::deserialize_compressed(reader)?;
         let element: Element = bytes
             .try_into()
             .map_err(|_| ark_serialize::SerializationError::InvalidData)?;
@@ -20,7 +20,7 @@ impl CanonicalDeserialize for AffineElement {
 }
 
 impl CanonicalSerialize for AffineElement {
-    fn serialized_size(&self) -> usize {
+    fn serialized_size(&self, compress: ark_serialize::Compress) -> usize {
         32
     }
 
@@ -30,6 +30,6 @@ impl CanonicalSerialize for AffineElement {
         mode: ark_serialize::Compress,
     ) -> Result<(), ark_serialize::SerializationError> {
         let element: Element = self.into();
-        element.vartime_compress().serialize(writer)
+        element.vartime_compress().serialize_compressed(writer)
     }
 }

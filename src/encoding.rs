@@ -38,7 +38,8 @@ impl Encoding {
         let D4: Fq = EdwardsConfig::COEFF_D * Fq::from(4u32);
 
         // 1/2. Reject unless s is canonically encoded and nonnegative.
-        let s = Fq::deserialize(&self.0[..]).map_err(|_| EncodingError::InvalidEncoding)?;
+        let s =
+            Fq::deserialize_compressed(&self.0[..]).map_err(|_| EncodingError::InvalidEncoding)?;
         if s.is_negative() {
             return Err(EncodingError::InvalidEncoding);
         }
@@ -122,8 +123,8 @@ impl Element {
 
         // Encode.
         let mut bytes = [0u8; 32];
-        debug_assert_eq!(s.serialized_size(), 32);
-        s.serialize(&mut bytes[..])
+        debug_assert_eq!(s.serialized_size(ark_serialize::Compress::Yes), 32);
+        s.serialize_compressed(&mut bytes[..])
             .expect("serialization into array should be infallible");
         // Set top three bits of last byte to zero
         bytes[31] &= 0b00011111;
@@ -145,7 +146,7 @@ impl From<Element> for Encoding {
 }
 
 impl CanonicalSerialize for Encoding {
-    fn serialized_size(&self) -> usize {
+    fn serialized_size(&self, compress: ark_serialize::Compress) -> usize {
         32
     }
 
@@ -160,7 +161,7 @@ impl CanonicalSerialize for Encoding {
 }
 
 impl CanonicalSerialize for Element {
-    fn serialized_size(&self) -> usize {
+    fn serialized_size(&self, compress: ark_serialize::Compress) -> usize {
         32
     }
 
@@ -169,7 +170,7 @@ impl CanonicalSerialize for Element {
         mut writer: W,
         mode: ark_serialize::Compress,
     ) -> Result<(), ark_serialize::SerializationError> {
-        self.vartime_compress().serialize(writer)
+        self.vartime_compress().serialize_compressed(writer)
     }
 }
 
@@ -240,6 +241,14 @@ impl From<Element> for [u8; 32] {
     }
 }
 
+impl ark_serialize::Valid for Encoding {
+    fn check(&self) -> Result<(), ark_serialize::SerializationError> {
+        // At this stage, validity just means the point has 32 bytes
+        // which is encoded in the type information.
+        Ok(())
+    }
+}
+
 impl CanonicalDeserialize for Encoding {
     fn deserialize_with_mode<R: std::io::Read>(
         reader: R,
@@ -258,7 +267,7 @@ impl CanonicalDeserialize for Element {
         compress: ark_serialize::Compress,
         validate: ark_serialize::Validate,
     ) -> Result<Self, ark_serialize::SerializationError> {
-        let bytes = Encoding::deserialize(reader)?;
+        let bytes = Encoding::deserialize_compressed(reader)?;
         bytes
             .try_into()
             .map_err(|_| ark_serialize::SerializationError::InvalidData)

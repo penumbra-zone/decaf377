@@ -1,6 +1,6 @@
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
-use crate::{Element, Fr};
+use crate::{AffineElement, Element, Fr};
 
 impl<'a, 'b> Add<&'b Element> for &'a Element {
     type Output = Element;
@@ -183,5 +183,61 @@ impl Mul<Element> for Fr {
 
     fn mul(self, other: Element) -> Element {
         &self * &other
+    }
+}
+
+impl<'a> Add<&'a AffineElement> for Element {
+    type Output = Element;
+
+    fn add(self, other: &'a AffineElement) -> Element {
+        &self + other
+    }
+}
+
+impl Add<AffineElement> for Element {
+    type Output = Element;
+
+    fn add(self, other: AffineElement) -> Element {
+        &self + &other.into()
+    }
+}
+
+impl<'a> AddAssign<&'a AffineElement> for Element {
+    fn add_assign(&mut self, other: &'a AffineElement) {
+        *self += other;
+    }
+}
+
+impl AddAssign<AffineElement> for Element {
+    fn add_assign(&mut self, other: AffineElement) {
+        *self += &other;
+    }
+}
+
+impl<'a> SubAssign<&'a AffineElement> for Element {
+    fn sub_assign(&mut self, other: &'a AffineElement) {
+        *self -= other;
+    }
+}
+
+impl SubAssign<AffineElement> for Element {
+    fn sub_assign(&mut self, other: AffineElement) {
+        *self -= &other.into();
+    }
+}
+
+impl<'a> Sub<&'a AffineElement> for Element {
+    type Output = Element;
+
+    fn sub(self, other: &'a AffineElement) -> Element {
+        &self - other
+    }
+}
+
+impl Sub<AffineElement> for Element {
+    type Output = Element;
+
+    fn sub(self, other: AffineElement) -> Element {
+        &self - &other.into()
     }
 }
