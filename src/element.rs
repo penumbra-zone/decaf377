@@ -22,7 +22,7 @@ impl ScalarMul for Element {
     const NEGATION_IS_CHEAP: bool = true;
 
     fn batch_convert_to_mul_base(bases: &[Self]) -> Vec<Self::MulBase> {
-        let mut bases_inner = bases.iter_mut().map(|g| g.inner).collect::<Vec<_>>();
+        let bases_inner = bases.iter().map(|g| g.inner).collect::<Vec<_>>();
         let result = EdwardsProjective::batch_convert_to_mul_base(&bases_inner[..]);
         result
             .into_iter()
@@ -69,8 +69,8 @@ impl CurveGroup for Element {
     type FullGroup = AffineElement;
 
     fn normalize_batch(v: &[Self]) -> Vec<AffineElement> {
-        let mut v_inner = v.iter_mut().map(|g| g.inner).collect::<Vec<_>>();
-        let result = EdwardsProjective::normalize_batch(&mut v_inner[..]);
+        let v_inner = v.iter().map(|g| g.inner).collect::<Vec<_>>();
+        let result = EdwardsProjective::normalize_batch(&v_inner[..]);
         result
             .into_iter()
             .map(|g| AffineElement { inner: g })

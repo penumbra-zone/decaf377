@@ -199,7 +199,7 @@ mod tests {
 
         for (ind, input) in inputs.iter().enumerate() {
             let input_element =
-                Fq::deserialize(&input[..]).expect("encoding of test vector is valid");
+                Fq::deserialize_compressed(&input[..]).expect("encoding of test vector is valid");
 
             let expected: Element = Element {
                 inner: EdwardsAffine::new(

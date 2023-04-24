@@ -251,7 +251,7 @@ impl ark_serialize::Valid for Encoding {
 
 impl CanonicalDeserialize for Encoding {
     fn deserialize_with_mode<R: std::io::Read>(
-        reader: R,
+        mut reader: R,
         compress: ark_serialize::Compress,
         validate: ark_serialize::Validate,
     ) -> Result<Self, ark_serialize::SerializationError> {
