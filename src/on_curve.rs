@@ -1,6 +1,7 @@
-use std::ops::Mul;
-
-use ark_ec::models::{twisted_edwards::Projective, twisted_edwards::TECurveConfig};
+use ark_ec::{
+    models::{twisted_edwards::Projective, twisted_edwards::TECurveConfig},
+    Group,
+};
 use ark_ff::{BigInteger, Field, PrimeField, Zero};
 use ark_serialize::CanonicalSerialize;
 
@@ -27,9 +28,9 @@ impl<P: TECurveConfig> OnCurve for Projective<P> {
                 .serialize_compressed(&mut r_bytes[..])
                 .expect("serialization into array should be infallible");
             let r = P::ScalarField::from_le_bytes_mod_order(&r_bytes);
-            let mut two_r_bigint = r.into_repr();
+            let mut two_r_bigint = r.into_bigint();
             two_r_bigint.mul2();
-            self.mul(two_r_bigint) == Projective::zero()
+            self.mul_bigint(two_r_bigint) == Projective::zero()
         };
 
         on_curve && on_segre_embedding && z_non_zero && point_order_2r

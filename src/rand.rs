@@ -8,7 +8,6 @@ use ark_std::rand::{
 
 use crate::{AffineElement, Element, Encoding};
 
-// TODO: Is this the best way to generate point?
 impl Distribution<Element> for Standard {
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Element {
@@ -30,7 +29,7 @@ impl Distribution<Element> for Standard {
 
 impl Distribution<AffineElement> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> AffineElement {
-        let point = Element::sample(&mut rng);
+        let point: Element = self.sample(rng);
         point.into()
     }
 }
