@@ -1,5 +1,5 @@
 use ark_ff::{PrimeField, UniformRand};
-use ark_groth16::{Groth16, Proof, ProvingKey, VerifyingKey};
+use ark_groth16::{r1cs_to_qap::LibsnarkReduction, Groth16, Proof, ProvingKey, VerifyingKey};
 use proptest::prelude::*;
 
 use ark_r1cs_std::{
@@ -57,8 +57,9 @@ impl DiscreteLogCircuit {
         let scalar = [0u8; 32];
         let public = Element::default();
         let circuit = DiscreteLogCircuit { scalar, public };
-        let (pk, vk) = Groth16::circuit_specific_setup(circuit, &mut OsRng)
-            .expect("can perform circuit specific setup");
+        let (pk, vk) =
+            Groth16::<Bls12_377, LibsnarkReduction>::circuit_specific_setup(circuit, &mut OsRng)
+                .expect("can perform circuit specific setup");
         (pk, vk)
     }
 }
@@ -79,15 +80,15 @@ fn groth16_dl_proof_happy_path(scalar_arr in scalar_strategy_random()) {
 
         // Prover POV
         let circuit = DiscreteLogCircuit { scalar, public };
-        let proof = Groth16::prove(&pk, circuit, &mut rng)
+        let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
             .map_err(|_| anyhow::anyhow!("invalid proof"))
             .expect("can generate proof");
 
         // Verifier POV
-        let processed_pvk = Groth16::process_vk(&vk).expect("can process verifying key");
+        let processed_pvk = Groth16::<Bls12_377, LibsnarkReduction>::process_vk(&vk).expect("can process verifying key");
         let public_inputs = public.to_field_elements().unwrap();
         let proof_result =
-            Groth16::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
+            Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
 
         assert!(proof_result);
     }
@@ -107,15 +108,15 @@ proptest! {
 
         // Prover POV
         let circuit = DiscreteLogCircuit { scalar, public };
-        let proof = Groth16::prove(&pk, circuit, &mut rng)
+        let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
             .map_err(|_| anyhow::anyhow!("invalid proof"))
             .expect("can generate proof");
 
         // Verifier POV
-        let processed_pvk = Groth16::process_vk(&vk).expect("can process verifying key");
+        let processed_pvk = Groth16::<Bls12_377, LibsnarkReduction>::process_vk(&vk).expect("can process verifying key");
         let public_inputs = wrong_public.to_field_elements().unwrap();
         let proof_result =
-            Groth16::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
+            Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
 
         assert!(!proof_result);
     }
@@ -159,8 +160,9 @@ impl CompressionCircuit {
             point,
             field_element,
         };
-        let (pk, vk) = Groth16::circuit_specific_setup(circuit, &mut OsRng)
-            .expect("can perform circuit specific setup");
+        let (pk, vk) =
+            Groth16::<Bls12_377, LibsnarkReduction>::circuit_specific_setup(circuit, &mut OsRng)
+                .expect("can perform circuit specific setup");
         (pk, vk)
     }
 }
@@ -187,15 +189,15 @@ proptest! {
         };
         dbg!(circuit.clone().num_constraints_and_instance_variables());
 
-        let proof = Groth16::prove(&pk, circuit, &mut rng)
+        let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
             .map_err(|_| anyhow::anyhow!("invalid proof"))
             .expect("can generate proof");
 
         // Verifier POV
-        let processed_pvk = Groth16::process_vk(&vk).expect("can process verifying key");
+        let processed_pvk = Groth16::<Bls12_377, LibsnarkReduction>::process_vk(&vk).expect("can process verifying key");
         let public_inputs = field_element.to_field_elements().unwrap();
         let proof_result =
-            Groth16::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
+            Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
 
         assert!(proof_result);
     }
@@ -215,16 +217,16 @@ proptest! {
             point,
             field_element,
         };
-        let proof = Groth16::prove(&pk, circuit, &mut rng)
+        let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
             .map_err(|_| anyhow::anyhow!("invalid proof"))
             .expect("can generate proof");
 
         // Verifier POV
-        let processed_pvk = Groth16::process_vk(&vk).expect("can process verifying key");
+        let processed_pvk = Groth16::<Bls12_377, LibsnarkReduction>::process_vk(&vk).expect("can process verifying key");
         let wrong_public_input = Fq::rand(&mut rng);
         let public_inputs = (wrong_public_input).to_field_elements().unwrap();
         let proof_result =
-            Groth16::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
+            Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
 
         assert!(!proof_result);
     }
@@ -267,8 +269,9 @@ impl DecompressionCircuit {
             point,
             field_element,
         };
-        let (pk, vk) = Groth16::circuit_specific_setup(circuit, &mut OsRng)
-            .expect("can perform circuit specific setup");
+        let (pk, vk) =
+            Groth16::<Bls12_377, LibsnarkReduction>::circuit_specific_setup(circuit, &mut OsRng)
+                .expect("can perform circuit specific setup");
         (pk, vk)
     }
 }
@@ -289,15 +292,15 @@ proptest! {
     };
     dbg!(circuit.clone().num_constraints_and_instance_variables());
 
-    let proof = Groth16::prove(&pk, circuit, &mut rng)
+    let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
         .map_err(|_| anyhow::anyhow!("invalid proof"))
         .expect("can generate proof");
 
     // Verifier POV
-    let processed_pvk = Groth16::process_vk(&vk).expect("can process verifying key");
+    let processed_pvk = Groth16::<Bls12_377, LibsnarkReduction>::process_vk(&vk).expect("can process verifying key");
     let public_inputs = point.to_field_elements().unwrap();
     let proof_result =
-        Groth16::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
+        Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
 
     assert!(proof_result);
 }
@@ -317,15 +320,15 @@ proptest! {
         point,
         field_element,
     };
-    let proof = Groth16::prove(&pk, circuit, &mut rng)
+    let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
         .map_err(|_| anyhow::anyhow!("invalid proof"))
         .expect("can generate proof");
 
     // Verifier POV
-    let processed_pvk = Groth16::process_vk(&vk).expect("can process verifying key");
+    let processed_pvk = Groth16::<Bls12_377, LibsnarkReduction>::process_vk(&vk).expect("can process verifying key");
     let public_inputs = (Fr::from(600) * decaf377::basepoint()).to_field_elements().unwrap();
     let proof_result =
-        Groth16::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
+        Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
 
     assert!(!proof_result);
 }
@@ -367,8 +370,9 @@ impl ElligatorCircuit {
             point,
             field_element,
         };
-        let (pk, vk) = Groth16::circuit_specific_setup(circuit, &mut OsRng)
-            .expect("can perform circuit specific setup");
+        let (pk, vk) =
+            Groth16::<Bls12_377, LibsnarkReduction>::circuit_specific_setup(circuit, &mut OsRng)
+                .expect("can perform circuit specific setup");
         (pk, vk)
     }
 }
@@ -394,15 +398,15 @@ fn groth16_elligator_proof_happy_path(field_element in fq_strategy()) {
     };
     dbg!(circuit.clone().num_constraints_and_instance_variables());
 
-    let proof = Groth16::prove(&pk, circuit, &mut rng)
+    let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
         .map_err(|_| anyhow::anyhow!("invalid proof"))
         .expect("can generate proof");
 
     // Verifier POV
-    let processed_pvk = Groth16::process_vk(&vk).expect("can process verifying key");
+    let processed_pvk = Groth16::<Bls12_377, LibsnarkReduction>::process_vk(&vk).expect("can process verifying key");
     let public_inputs = point.to_field_elements().unwrap();
     let proof_result =
-        Groth16::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
+        Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
 
     assert!(proof_result);
 }
@@ -421,16 +425,16 @@ fn groth16_elligator_proof_unhappy_path(field_element in fq_strategy()) {
         point,
         field_element,
     };
-    let proof = Groth16::prove(&pk, circuit, &mut rng)
+    let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
         .map_err(|_| anyhow::anyhow!("invalid proof"))
         .expect("can generate proof");
 
     // Verifier POV
     let wrong_point = Fr::rand(&mut rng) * decaf377::basepoint();
-    let processed_pvk = Groth16::process_vk(&vk).expect("can process verifying key");
+    let processed_pvk = Groth16::<Bls12_377, LibsnarkReduction>::process_vk(&vk).expect("can process verifying key");
     let public_inputs = wrong_point.to_field_elements().unwrap();
     let proof_result =
-        Groth16::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
+        Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
 
     assert!(!proof_result);
 }
@@ -460,21 +464,21 @@ fn groth16_public_input(point in element_strategy()) {
     let test_circuit = PublicElementInput {
         point: decaf377::basepoint(),
     };
-    let (pk, vk) = Groth16::circuit_specific_setup(test_circuit, &mut OsRng)
+    let (pk, vk) = Groth16::<Bls12_377, LibsnarkReduction>::circuit_specific_setup(test_circuit, &mut OsRng)
         .expect("can perform circuit specific setup");
     let mut rng = OsRng;
 
     // Prover POV
     let circuit = PublicElementInput { point };
-    let proof: Proof<Bls12_377> = Groth16::prove(&pk, circuit, &mut rng)
+    let proof: Proof<Bls12_377> = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
         .map_err(|_| anyhow::anyhow!("invalid proof"))
         .expect("can generate proof");
 
     // Verifier POV
-    let processed_pvk = Groth16::process_vk(&vk).expect("can process verifying key");
+    let processed_pvk = Groth16::<Bls12_377, LibsnarkReduction>::process_vk(&vk).expect("can process verifying key");
     let public_inputs = point.to_field_elements().unwrap();
     let proof_result =
-        Groth16::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
+        Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
 
     assert!(proof_result);
 }
