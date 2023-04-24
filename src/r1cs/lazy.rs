@@ -68,7 +68,7 @@ impl LazyElementVar {
 mod tests {
     use crate::{Element, Fq};
     use ark_bls12_377::Bls12_377;
-    use ark_groth16::{Groth16, ProvingKey, VerifyingKey};
+    use ark_groth16::{r1cs_to_qap::LibsnarkReduction, Groth16, ProvingKey, VerifyingKey};
     use ark_r1cs_std::prelude::AllocVar;
     use ark_relations::r1cs::ConstraintSynthesizer;
     use ark_snark::SNARK;
@@ -99,8 +99,10 @@ mod tests {
             let element = Element::default();
             let encoding = element.vartime_compress_to_field();
             let circuit = TestCircuit { encoding };
-            let (pk, vk) = Groth16::circuit_specific_setup(circuit, &mut OsRng)
-                .expect("can perform circuit specific setup");
+            let (pk, vk) = Groth16::<Bls12_377, LibsnarkReduction>::circuit_specific_setup(
+                circuit, &mut OsRng,
+            )
+            .expect("can perform circuit specific setup");
             (pk, vk)
         }
     }
@@ -112,6 +114,7 @@ mod tests {
         let test_circuit = TestCircuit {
             encoding: Element::default().vartime_compress_to_field(),
         };
-        Groth16::prove(&pk, test_circuit, &mut rng).expect("can generate proof");
+        Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, test_circuit, &mut rng)
+            .expect("can generate proof");
     }
 }
