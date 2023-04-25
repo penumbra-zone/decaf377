@@ -11,6 +11,14 @@ impl CanonicalDeserialize for AffineElement {
         compress: ark_serialize::Compress,
         validate: ark_serialize::Validate,
     ) -> Result<Self, ark_serialize::SerializationError> {
+        match compress {
+            ark_serialize::Compress::Yes => (),
+            ark_serialize::Compress::No => unimplemented!(),
+        };
+        match validate {
+            ark_serialize::Validate::Yes => (),
+            ark_serialize::Validate::No => unimplemented!(),
+        }
         let bytes = Encoding::deserialize_compressed(reader)?;
         let element: Element = bytes
             .try_into()
@@ -21,15 +29,18 @@ impl CanonicalDeserialize for AffineElement {
 
 impl CanonicalSerialize for AffineElement {
     fn serialized_size(&self, compress: ark_serialize::Compress) -> usize {
-        32
+        match compress {
+            ark_serialize::Compress::Yes => 32,
+            ark_serialize::Compress::No => unimplemented!(),
+        }
     }
 
     fn serialize_with_mode<W: Write>(
         &self,
-        mut writer: W,
+        writer: W,
         mode: ark_serialize::Compress,
     ) -> Result<(), ark_serialize::SerializationError> {
         let element: Element = self.into();
-        element.vartime_compress().serialize_compressed(writer)
+        element.vartime_compress().serialize_with_mode(writer, mode)
     }
 }

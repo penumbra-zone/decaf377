@@ -211,7 +211,7 @@ impl Add<AffineElement> for AffineElement {
     fn add(self, other: AffineElement) -> Element {
         let other_element: Element = other.into();
         let self_element: Element = other.into();
-        self + other_element
+        self_element + other_element
     }
 }
 
@@ -233,7 +233,8 @@ impl<'a> Add<&'a Element> for AffineElement {
 
 impl<'a> AddAssign<&'a AffineElement> for Element {
     fn add_assign(&mut self, other: &'a AffineElement) {
-        *self += other;
+        let other_element: Element = other.into();
+        *self += other_element;
     }
 }
 
@@ -245,7 +246,8 @@ impl AddAssign<AffineElement> for Element {
 
 impl<'a> SubAssign<&'a AffineElement> for Element {
     fn sub_assign(&mut self, other: &'a AffineElement) {
-        *self -= other;
+        let other_element: Element = other.into();
+        *self -= other_element;
     }
 }
 
