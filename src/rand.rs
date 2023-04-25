@@ -1,4 +1,3 @@
-use ark_ed_on_bls12_377::EdwardsProjective;
 use ark_ff::UniformRand;
 use ark_serialize::CanonicalSerialize;
 use ark_std::rand::{
@@ -6,7 +5,7 @@ use ark_std::rand::{
     Rng,
 };
 
-use crate::{AffineElement, Element, Encoding};
+use crate::{element::EdwardsProjective, AffineElement, Element, Encoding};
 
 impl Distribution<Element> for Standard {
     #[inline]

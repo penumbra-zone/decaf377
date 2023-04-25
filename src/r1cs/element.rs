@@ -2,16 +2,15 @@
 use std::borrow::Borrow;
 
 use ark_ec::AffineRepr;
-use ark_ed_on_bls12_377::{
-    constraints::{EdwardsVar, FqVar},
-    EdwardsAffine,
-};
+use ark_ed_on_bls12_377::constraints::FqVar;
 use ark_r1cs_std::{alloc::AllocVar, eq::EqGadget, prelude::*, R1CSVar};
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 
-use crate::r1cs::inner::ElementVar as InnerElementVar;
 use crate::r1cs::lazy::LazyElementVar;
+use crate::{element::EdwardsAffine, r1cs::inner::ElementVar as InnerElementVar};
 use crate::{AffineElement, Element, Fq};
+
+use super::inner::Decaf377EdwardsVar;
 
 #[derive(Clone, Debug)]
 /// Represents the R1CS equivalent of a `decaf377::Element`
@@ -115,7 +114,7 @@ impl CondSelectGadget<Fq> for ElementVar {
         let y = cond.select(&true_element.inner.y, &false_element.inner.y)?;
 
         let new_element = InnerElementVar {
-            inner: EdwardsVar::new(x, y),
+            inner: Decaf377EdwardsVar::new(x, y),
         };
         Ok(Self {
             inner: LazyElementVar::new_from_element(new_element),

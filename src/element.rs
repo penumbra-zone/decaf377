@@ -1,8 +1,15 @@
-use ark_ec::{AffineRepr, CurveGroup, Group, ScalarMul, VariableBaseMSM};
-use ark_ed_on_bls12_377::{EdwardsAffine, EdwardsConfig, EdwardsProjective};
+use ark_ec::{
+    twisted_edwards::{Affine, MontCurveConfig, Projective, TECurveConfig},
+    AffineRepr, CurveConfig, CurveGroup, Group, ScalarMul, VariableBaseMSM,
+};
+use ark_ed_on_bls12_377::EdwardsConfig;
+use ark_ff::MontFp;
 use ark_serialize::Valid;
 
-use crate::{Fq, Fr};
+use crate::{
+    constants::{GENERATOR_X, GENERATOR_Y},
+    Fq, Fr,
+};
 
 pub mod affine;
 pub mod projective;
@@ -10,9 +17,59 @@ pub mod projective;
 pub use affine::AffineElement;
 pub use projective::Element;
 
+#[derive(Clone, Default, PartialEq, Eq)]
+pub struct Decaf377EdwardsConfig;
+
+// These types should not be exported. They are similar to `EdwardsAffine` and
+// `EdwardsProjective` from the `ark_ed_on_bls12_377` crate, except using our own
+// `Decaf377Config` that has the cofactor set to 1. Consumers of this
+// library should use the `AffineElement` and `Element` (projective)
+// types.
+pub(crate) type EdwardsAffine = Affine<Decaf377EdwardsConfig>;
+pub(crate) type EdwardsProjective = Projective<Decaf377EdwardsConfig>;
+
+impl CurveConfig for Decaf377EdwardsConfig {
+    type BaseField = Fq;
+    type ScalarField = Fr;
+
+    const COFACTOR: &'static [u64] = &[1];
+
+    const COFACTOR_INV: Fr = MontFp!("1");
+}
+
+impl TECurveConfig for Decaf377EdwardsConfig {
+    /// COEFF_A = -1
+    const COEFF_A: Fq = <EdwardsConfig as ark_ec::twisted_edwards::TECurveConfig>::COEFF_A;
+
+    /// COEFF_D = 3021
+    const COEFF_D: Fq = <EdwardsConfig as ark_ec::twisted_edwards::TECurveConfig>::COEFF_D;
+
+    const GENERATOR: EdwardsAffine = EdwardsAffine::new_unchecked(GENERATOR_X, GENERATOR_Y);
+
+    type MontCurveConfig = EdwardsConfig;
+
+    /// Multiplication by `a` is just negation.
+    #[inline(always)]
+    fn mul_by_a(elem: Self::BaseField) -> Self::BaseField {
+        -elem
+    }
+
+    fn is_in_correct_subgroup_assuming_on_curve(_: &Affine<Self>) -> bool {
+        true
+    }
+}
+
+impl MontCurveConfig for Decaf377EdwardsConfig {
+    const COEFF_A: Fq = <EdwardsConfig as ark_ec::twisted_edwards::MontCurveConfig>::COEFF_A;
+
+    const COEFF_B: Fq = <EdwardsConfig as ark_ec::twisted_edwards::MontCurveConfig>::COEFF_B;
+
+    type TECurveConfig = Decaf377EdwardsConfig;
+}
+
 impl Valid for Element {
     fn check(&self) -> Result<(), ark_serialize::SerializationError> {
-        todo!()
+        Ok(())
     }
 }
 
@@ -84,7 +141,7 @@ impl CurveGroup for Element {
 
 impl Valid for AffineElement {
     fn check(&self) -> Result<(), ark_serialize::SerializationError> {
-        todo!()
+        Ok(())
     }
 }
 
