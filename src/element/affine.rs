@@ -1,6 +1,6 @@
 use std::hash::Hash;
 
-use ark_ed_on_bls12_377::EdwardsAffine;
+use crate::element::EdwardsAffine;
 use ark_std::fmt::{Display, Formatter, Result as FmtResult};
 use ark_std::Zero;
 

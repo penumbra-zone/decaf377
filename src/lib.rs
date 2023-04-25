@@ -14,9 +14,9 @@ pub mod rand;
 pub mod serialize;
 mod sign;
 
-use ark_ed_on_bls12_377::EdwardsProjective;
 pub use constants::ZETA;
 pub use element::{AffineElement, Element};
+pub(crate) use element::{Decaf377EdwardsConfig, EdwardsProjective};
 pub use encoding::Encoding;
 pub use error::EncodingError;
 pub use field_ext::FieldExt;

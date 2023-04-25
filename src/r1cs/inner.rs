@@ -3,17 +3,18 @@ use std::borrow::Borrow;
 use std::ops::{Add, AddAssign, Sub, SubAssign};
 
 use ark_ec::{twisted_edwards::TECurveConfig, AffineRepr};
-use ark_ed_on_bls12_377::{
-    constraints::{EdwardsVar, FqVar},
-    EdwardsAffine, EdwardsConfig,
-};
+use ark_ed_on_bls12_377::constraints::FqVar;
 use ark_r1cs_std::{
     alloc::AllocVar, eq::EqGadget, groups::curves::twisted_edwards::AffineVar, prelude::*, R1CSVar,
 };
 use ark_relations::ns;
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 
+use crate::element::EdwardsAffine;
+use crate::Decaf377EdwardsConfig;
 use crate::{constants::ZETA, r1cs::fqvar_ext::FqVarExtension, AffineElement, Element, Fq};
+
+pub(crate) type Decaf377EdwardsVar = AffineVar<Decaf377EdwardsConfig, FqVar>;
 
 #[derive(Clone, Debug)]
 /// Represents the R1CS equivalent of a `decaf377::Element`
@@ -22,7 +23,7 @@ use crate::{constants::ZETA, r1cs::fqvar_ext::FqVarExtension, AffineElement, Ele
 /// represents in R1CS.
 pub struct ElementVar {
     /// Inner type is an alias for `AffineVar<EdwardsConfig, FqVar>`
-    pub(crate) inner: EdwardsVar,
+    pub(crate) inner: Decaf377EdwardsVar,
 }
 
 impl ElementVar {
@@ -38,8 +39,10 @@ impl ElementVar {
         let Z_var = FqVar::one();
         let T_var = X_var * Y_var;
 
-        let A_MINUS_D_VAR =
-            FqVar::new_constant(self.cs(), EdwardsConfig::COEFF_A - EdwardsConfig::COEFF_D)?;
+        let A_MINUS_D_VAR = FqVar::new_constant(
+            self.cs(),
+            Decaf377EdwardsConfig::COEFF_A - Decaf377EdwardsConfig::COEFF_D,
+        )?;
 
         // 1.
         let u_1_var = (X_var.clone() + T_var.clone()) * (X_var.clone() - T_var.clone());
@@ -62,7 +65,7 @@ impl ElementVar {
 
     /// R1CS equivalent of `Encoding::vartime_decompress`
     pub fn decompress_from_field(s_var: FqVar) -> Result<ElementVar, SynthesisError> {
-        let D4: Fq = EdwardsConfig::COEFF_D * Fq::from(4u32);
+        let D4: Fq = Decaf377EdwardsConfig::COEFF_D * Fq::from(4u32);
         let D4_VAR = FqVar::constant(D4);
 
         // 1. We do not check if canonically encoded here since we know FqVar is already
@@ -107,8 +110,8 @@ impl ElementVar {
     pub(crate) fn elligator_map(r_0_var: &FqVar) -> Result<ElementVar, SynthesisError> {
         let cs = r_0_var.cs();
 
-        let A_VAR = FqVar::new_constant(cs.clone(), EdwardsConfig::COEFF_A)?;
-        let D_VAR = FqVar::new_constant(cs.clone(), EdwardsConfig::COEFF_D)?;
+        let A_VAR = FqVar::new_constant(cs.clone(), Decaf377EdwardsConfig::COEFF_A)?;
+        let D_VAR = FqVar::new_constant(cs.clone(), Decaf377EdwardsConfig::COEFF_D)?;
         let ZETA_VAR = FqVar::new_constant(cs, *ZETA)?;
 
         let r_var = ZETA_VAR * r_0_var.square()?;
@@ -219,7 +222,7 @@ impl CondSelectGadget<Fq> for ElementVar {
         let y = cond.select(&true_value.inner.y, &false_value.inner.y)?;
 
         Ok(ElementVar {
-            inner: EdwardsVar::new(x, y),
+            inner: Decaf377EdwardsVar::new(x, y),
         })
     }
 }
@@ -244,7 +247,7 @@ impl AllocVar<Element, Fq> for ElementVar {
         // where they check that the point is in the right subgroup prior to witnessing.
         match mode {
             AllocationMode::Constant => Ok(Self {
-                inner: EdwardsVar::new_variable_omit_prime_order_check(
+                inner: Decaf377EdwardsVar::new_variable_omit_prime_order_check(
                     cs,
                     || Ok(group_projective_point.inner),
                     mode,
@@ -254,7 +257,6 @@ impl AllocVar<Element, Fq> for ElementVar {
                 unreachable!()
             }
             AllocationMode::Witness => {
-                //let ge: EdwardsAffine = group_projective_point.inner.into();
                 let P_var = AffineVar::new_variable_omit_prime_order_check(
                     ns!(cs, "P_affine"),
                     || Ok(group_projective_point.inner),
@@ -410,13 +412,13 @@ impl<'a> GroupOpsBounds<'a, Element, ElementVar> for ElementVar {}
 impl CurveVar<Element, Fq> for ElementVar {
     fn zero() -> Self {
         Self {
-            inner: AffineVar::<EdwardsConfig, FqVar>::zero(),
+            inner: AffineVar::<Decaf377EdwardsConfig, FqVar>::zero(),
         }
     }
 
     fn constant(other: Element) -> Self {
         Self {
-            inner: AffineVar::<EdwardsConfig, FqVar>::constant(other.inner),
+            inner: AffineVar::<Decaf377EdwardsConfig, FqVar>::constant(other.inner),
         }
     }
 

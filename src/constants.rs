@@ -54,6 +54,12 @@ pub static B_T: Lazy<Fq> = Lazy::new(|| {
 });
 pub static B_Z: Lazy<Fq> = Lazy::new(|| ark_ff::MontFp!("1"));
 
+// Canonical basepoint affine coordinates
+pub const GENERATOR_X: Fq =
+    ark_ff::MontFp!("4959445789346820725352484487855828915252512307947624787834978378872129235627");
+pub const GENERATOR_Y: Fq =
+    ark_ff::MontFp!("6060471950081851567114691557659790004756535011754163002297540472747064943288");
+
 // Modulus of basefield
 pub static R: Lazy<Fr> = Lazy::new(|| {
     ark_ff::MontFp!("2111115437357092606062206234695386632838870926408408195193685246394721360383")

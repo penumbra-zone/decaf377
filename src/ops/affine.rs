@@ -1,9 +1,8 @@
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 use ark_ec::twisted_edwards::Projective;
-use ark_ed_on_bls12_377::EdwardsConfig;
 
-use crate::{element::AffineElement, Element, Fr};
+use crate::{element::AffineElement, Decaf377EdwardsConfig, Element, Fr};
 
 impl<'a, 'b> Add<&'b AffineElement> for &'a AffineElement {
     type Output = AffineElement;
@@ -102,7 +101,7 @@ impl Neg for AffineElement {
 
 impl<'b> MulAssign<&'b Fr> for AffineElement {
     fn mul_assign(&mut self, point: &'b Fr) {
-        let mut p: Projective<EdwardsConfig> = self.inner.into();
+        let mut p: Projective<Decaf377EdwardsConfig> = self.inner.into();
         p *= *point;
         *self = AffineElement { inner: p.into() }
     }
@@ -118,7 +117,7 @@ impl<'a, 'b> Mul<&'b Fr> for &'a AffineElement {
     type Output = AffineElement;
 
     fn mul(self, point: &'b Fr) -> AffineElement {
-        let mut p: Projective<EdwardsConfig> = self.inner.into();
+        let mut p: Projective<Decaf377EdwardsConfig> = self.inner.into();
         p *= *point;
         AffineElement { inner: p.into() }
     }

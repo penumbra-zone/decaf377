@@ -1,7 +1,8 @@
 #![allow(non_snake_case)]
 use ark_ec::twisted_edwards::TECurveConfig;
-use ark_ed_on_bls12_377::{EdwardsConfig, EdwardsProjective};
 use ark_ff::Field;
+
+use crate::element::{Decaf377EdwardsConfig, EdwardsProjective};
 
 use crate::{
     constants::{ONE, TWO, ZETA},
@@ -12,8 +13,8 @@ impl Element {
     /// Elligator 2 map to decaf377 point
     fn elligator_map(r_0: &Fq) -> Element {
         // Ref: `Decaf_1_1_Point.elligator` (optimized) in `ristretto.sage`
-        let A = EdwardsConfig::COEFF_A;
-        let D = EdwardsConfig::COEFF_D;
+        let A = Decaf377EdwardsConfig::COEFF_A;
+        let D = Decaf377EdwardsConfig::COEFF_D;
 
         let r = *ZETA * r_0.square();
 
@@ -44,8 +45,8 @@ impl Element {
 
         // Convert point to extended projective (X : Y : Z : T)
         let E = *TWO * s;
-        let F = *ONE + EdwardsConfig::COEFF_A * s.square();
-        let G = *ONE - EdwardsConfig::COEFF_A * s.square();
+        let F = *ONE + Decaf377EdwardsConfig::COEFF_A * s.square();
+        let G = *ONE - Decaf377EdwardsConfig::COEFF_A * s.square();
         let H = t;
         let result = Element {
             inner: EdwardsProjective::new(E * H, F * G, E * G, F * H),
@@ -86,7 +87,7 @@ impl Element {
 
 #[cfg(test)]
 mod tests {
-    use ark_ed_on_bls12_377::EdwardsAffine;
+    use crate::element::EdwardsAffine;
 
     use super::*;
 
