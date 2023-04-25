@@ -147,13 +147,16 @@ impl From<Element> for Encoding {
 
 impl CanonicalSerialize for Encoding {
     fn serialized_size(&self, compress: ark_serialize::Compress) -> usize {
-        32
+        match compress {
+            ark_serialize::Compress::Yes => 32,
+            ark_serialize::Compress::No => unimplemented!(),
+        }
     }
 
     fn serialize_with_mode<W: std::io::Write>(
         &self,
         mut writer: W,
-        mode: ark_serialize::Compress,
+        _mode: ark_serialize::Compress,
     ) -> Result<(), ark_serialize::SerializationError> {
         writer.write_all(&self.0[..])?;
         Ok(())
@@ -162,15 +165,18 @@ impl CanonicalSerialize for Encoding {
 
 impl CanonicalSerialize for Element {
     fn serialized_size(&self, compress: ark_serialize::Compress) -> usize {
-        32
+        match compress {
+            ark_serialize::Compress::Yes => 32,
+            ark_serialize::Compress::No => unimplemented!(),
+        }
     }
 
     fn serialize_with_mode<W: std::io::Write>(
         &self,
-        mut writer: W,
+        writer: W,
         mode: ark_serialize::Compress,
     ) -> Result<(), ark_serialize::SerializationError> {
-        self.vartime_compress().serialize_compressed(writer)
+        self.vartime_compress().serialize_with_mode(writer, mode)
     }
 }
 
@@ -255,6 +261,14 @@ impl CanonicalDeserialize for Encoding {
         compress: ark_serialize::Compress,
         validate: ark_serialize::Validate,
     ) -> Result<Self, ark_serialize::SerializationError> {
+        match compress {
+            ark_serialize::Compress::Yes => (),
+            ark_serialize::Compress::No => unimplemented!(),
+        }
+        match validate {
+            ark_serialize::Validate::Yes => (),
+            ark_serialize::Validate::No => unimplemented!(),
+        }
         let mut bytes = [0u8; 32];
         reader.read_exact(&mut bytes[..])?;
         Ok(Self(bytes))
@@ -267,6 +281,14 @@ impl CanonicalDeserialize for Element {
         compress: ark_serialize::Compress,
         validate: ark_serialize::Validate,
     ) -> Result<Self, ark_serialize::SerializationError> {
+        match compress {
+            ark_serialize::Compress::Yes => (),
+            ark_serialize::Compress::No => unimplemented!(),
+        }
+        match validate {
+            ark_serialize::Validate::Yes => (),
+            ark_serialize::Validate::No => unimplemented!(),
+        }
         let bytes = Encoding::deserialize_compressed(reader)?;
         bytes
             .try_into()
