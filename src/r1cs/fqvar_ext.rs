@@ -29,38 +29,43 @@ impl FqVarExtension for FqVar {
     /// - Case 4: `(false, sqrt(zeta*num/den))` if `num` and `den` are both nonzero and `num/den` is nonsquare;
     fn isqrt(&self) -> Result<(Boolean<Fq>, FqVar), SynthesisError> {
         // During mode `SynthesisMode::Setup`, value() will not provide a field element.
-        let x = self.value().unwrap_or(Fq::one());
+        let den = self.value().unwrap_or(Fq::one());
 
-        // Out of circuit sqrt computation
-        let (was_square, y) = Fq::sqrt_ratio_zeta(&Fq::one(), &x);
+        // Out of circuit sqrt computation:
+        // Note: `num = 1`
+        // `y = sqrt(num/den)`
+        let (was_square, y) = Fq::sqrt_ratio_zeta(&Fq::one(), &den);
 
         let cs = self.cs();
         let was_square_var = Boolean::new_witness(cs.clone(), || Ok(was_square))?;
         let y_var = FqVar::new_witness(cs.clone(), || Ok(y))?;
+        // `y^2 = num/den`
         let y_squared_var = y_var.square()?;
 
         // The below is a flattened version of the four cases above, excluding case 2 since `num` is hardcoded
         // to be one.
         //
+        // Case 1: `(true, sqrt(num/den))` if `num` and `den` are both nonzero and `num/den` is square
+        let den_var_inv = self.inverse()?;
+        // Note we could be in case 1 or case 2 based on the constraint that `was_square = true`, but
+        // num is hardcoded to be one above, so we're in case 1.
+        let in_case_1 = was_square_var.clone();
+        // Certify the return value y is sqrt(1/den) when we're in case 1. This also certifies that we are not in case 2.
+        y_squared_var.conditional_enforce_equal(&den_var_inv, &in_case_1)?;
+
         // Case 3: `(false, 0)` if `den` is zero
         let was_not_square_var = was_square_var.not();
-        let x_var_is_zero = self.is_eq(&FqVar::zero())?;
-        let in_case_3 = was_not_square_var.and(&x_var_is_zero)?;
-        // Certify the return value y is 0.
+        let den_var_is_zero = self.is_eq(&FqVar::zero())?;
+        let in_case_3 = was_not_square_var.and(&den_var_is_zero)?;
+        // Certify the return value y is 0 when we're in case 3.
         y_squared_var.conditional_enforce_equal(&FqVar::zero(), &in_case_3)?;
-
-        // Case 1: `(true, sqrt(num/den))` if `num` and `den` are both nonzero and `num/den` is square
-        let x_var_inv = self.inverse()?;
-        let in_case_1 = was_square_var.clone();
-        // Certify the return value y is sqrt(1/x)
-        y_squared_var.conditional_enforce_equal(&x_var_inv, &in_case_1)?;
 
         // Case 4: `(false, sqrt(zeta*num/den))` if `num` and `den` are both nonzero and `num/den` is nonsquare;
         let zeta_var = FqVar::new_constant(cs, *ZETA)?;
-        let zeta_times_one_over_x_var = zeta_var * x_var_inv;
-        let in_case_4 = was_not_square_var.and(&x_var_is_zero.not())?;
-        // Certify the return value y is sqrt(zeta * 1/x)
-        y_squared_var.conditional_enforce_equal(&zeta_times_one_over_x_var, &in_case_4)?;
+        let zeta_times_one_over_den_var = zeta_var * den_var_inv;
+        let in_case_4 = was_not_square_var.and(&den_var_is_zero.not())?;
+        // Certify the return value y is sqrt(zeta * 1/den)
+        y_squared_var.conditional_enforce_equal(&zeta_times_one_over_den_var, &in_case_4)?;
 
         Ok((was_square_var, y_var))
     }
