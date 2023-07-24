@@ -17,3 +17,7 @@
 # 0.4.0
 
 * Upgrade to 0.4.x series of Arkworks dependencies.
+
+# Unreleased
+
+* R1CS: remove 7 unnecessary constraints in the sign checks.
