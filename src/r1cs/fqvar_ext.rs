@@ -80,13 +80,11 @@ impl FqVarExtension for FqVar {
         // bytes[0] & 1 == 0
         let true_var = Boolean::<Fq>::TRUE;
         let false_var = Boolean::<Fq>::FALSE;
-        let mut is_nonnegative_var = true_var.clone();
-        // Check first 8 bits
-        for _ in 0..8 {
-            let lhs = bitvars[0].and(&true_var.clone())?;
-            let this_loop_var = lhs.is_eq(&false_var)?;
-            is_nonnegative_var = is_nonnegative_var.and(&this_loop_var)?;
-        }
+
+        // Check least significant bit
+        let lhs = bitvars[0].and(&true_var)?;
+        let is_nonnegative_var = lhs.is_eq(&false_var)?;
+
         Ok(is_nonnegative_var)
     }
 
