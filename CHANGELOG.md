@@ -18,6 +18,8 @@
 
 * Upgrade to 0.4.x series of Arkworks dependencies.
 
-# Unreleased
+# 0.5.0
 
-* R1CS: remove 7 unnecessary constraints in the sign checks.
+* Audit followup:
+  * Optimization: remove 7 unnecessary constraints in the R1CS sign checks.
+  * Fix: Resolve incorrect handling of zero in point decompression in R1CS.
