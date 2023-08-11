@@ -483,3 +483,63 @@ fn groth16_public_input(point in element_strategy()) {
     assert!(proof_result);
 }
 }
+
+#[derive(Clone)]
+struct NegationCircuit {
+    // Witness
+    pos: Element,
+
+    // Public input
+    pub public_neg: Element,
+}
+
+impl ConstraintSynthesizer<Fq> for NegationCircuit {
+    fn generate_constraints(
+        self,
+        cs: ark_relations::r1cs::ConstraintSystemRef<Fq>,
+    ) -> ark_relations::r1cs::Result<()> {
+        // 1. Add witness variable
+        let pos = ElementVar::new_witness(cs.clone(), || Ok(self.pos))?;
+
+        // 2. Add public input variables
+        // This is derived from calling Point.negate() OOC
+        let public_neg = ElementVar::new_input(cs, || Ok(self.public_neg))?;
+
+        let neg: ElementVar = pos.negate()?;
+        neg.enforce_equal(&public_neg)?;
+
+        Ok(())
+    }
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(10))]
+#[test]
+fn groth16_negation(point in element_strategy()) {
+    let test_circuit = NegationCircuit {
+        pos: decaf377::basepoint(),
+        public_neg: point.negate(),
+    };
+    let (pk, vk) = Groth16::<Bls12_377, LibsnarkReduction>::circuit_specific_setup(test_circuit, &mut OsRng)
+        .expect("can perform circuit specific setup");
+    let mut rng = OsRng;
+
+    // Prover POV
+    let public_neg = point.negate();
+    let circuit = NegationCircuit {
+        pos: point,
+        public_neg,
+    };
+    let proof: Proof<Bls12_377> = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
+        .map_err(|_| anyhow::anyhow!("invalid proof"))
+        .expect("can generate proof");
+
+    // Verifier POV
+    let processed_pvk = Groth16::<Bls12_377, LibsnarkReduction>::process_vk(&vk).expect("can process verifying key");
+    let public_inputs = public_neg.to_field_elements().unwrap();
+    let proof_result =
+        Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
+
+    assert!(proof_result);
+}
+}
