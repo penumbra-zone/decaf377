@@ -84,6 +84,10 @@ impl Encoding {
 }
 
 impl Element {
+    pub fn negate(&self) -> Element {
+        Element { inner: -self.inner }
+    }
+
     #[deprecated(note = "please use `vartime_compress_to_field` instead")]
     pub fn compress_to_field(&self) -> Fq {
         self.vartime_compress_to_field()
