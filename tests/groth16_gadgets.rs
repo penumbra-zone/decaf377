@@ -543,3 +543,65 @@ fn groth16_negation(point in element_strategy()) {
     assert!(proof_result);
 }
 }
+
+#[derive(Clone)]
+struct AddAssignAddCircuit {
+    // Witness
+    a: Element,
+    b: Element,
+
+    pub c: Element,
+}
+
+impl ConstraintSynthesizer<Fq> for AddAssignAddCircuit {
+    fn generate_constraints(
+        self,
+        cs: ark_relations::r1cs::ConstraintSystemRef<Fq>,
+    ) -> ark_relations::r1cs::Result<()> {
+        let a = ElementVar::new_witness(cs.clone(), || Ok(self.a))?;
+        let b = ElementVar::new_witness(cs.clone(), || Ok(self.b))?;
+
+        let c_pub = ElementVar::new_input(cs, || Ok(self.c))?;
+        let c_add = a.clone() + b.clone();
+        let mut c_add_assign = a;
+        c_add_assign += b;
+
+        c_add.enforce_equal(&c_pub)?;
+        c_add_assign.enforce_equal(&c_pub)?;
+
+        Ok(())
+    }
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(10))]
+#[test]
+fn groth16_add_addassign(a in element_strategy(), b in element_strategy()) {
+    let test_circuit = AddAssignAddCircuit {
+        a: decaf377::basepoint(),
+        b: decaf377::basepoint() * Fr::from(2),
+        c: decaf377::basepoint() * Fr::from(3),
+    };
+    let (pk, vk) = Groth16::<Bls12_377, LibsnarkReduction>::circuit_specific_setup(test_circuit, &mut OsRng)
+        .expect("can perform circuit specific setup");
+    let mut rng = OsRng;
+
+    // Prover POV
+    let circuit = AddAssignAddCircuit {
+        a,
+        b,
+        c: a + b,
+    };
+    let proof: Proof<Bls12_377> = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
+        .map_err(|_| anyhow::anyhow!("invalid proof"))
+        .expect("can generate proof");
+
+    // Verifier POV
+    let processed_pvk = Groth16::<Bls12_377, LibsnarkReduction>::process_vk(&vk).expect("can process verifying key");
+    let public_inputs = (a + b).to_field_elements().unwrap();
+    let proof_result =
+        Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
+
+    assert!(proof_result);
+}
+}
