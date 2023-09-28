@@ -1,5 +1,7 @@
 use std::ops::{Add, AddAssign, Sub, SubAssign};
 
+use ark_r1cs_std::R1CSVar;
+
 use crate::{r1cs::element::ElementVar, Element};
 
 use super::lazy::LazyElementVar;
@@ -36,15 +38,24 @@ impl<'a> Add<&'a ElementVar> for ElementVar {
 
 impl AddAssign for ElementVar {
     fn add_assign(&mut self, rhs: ElementVar) {
+        dbg!("inside impl AddAssign for ElementVar");
+        dbg!(self.inner.element().unwrap().value());
+
+        let rhs = rhs.inner.element().expect("element will exist");
         self.inner
             .element()
             .expect("element will exist")
-            .add_assign(rhs.inner.element().expect("element will exist"));
+            .add_assign(rhs);
+
+        // BUG: inner element not being updated here?
+
+        dbg!(self.inner.element().unwrap().value());
     }
 }
 
 impl<'a> AddAssign<&'a ElementVar> for ElementVar {
     fn add_assign(&mut self, rhs: &'a ElementVar) {
+        dbg!("inside impl<'a> AddAssign<&'a ElementVar> for ElementVar ");
         self.inner
             .element()
             .expect("element will exist")

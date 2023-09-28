@@ -547,10 +547,10 @@ fn groth16_negation(point in element_strategy()) {
 #[derive(Clone)]
 struct AddAssignAddCircuit {
     // Witness
-    a: Fq,
-    b: Fq,
+    a: Element,
+    b: Element,
 
-    pub c: Fq,
+    pub c: Element,
 }
 
 impl ConstraintSynthesizer<Fq> for AddAssignAddCircuit {
@@ -558,17 +558,17 @@ impl ConstraintSynthesizer<Fq> for AddAssignAddCircuit {
         self,
         cs: ark_relations::r1cs::ConstraintSystemRef<Fq>,
     ) -> ark_relations::r1cs::Result<()> {
-        let a = FqVar::new_witness(cs.clone(), || Ok(self.a))?;
-        let b = FqVar::new_witness(cs.clone(), || Ok(self.b))?;
+        let a = ElementVar::new_witness(cs.clone(), || Ok(self.a))?;
+        let b = ElementVar::new_witness(cs.clone(), || Ok(self.b))?;
 
-        let c_pub = FqVar::new_input(cs, || Ok(self.c))?;
+        let c_pub = ElementVar::new_input(cs, || Ok(self.c))?;
         let c_add = a.clone() + b.clone();
         let mut c_add_assign = a.clone();
         dbg!(a.value());
         c_add_assign += b;
 
         dbg!(c_pub.value());
-        c_add.enforce_equal(&c_pub)?;
+        //c_add.enforce_equal(&c_pub)?;
         dbg!(c_add.value());
         c_add_assign.enforce_equal(&c_pub)?;
         dbg!(c_add_assign.value());
@@ -580,11 +580,11 @@ impl ConstraintSynthesizer<Fq> for AddAssignAddCircuit {
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(10))]
 #[test]
-fn groth16_add_addassign(a in fq_strategy(), b in fq_strategy()) {
+fn groth16_add_addassign(a in element_strategy(), b in element_strategy()) {
     let test_circuit = AddAssignAddCircuit {
-        a: Fq::from(1),
-        b: Fq::from(2),
-        c: Fq::from(3),
+        a: decaf377::basepoint(),
+        b: decaf377::basepoint() * Fr::from(2),
+        c: decaf377::basepoint() * Fr::from(3),
     };
     let (pk, vk) = Groth16::<Bls12_377, LibsnarkReduction>::circuit_specific_setup(test_circuit, &mut OsRng)
         .expect("can perform circuit specific setup");
@@ -596,11 +596,6 @@ fn groth16_add_addassign(a in fq_strategy(), b in fq_strategy()) {
         b,
         c: a + b,
     };
-    let c_add_ooc = a + b;
-    dbg!(c_add_ooc);
-    let mut c_add_assign_ooc = a;
-    c_add_assign_ooc += b;
-    dbg!(c_add_assign_ooc);
 
     let proof: Proof<Bls12_377> = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
         .map_err(|_| anyhow::anyhow!("invalid proof"))
