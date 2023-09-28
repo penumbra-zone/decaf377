@@ -5,7 +5,7 @@ use proptest::prelude::*;
 use ark_r1cs_std::{
     prelude::{AllocVar, CurveVar, EqGadget},
     uint8::UInt8,
-    R1CSVar, ToBitsGadget,
+    ToBitsGadget,
 };
 use ark_relations::r1cs::{ConstraintSynthesizer, ToConstraintField};
 use ark_snark::SNARK;
@@ -551,6 +551,7 @@ struct AddAssignAddCircuit {
     b: Element,
 
     pub c: Element,
+    pub d: Element,
 }
 
 impl ConstraintSynthesizer<Fq> for AddAssignAddCircuit {
@@ -561,17 +562,21 @@ impl ConstraintSynthesizer<Fq> for AddAssignAddCircuit {
         let a = ElementVar::new_witness(cs.clone(), || Ok(self.a))?;
         let b = ElementVar::new_witness(cs.clone(), || Ok(self.b))?;
 
-        let c_pub = ElementVar::new_input(cs, || Ok(self.c))?;
+        let c_pub = ElementVar::new_input(cs.clone(), || Ok(self.c))?;
         let c_add = a.clone() + b.clone();
         let mut c_add_assign = a.clone();
-        dbg!(a.value());
-        c_add_assign += b;
+        c_add_assign += b.clone();
 
-        dbg!(c_pub.value());
-        //c_add.enforce_equal(&c_pub)?;
-        dbg!(c_add.value());
+        c_add.enforce_equal(&c_pub)?;
         c_add_assign.enforce_equal(&c_pub)?;
-        dbg!(c_add_assign.value());
+
+        let d_pub = ElementVar::new_input(cs, || Ok(self.d))?;
+        let d_sub = a.clone() - b.clone();
+        let mut d_sub_assign = a.clone();
+        d_sub_assign -= b;
+
+        d_sub.enforce_equal(&d_pub)?;
+        d_sub_assign.enforce_equal(&d_pub)?;
 
         Ok(())
     }
@@ -581,10 +586,13 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(10))]
 #[test]
 fn groth16_add_addassign(a in element_strategy(), b in element_strategy()) {
+    let test_a = decaf377::basepoint();
+    let test_b = decaf377::basepoint() * Fr::from(2);
     let test_circuit = AddAssignAddCircuit {
-        a: decaf377::basepoint(),
-        b: decaf377::basepoint() * Fr::from(2),
-        c: decaf377::basepoint() * Fr::from(3),
+        a: test_a,
+        b: test_b,
+        c: test_a + test_b,
+        d: test_a - test_b,
     };
     let (pk, vk) = Groth16::<Bls12_377, LibsnarkReduction>::circuit_specific_setup(test_circuit, &mut OsRng)
         .expect("can perform circuit specific setup");
@@ -595,6 +603,7 @@ fn groth16_add_addassign(a in element_strategy(), b in element_strategy()) {
         a,
         b,
         c: a + b,
+        d: a - b,
     };
 
     let proof: Proof<Bls12_377> = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
@@ -603,7 +612,8 @@ fn groth16_add_addassign(a in element_strategy(), b in element_strategy()) {
 
     // Verifier POV
     let processed_pvk = Groth16::<Bls12_377, LibsnarkReduction>::process_vk(&vk).expect("can process verifying key");
-    let public_inputs = (a + b).to_field_elements().unwrap();
+    let mut public_inputs = (a + b).to_field_elements().unwrap();
+    public_inputs.extend_from_slice(&(a - b).to_field_elements().unwrap());
     let proof_result =
         Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
 
