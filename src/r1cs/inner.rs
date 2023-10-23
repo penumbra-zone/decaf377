@@ -333,7 +333,7 @@ impl<'a> Add<&'a ElementVar> for ElementVar {
 
 impl AddAssign for ElementVar {
     fn add_assign(&mut self, rhs: ElementVar) {
-        self.inner.add_assign(rhs.inner)
+        self.inner.add_assign(rhs.inner);
     }
 }
 

@@ -543,3 +543,80 @@ fn groth16_negation(point in element_strategy()) {
     assert!(proof_result);
 }
 }
+
+#[derive(Clone)]
+struct AddAssignAddCircuit {
+    // Witness
+    a: Element,
+    b: Element,
+
+    pub c: Element,
+    pub d: Element,
+}
+
+impl ConstraintSynthesizer<Fq> for AddAssignAddCircuit {
+    fn generate_constraints(
+        self,
+        cs: ark_relations::r1cs::ConstraintSystemRef<Fq>,
+    ) -> ark_relations::r1cs::Result<()> {
+        let a = ElementVar::new_witness(cs.clone(), || Ok(self.a))?;
+        let b = ElementVar::new_witness(cs.clone(), || Ok(self.b))?;
+
+        let c_pub = ElementVar::new_input(cs.clone(), || Ok(self.c))?;
+        let c_add = a.clone() + b.clone();
+        let mut c_add_assign = a.clone();
+        c_add_assign += b.clone();
+
+        c_add.enforce_equal(&c_pub)?;
+        c_add_assign.enforce_equal(&c_pub)?;
+
+        let d_pub = ElementVar::new_input(cs, || Ok(self.d))?;
+        let d_sub = a.clone() - b.clone();
+        let mut d_sub_assign = a.clone();
+        d_sub_assign -= b;
+
+        d_sub.enforce_equal(&d_pub)?;
+        d_sub_assign.enforce_equal(&d_pub)?;
+
+        Ok(())
+    }
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(10))]
+#[test]
+fn groth16_add_addassign(a in element_strategy(), b in element_strategy()) {
+    let test_a = decaf377::basepoint();
+    let test_b = decaf377::basepoint() * Fr::from(2);
+    let test_circuit = AddAssignAddCircuit {
+        a: test_a,
+        b: test_b,
+        c: test_a + test_b,
+        d: test_a - test_b,
+    };
+    let (pk, vk) = Groth16::<Bls12_377, LibsnarkReduction>::circuit_specific_setup(test_circuit, &mut OsRng)
+        .expect("can perform circuit specific setup");
+    let mut rng = OsRng;
+
+    // Prover POV
+    let circuit = AddAssignAddCircuit {
+        a,
+        b,
+        c: a + b,
+        d: a - b,
+    };
+
+    let proof: Proof<Bls12_377> = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
+        .map_err(|_| anyhow::anyhow!("invalid proof"))
+        .expect("can generate proof");
+
+    // Verifier POV
+    let processed_pvk = Groth16::<Bls12_377, LibsnarkReduction>::process_vk(&vk).expect("can process verifying key");
+    let mut public_inputs = (a + b).to_field_elements().unwrap();
+    public_inputs.extend_from_slice(&(a - b).to_field_elements().unwrap());
+    let proof_result =
+        Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
+
+    assert!(proof_result);
+}
+}

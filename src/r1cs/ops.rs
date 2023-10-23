@@ -36,19 +36,25 @@ impl<'a> Add<&'a ElementVar> for ElementVar {
 
 impl AddAssign for ElementVar {
     fn add_assign(&mut self, rhs: ElementVar) {
-        self.inner
-            .element()
-            .expect("element will exist")
-            .add_assign(rhs.inner.element().expect("element will exist"));
+        let rhs = rhs.inner.element().expect("element will exist");
+        let mut lhs = self.inner.element().expect("element will exist");
+        lhs.add_assign(rhs);
+
+        *self = ElementVar {
+            inner: LazyElementVar::new_from_element(lhs),
+        };
     }
 }
 
 impl<'a> AddAssign<&'a ElementVar> for ElementVar {
     fn add_assign(&mut self, rhs: &'a ElementVar) {
-        self.inner
-            .element()
-            .expect("element will exist")
-            .add_assign(rhs.inner.element().expect("element will exist"));
+        let rhs = rhs.inner.element().expect("element will exist");
+        let mut lhs = self.inner.element().expect("element will exist");
+        lhs.add_assign(rhs);
+
+        *self = ElementVar {
+            inner: LazyElementVar::new_from_element(lhs),
+        };
     }
 }
 
@@ -84,19 +90,25 @@ impl<'a> Sub<&'a ElementVar> for ElementVar {
 
 impl SubAssign for ElementVar {
     fn sub_assign(&mut self, rhs: ElementVar) {
-        self.inner
-            .element()
-            .expect("element will exist")
-            .sub_assign(rhs.inner.element().expect("element will exist"));
+        let rhs = rhs.inner.element().expect("element will exist");
+        let mut lhs = self.inner.element().expect("element will exist");
+        lhs.sub_assign(rhs);
+
+        *self = ElementVar {
+            inner: LazyElementVar::new_from_element(lhs),
+        };
     }
 }
 
 impl<'a> SubAssign<&'a ElementVar> for ElementVar {
     fn sub_assign(&mut self, rhs: &'a ElementVar) {
-        self.inner
-            .element()
-            .expect("element will exist")
-            .sub_assign(rhs.inner.element().expect("element will exist"));
+        let rhs = rhs.inner.element().expect("element will exist");
+        let mut lhs = self.inner.element().expect("element will exist");
+        lhs.sub_assign(rhs);
+
+        *self = ElementVar {
+            inner: LazyElementVar::new_from_element(lhs),
+        };
     }
 }
 
@@ -114,10 +126,12 @@ impl Sub<Element> for ElementVar {
 
 impl SubAssign<Element> for ElementVar {
     fn sub_assign(&mut self, rhs: Element) {
-        self.inner
-            .element()
-            .expect("element will exist")
-            .sub_assign(rhs)
+        let mut lhs = self.inner.element().expect("element will exist");
+        lhs.sub_assign(rhs);
+
+        *self = ElementVar {
+            inner: LazyElementVar::new_from_element(lhs),
+        };
     }
 }
 
@@ -135,9 +149,11 @@ impl Add<Element> for ElementVar {
 
 impl AddAssign<Element> for ElementVar {
     fn add_assign(&mut self, rhs: Element) {
-        self.inner
-            .element()
-            .expect("element will exist")
-            .add_assign(rhs)
+        let mut lhs = self.inner.element().expect("element will exist");
+        lhs.add_assign(rhs);
+
+        *self = ElementVar {
+            inner: LazyElementVar::new_from_element(lhs),
+        };
     }
 }
