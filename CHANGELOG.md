@@ -23,3 +23,7 @@
 * Audit followup:
   * Optimization: remove 7 unnecessary constraints in the R1CS sign checks.
   * Fix: Resolve incorrect handling of zero in point decompression in R1CS.
+
+# 0.6.0
+
+* Fix: Resolve incorrect `SubAssign` and `AddAssign` implementations in R1CS.
