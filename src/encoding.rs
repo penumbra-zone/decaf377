@@ -4,7 +4,7 @@ use std::convert::{TryFrom, TryInto};
 
 use ark_ec::twisted_edwards::TECurveConfig;
 use ark_ff::{Field, One};
-use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
+use ark_serialize::{CanonicalDeserialize, CanonicalSerialize, Read, Write};
 
 use crate::{
     constants::TWO, element::Decaf377EdwardsConfig, EdwardsProjective, Element, EncodingError, Fq,
@@ -159,7 +159,7 @@ impl CanonicalSerialize for Encoding {
         }
     }
 
-    fn serialize_with_mode<W: std::io::Write>(
+    fn serialize_with_mode<W: Write>(
         &self,
         mut writer: W,
         _mode: ark_serialize::Compress,
@@ -177,7 +177,7 @@ impl CanonicalSerialize for Element {
         }
     }
 
-    fn serialize_with_mode<W: std::io::Write>(
+    fn serialize_with_mode<W: Write>(
         &self,
         writer: W,
         mode: ark_serialize::Compress,
@@ -262,7 +262,7 @@ impl ark_serialize::Valid for Encoding {
 }
 
 impl CanonicalDeserialize for Encoding {
-    fn deserialize_with_mode<R: std::io::Read>(
+    fn deserialize_with_mode<R: Read>(
         mut reader: R,
         compress: ark_serialize::Compress,
         validate: ark_serialize::Validate,
@@ -282,7 +282,7 @@ impl CanonicalDeserialize for Encoding {
 }
 
 impl CanonicalDeserialize for Element {
-    fn deserialize_with_mode<R: std::io::Read>(
+    fn deserialize_with_mode<R: Read>(
         reader: R,
         compress: ark_serialize::Compress,
         validate: ark_serialize::Validate,
