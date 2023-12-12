@@ -1,4 +1,4 @@
-use std::convert::TryInto;
+use core::convert::TryInto;
 
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_std::io::{Read, Write};
