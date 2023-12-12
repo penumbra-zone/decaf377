@@ -53,20 +53,27 @@ jobs:
 
   no-std:
     name: no_std compatibility check
-      runs-on: ubuntu-latest
-      steps:
-        - uses: actions/checkout@v2
-        - uses: actions-rs/toolchain@v1
-          with:
-            profile: minimal
-            toolchain: stable
-            override: true
-        - uses: Swatinem/rust-cache@v1
-        - uses: actions-rs/cargo@v1
-        - name: Build with --no-default-features
-              run: |
-                cargo check --no-default-features
-                cargo build --no-default-features
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - uses: Swatinem/rust-cache@v1
+      - uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --no-default-features --features r1cs
+      - uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --no-default-features --features r1cs
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --no-default-features --features r1cs
 
   # clippy:
   #  name: Clippy
