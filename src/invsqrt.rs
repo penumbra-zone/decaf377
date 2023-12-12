@@ -3,6 +3,8 @@ use hashbrown::HashMap;
 
 use ark_ed_on_bls12_377::Fq;
 use ark_ff::{BigInteger256, BigInteger64, Field, Zero};
+use ark_std::boxed::Box;
+use ark_std::vec::Vec;
 use once_cell::sync::Lazy;
 
 use crate::constants::{G, M_MINUS_ONE_DIV_TWO, N, ONE, SQRT_W, ZETA_TO_ONE_MINUS_M_DIV_TWO};

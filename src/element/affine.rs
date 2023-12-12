@@ -14,7 +14,7 @@ pub struct AffineElement {
 }
 
 impl Hash for AffineElement {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         self.inner.hash(state);
     }
 }
@@ -46,8 +46,8 @@ impl PartialEq for AffineElement {
 
 impl Eq for AffineElement {}
 
-impl std::fmt::Debug for AffineElement {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Debug for AffineElement {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let element: Element = self.into();
         f.write_fmt(format_args!(
             "decaf377::AffineElement({})",

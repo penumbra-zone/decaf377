@@ -6,6 +6,7 @@ pub mod ops;
 
 pub use ark_ed_on_bls12_377::constraints::FqVar;
 use ark_ff::ToConstraintField;
+use ark_std::vec::Vec;
 pub use element::ElementVar;
 
 use crate::{Element, Fq};
