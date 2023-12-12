@@ -27,3 +27,7 @@
 # 0.6.0
 
 * Fix: Resolve incorrect `SubAssign` and `AddAssign` implementations in R1CS.
+
+# 0.7.0
+
+* Fix: Add `no_std` compatibility.
