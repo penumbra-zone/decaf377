@@ -1,3 +1,5 @@
+use ark_std::error::Error;
+
 #[derive(Debug)]
 pub enum EncodingError {
     InvalidEncoding,
@@ -15,5 +17,4 @@ impl core::fmt::Display for EncodingError {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for EncodingError {}
+impl Error for EncodingError {}

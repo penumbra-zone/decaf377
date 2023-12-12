@@ -14,8 +14,8 @@ use crate::{
 #[derive(Copy, Clone, Default, Eq, Ord, PartialOrd, PartialEq)]
 pub struct Encoding(pub [u8; 32]);
 
-impl std::fmt::Debug for Encoding {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Debug for Encoding {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.write_fmt(format_args!(
             "decaf377::Encoding({})",
             hex::encode(&self.0[..])

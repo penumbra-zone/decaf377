@@ -5,6 +5,7 @@ use ark_ec::{
 use ark_ed_on_bls12_377::EdwardsConfig;
 use ark_ff::MontFp;
 use ark_serialize::Valid;
+use ark_std::vec::Vec;
 
 use crate::{
     constants::{GENERATOR_X, GENERATOR_Y},

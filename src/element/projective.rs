@@ -14,13 +14,13 @@ pub struct Element {
 }
 
 impl Hash for Element {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         self.inner.hash(state);
     }
 }
 
-impl std::fmt::Debug for Element {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Debug for Element {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         // This prints the hex of the encoding of self, rather than the
         // coordinates, because that's what's most useful to downstream
         // consumers of the library.

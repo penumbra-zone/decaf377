@@ -5,6 +5,7 @@ use ark_ec::AffineRepr;
 use ark_ed_on_bls12_377::constraints::FqVar;
 use ark_r1cs_std::{alloc::AllocVar, eq::EqGadget, prelude::*, R1CSVar};
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
+use ark_std::vec::Vec;
 
 use crate::r1cs::lazy::LazyElementVar;
 use crate::{element::EdwardsAffine, r1cs::inner::ElementVar as InnerElementVar};
@@ -125,7 +126,7 @@ impl CondSelectGadget<Fq> for ElementVar {
 // This lets us use `new_constant`, `new_input` (public), or `new_witness` to add
 // decaf elements to an R1CS constraint system.
 impl AllocVar<Element, Fq> for ElementVar {
-    fn new_variable<T: std::borrow::Borrow<Element>>(
+    fn new_variable<T: core::borrow::Borrow<Element>>(
         cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
         f: impl FnOnce() -> Result<T, SynthesisError>,
         mode: AllocationMode,
