@@ -1,3 +1,4 @@
+#![no_std]
 //! `decaf377` [instantiates Decaf over the BLS12-377 scalar
 //! field](https://penumbra.zone/crypto/primitives/decaf377.html).
 

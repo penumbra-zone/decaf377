@@ -1,6 +1,6 @@
 #![allow(non_snake_case)]
+use core::borrow::Borrow;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
-use std::borrow::Borrow;
 
 use ark_ec::{twisted_edwards::TECurveConfig, AffineRepr};
 use ark_ed_on_bls12_377::constraints::FqVar;
