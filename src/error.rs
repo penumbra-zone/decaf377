@@ -1,9 +1,19 @@
-use thiserror::Error;
-
-#[derive(Error, Debug)]
+#[derive(Debug)]
 pub enum EncodingError {
-    #[error("Invalid Decaf377 encoding")]
     InvalidEncoding,
-    #[error("Invalid length bytes in encoded point")]
     InvalidSliceLength,
 }
+
+impl core::fmt::Display for EncodingError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let msg = match self {
+            Self::InvalidEncoding => "Invalid Decaf377 encoding",
+            Self::InvalidSliceLength => "Invalid length bytes in encoded point",
+        };
+
+        msg.fmt(f)
+    }
+}
+
+#[cfg(feature = "std")]
+impl std::error::Error for EncodingError {}
