@@ -1,6 +1,6 @@
 #![allow(non_snake_case)]
 
-use std::convert::{TryFrom, TryInto};
+use core::convert::{TryFrom, TryInto};
 
 use ark_ec::twisted_edwards::TECurveConfig;
 use ark_ff::{Field, One};

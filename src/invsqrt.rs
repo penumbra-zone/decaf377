@@ -1,5 +1,5 @@
+use core::convert::TryInto;
 use std::collections::HashMap;
-use std::convert::TryInto;
 
 use ark_ed_on_bls12_377::Fq;
 use ark_ff::{BigInteger256, BigInteger64, Field, Zero};
