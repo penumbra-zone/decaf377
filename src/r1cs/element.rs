@@ -1,5 +1,5 @@
 #![allow(non_snake_case)]
-use std::borrow::Borrow;
+use core::borrow::Borrow;
 
 use ark_ec::AffineRepr;
 use ark_ed_on_bls12_377::constraints::FqVar;
