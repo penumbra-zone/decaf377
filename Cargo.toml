@@ -26,6 +26,7 @@ ark-ed-on-bls12-377 = { version = "0.4", features = ["r1cs"] }
 ark-groth16 = { version = "0.4", default-features=false, optional=true }
 ark-snark = { version = "0.4", optional=true }
 zeroize = {version ="1.4", default-features=false}
+hashbrown = "0.14.3"
 
 # This matches what ark-std (a library for no_std compatibility) does, having
 # a default feature of std - without the ark-std std feature, decaf377 doesn't
