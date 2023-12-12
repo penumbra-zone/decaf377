@@ -1,4 +1,4 @@
-use std::ops::{Add, AddAssign, Sub, SubAssign};
+use core::ops::{Add, AddAssign, Sub, SubAssign};
 
 use crate::{r1cs::element::ElementVar, Element};
 
