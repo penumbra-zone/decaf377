@@ -9,8 +9,8 @@ license = "MIT OR Apache-2.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-hex = {version ="0.4", default-features=false}
-num-bigint = {version= "0.4", default-features=false}
+hex = {version ="=0.4.2", default-features=false}
+num-bigint = {version= "0.4.4", default-features=false}
 once_cell = {version= "1.8", default-features=false}
 tracing = {version = "0.1", default-features=false}
 tracing-subscriber = {version = "0.3", default-features=false }
@@ -25,7 +25,7 @@ ark-bls12-377 = "0.4"
 ark-ed-on-bls12-377 = { version = "0.4", features = ["r1cs"] }
 ark-groth16 = { version = "0.4", default-features=false, optional=true }
 ark-snark = { version = "0.4", optional=true }
-zeroize = {version ="1.4", default-features=false}
+zeroize = {version ="1.7", default-features=false}
 hashbrown = "0.14.3"
 
 # This matches what ark-std (a library for no_std compatibility) does, having
