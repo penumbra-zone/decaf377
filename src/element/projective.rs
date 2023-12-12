@@ -1,5 +1,5 @@
+use core::hash::Hash;
 use std::borrow::Borrow;
-use std::hash::Hash;
 
 use ark_ff::Zero;
 use ark_std::fmt::{Display, Formatter, Result as FmtResult};

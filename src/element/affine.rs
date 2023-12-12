@@ -1,4 +1,4 @@
-use std::hash::Hash;
+use core::hash::Hash;
 
 use crate::element::EdwardsAffine;
 use ark_std::fmt::{Display, Formatter, Result as FmtResult};
