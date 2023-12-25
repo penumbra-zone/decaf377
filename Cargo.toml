@@ -36,6 +36,8 @@ default = ["std"]
 std = ["ark-std/std", "tracing/std", "anyhow/std", "tracing-subscriber/std", "zeroize/std", "once_cell/std", "num-bigint/std", "hex/std" ]
 parallel = ["ark-ff/parallel", "ark-ec/parallel", "ark-groth16/parallel", "ark-std/parallel", "ark-r1cs-std/parallel"]
 r1cs = ["ark-r1cs-std", "ark-groth16", "ark-snark"]
+# TODO: eventually, feature-gate all arkworks deps behind this feature.
+arkworks = []
 
 [dev-dependencies]
 proptest = "1"
