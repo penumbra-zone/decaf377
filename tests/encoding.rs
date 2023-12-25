@@ -4,6 +4,18 @@ use proptest::prelude::*;
 
 use decaf377::{basepoint, Element, Encoding, FieldExt, Fr};
 
+/*
+#[test]
+fn print_fp_for_fiat_codegen() {
+    use ark_ff::PrimeField;
+    use decaf377::Bls12_377;
+
+    let p = <Bls12_377 as ark_ec::pairing::Pairing>::BaseField::MODULUS;
+    println!("p = {}", p);
+    panic!();
+}
+ */
+
 #[test]
 fn identity_encoding_is_zero() {
     let identity = Element::default();
