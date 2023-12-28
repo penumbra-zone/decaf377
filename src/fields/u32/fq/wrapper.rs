@@ -58,6 +58,59 @@ impl Fq {
         fiat::fq_square(&mut result, &self.0);
         Self(result)
     }
+
+    fn div(&self) -> Fq {
+        const LEN_PRIME: usize = 253;
+        const ITERATIONS: usize = (49 * LEN_PRIME + 57) / 17;
+
+        let mut a = fiat::FqNonMontgomeryDomainFieldElement([0; 8]);
+        fiat::fq_from_montgomery(&mut a, &self.0);       
+        let mut d = 1;
+        let mut f: [u32; 9] = [0u32; 9];
+        fiat::fq_msat(&mut f);
+        let mut g = [0u32; 9]; 
+        let mut v = [0u32; 8];
+        let mut r: [u32; 8] = Fq::one().0.0;
+        let mut i = 0;
+        let mut j = 0;
+
+        while j < 8 { 
+            g[j] = a[j];
+            j += 1;
+        }
+
+        while i < ITERATIONS - ITERATIONS % 2 {
+            let (out1, out2, out3, out4, out5) = fiat::fq_divstep(d, &f, &g, &v, &r);
+            let (out1, out2, out3, out4, out5) = fiat::fq_divstep(out1, &out2, &out3, &out4, &out5);
+            d = out1;
+            f = out2;
+            g = out3;
+            v = out4;
+            r = out5;
+            i += 2;
+        }
+
+        if ITERATIONS % 2 != 0 {
+            let (_out1, out2, _out3, out4, _out5) = fiat::fq_divstep(d, &f, &g, &v, &r);
+            v = out4;
+            f = out2;
+        }
+
+        let s = ((f[f.len() - 1] >> 32 - 1) & 1) as u8;
+        let mut neg = fiat::FqMontgomeryDomainFieldElement([0; 8]);
+        fiat::fq_opp(&mut neg, &fiat::FqMontgomeryDomainFieldElement(v));
+
+        let mut v_prime: [u32; 8] = [0u32; 8]; 
+        fiat::fq_selectznz(&mut v_prime, s, &v, &neg.0);
+
+        let mut pre_comp: [u32; 8] = [0u32; 8]; 
+        fiat::fq_divstep_precomp(&mut pre_comp);
+
+        let mut result = fiat::FqMontgomeryDomainFieldElement([0; 8]);
+        fiat::fq_mul(&mut result, &fiat::FqMontgomeryDomainFieldElement(v_prime), &fiat::FqMontgomeryDomainFieldElement(pre_comp));
+        
+        Fq(result)
+    }
 }
 
 impl Add<Fq> for Fq {
@@ -97,5 +150,21 @@ impl Neg for Fq {
         let mut result = fiat::FqMontgomeryDomainFieldElement([0; 8]);
         fiat::fq_opp(&mut result, &self.0);
         Fq(result)
+    }
+}
+
+mod tests {
+    use super::*;
+    use ark_std::println;
+
+    #[test]
+    fn inversion_test() {
+        let one = Fq::one();
+        let one_invert = one.div();
+        assert_eq!(one_invert, one);
+
+        let three = Fq::one().add(Fq::one().add(Fq::one()));
+        let three_invert = three.div();
+        assert_eq!(three.mul(three_invert), Fq::one());
     }
 }

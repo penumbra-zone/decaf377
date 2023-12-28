@@ -5068,17 +5068,17 @@ pub fn fq_divstep_precomp(out1: &mut [u32; 8]) {
 ///   out4: [[0x0 ~> 0xffffffff], [0x0 ~> 0xffffffff], [0x0 ~> 0xffffffff], [0x0 ~> 0xffffffff], [0x0 ~> 0xffffffff], [0x0 ~> 0xffffffff], [0x0 ~> 0xffffffff], [0x0 ~> 0xffffffff]]
 ///   out5: [[0x0 ~> 0xffffffff], [0x0 ~> 0xffffffff], [0x0 ~> 0xffffffff], [0x0 ~> 0xffffffff], [0x0 ~> 0xffffffff], [0x0 ~> 0xffffffff], [0x0 ~> 0xffffffff], [0x0 ~> 0xffffffff]]
 pub fn fq_divstep(
-    out1: &mut u32,
-    out2: &mut [u32; 9],
-    out3: &mut [u32; 9],
-    out4: &mut [u32; 8],
-    out5: &mut [u32; 8],
     arg1: u32,
     arg2: &[u32; 9],
     arg3: &[u32; 9],
     arg4: &[u32; 8],
     arg5: &[u32; 8],
-) {
+) -> (u32, [u32; 9], [u32; 9], [u32; 8], [u32; 8]) {
+    let mut out1: u32 = 0;
+    let mut out2: [u32; 9] = [0; 9];
+    let mut out3: [u32; 9] = [0; 9];
+    let mut out4: [u32; 8] = [0; 8];
+    let mut out5: [u32; 8] = [0; 8];
     let mut x1: u32 = 0;
     let mut x2: FqU1 = 0;
     fq_addcarryx_u32(&mut x1, &mut x2, 0x0, (!arg1), (0x1 as u32));
@@ -5455,7 +5455,7 @@ pub fn fq_divstep(
     fq_cmovznz_u32(&mut x229, x203, x198, x182);
     let mut x230: u32 = 0;
     fq_cmovznz_u32(&mut x230, x203, x200, x184);
-    *out1 = x204;
+    out1 = x204;
     out2[0] = x7;
     out2[1] = x8;
     out2[2] = x9;
@@ -5490,4 +5490,5 @@ pub fn fq_divstep(
     out5[5] = x228;
     out5[6] = x229;
     out5[7] = x230;
+    (out1, out2, out3, out4, out5)
 }
