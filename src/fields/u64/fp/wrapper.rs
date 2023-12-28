@@ -1,5 +1,5 @@
-use core::ops::{Add, Mul, Neg, Sub};
 
+use core::ops::{Add, Mul, Neg, Sub};
 use super::fiat;
 
 #[derive(Copy, Clone)]
@@ -58,6 +58,59 @@ impl Fp {
         fiat::fp_square(&mut result, &self.0);
         Self(result)
     }
+
+    fn div(&self) -> Fp {
+        const LEN_PRIME: usize = 377;
+        const ITERATIONS: usize = (49 * LEN_PRIME + 57) / 17;
+
+        let mut a = fiat::FpNonMontgomeryDomainFieldElement([0; 6]);
+        fiat::fp_from_montgomery(&mut a, &self.0);       
+        let mut d = 1;
+        let mut f: [u64; 7] = [0u64; 7];
+        fiat::fp_msat(&mut f);
+        let mut g = [0u64; 7]; 
+        let mut v = [0u64; 6];
+        let mut r: [u64; 6] = Fp::one().0.0;
+        let mut i = 0;
+        let mut j = 0;
+
+        while j < 6 { 
+            g[j] = a[j];
+            j += 1;
+        }
+
+        while i < ITERATIONS - ITERATIONS % 2 {
+            let (out1, out2, out3, out4, out5) = fiat::fp_divstep(d, &f, &g, &v, &r);
+            let (out1, out2, out3, out4, out5) = fiat::fp_divstep(out1, &out2, &out3, &out4, &out5);
+            d = out1;
+            f = out2;
+            g = out3;
+            v = out4;
+            r = out5;
+            i += 2;
+        }
+
+        if ITERATIONS % 2 != 0 {
+            let (_out1, out2, _out3, out4, _out5) = fiat::fp_divstep(d, &f, &g, &v, &r);
+            v = out4;
+            f = out2;
+        }
+
+        let s = ((f[f.len() - 1] >> 64 - 1) & 1) as u8;
+        let mut neg = fiat::FpMontgomeryDomainFieldElement([0; 6]);
+        fiat::fp_opp(&mut neg, &fiat::FpMontgomeryDomainFieldElement(v));
+
+        let mut v_prime: [u64; 6] = [0u64; 6]; 
+        fiat::fp_selectznz(&mut v_prime, s, &v, &neg.0);
+
+        let mut pre_comp: [u64; 6] = [0u64; 6]; 
+        fiat::fp_divstep_precomp(&mut pre_comp);
+
+        let mut result = fiat::FpMontgomeryDomainFieldElement([0; 6]);
+        fiat::fp_mul(&mut result, &fiat::FpMontgomeryDomainFieldElement(v_prime), &fiat::FpMontgomeryDomainFieldElement(pre_comp));
+        
+        Fp(result)
+    }
 }
 
 impl Add<Fp> for Fp {
@@ -97,5 +150,22 @@ impl Neg for Fp {
         let mut result = fiat::FpMontgomeryDomainFieldElement([0; 6]);
         fiat::fp_opp(&mut result, &self.0);
         Fp(result)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ark_std::println;
+
+    #[test]
+    fn inversion_test() {
+        let one = Fp(fiat::FpMontgomeryDomainFieldElement([202099033278250856, 5854854902718660529, 11492539364873682930, 8885205928937022213, 5545221690922665192, 39800542322357402]));
+        let one_invert = one.div();
+        assert_eq!(one_invert, one);
+
+        let three = Fp::one().add(Fp::one().add(Fp::one()));
+        let three_invert = three.div();
+        assert_eq!(three.mul(three_invert), Fp::one());
     }
 }
