@@ -58,6 +58,59 @@ impl Fr {
         fiat::fr_square(&mut result, &self.0);
         Self(result)
     }
+
+    fn div(&self) -> Fr {
+        const LEN_PRIME: usize = 251;
+        const ITERATIONS: usize = (49 * LEN_PRIME + 57) / 17;
+
+        let mut a = fiat::FrNonMontgomeryDomainFieldElement([0; 8]);
+        fiat::fr_from_montgomery(&mut a, &self.0);       
+        let mut d = 1;
+        let mut f: [u32; 9] = [0u32; 9];
+        fiat::fr_msat(&mut f);
+        let mut g = [0u32; 9]; 
+        let mut v = [0u32; 8];
+        let mut r: [u32; 8] = Fr::one().0.0;
+        let mut i = 0;
+        let mut j = 0;
+
+        while j < 8 { 
+            g[j] = a[j];
+            j += 1;
+        }
+
+        while i < ITERATIONS - ITERATIONS % 2 {
+            let (out1, out2, out3, out4, out5) = fiat::fr_divstep(d, &f, &g, &v, &r);
+            let (out1, out2, out3, out4, out5) = fiat::fr_divstep(out1, &out2, &out3, &out4, &out5);
+            d = out1;
+            f = out2;
+            g = out3;
+            v = out4;
+            r = out5;
+            i += 2;
+        }
+
+        if ITERATIONS % 2 != 0 {
+            let (_out1, out2, _out3, out4, _out5) = fiat::fr_divstep(d, &f, &g, &v, &r);
+            v = out4;
+            f = out2;
+        }
+
+        let s = ((f[f.len() - 1] >> 32 - 1) & 1) as u8;
+        let mut neg = fiat::FrMontgomeryDomainFieldElement([0; 8]);
+        fiat::fr_opp(&mut neg, &fiat::FrMontgomeryDomainFieldElement(v));
+
+        let mut v_prime: [u32; 8] = [0u32; 8]; 
+        fiat::fr_selectznz(&mut v_prime, s, &v, &neg.0);
+
+        let mut pre_comp: [u32; 8] = [0u32; 8]; 
+        fiat::fr_divstep_precomp(&mut pre_comp);
+
+        let mut result = fiat::FrMontgomeryDomainFieldElement([0; 8]);
+        fiat::fr_mul(&mut result, &fiat::FrMontgomeryDomainFieldElement(v_prime), &fiat::FrMontgomeryDomainFieldElement(pre_comp));
+        
+        Fr(result)
+    }
 }
 
 impl Add<Fr> for Fr {
@@ -97,5 +150,21 @@ impl Neg for Fr {
         let mut result = fiat::FrMontgomeryDomainFieldElement([0; 8]);
         fiat::fr_opp(&mut result, &self.0);
         Fr(result)
+    }
+}
+
+mod tests {
+    use super::*;
+    use ark_std::println;
+
+    #[test]
+    fn inversion_test() {
+        let one = Fr::one();
+        let one_invert = one.div();
+        assert_eq!(one_invert, one);
+
+        let three = Fr::one().add(Fr::one().add(Fr::one()));
+        let three_invert = three.div();
+        assert_eq!(three.mul(three_invert), Fr::one());
     }
 }
