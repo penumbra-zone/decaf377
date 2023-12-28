@@ -58,7 +58,11 @@ impl Fr {
         Self(result)
     }
 
-    fn div(&self) -> Fr {
+    fn inverse(&self) -> Option<Fr> {
+        if self == &Fr::zero() {
+            return None;
+        }
+
         const LEN_PRIME: usize = 251;
         const ITERATIONS: usize = (49 * LEN_PRIME + 57) / 17;
 
@@ -112,7 +116,7 @@ impl Fr {
             &fiat::FrMontgomeryDomainFieldElement(pre_comp),
         );
 
-        Fr(result)
+        Some(Fr(result))
     }
 }
 
@@ -162,11 +166,11 @@ mod tests {
     #[test]
     fn inversion_test() {
         let one = Fr::one();
-        let one_invert = one.div();
+        let one_invert = one.inverse().unwrap();
         assert_eq!(one_invert, one);
 
         let three = Fr::one().add(Fr::one().add(Fr::one()));
-        let three_invert = three.div();
+        let three_invert = three.inverse().unwrap();
         assert_eq!(three.mul(three_invert), Fr::one());
     }
 }

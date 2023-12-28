@@ -58,7 +58,11 @@ impl Fq {
         Self(result)
     }
 
-    fn div(&self) -> Fq {
+    fn inverse(&self) -> Option<Fq> {
+        if self == &Fq::zero() {
+            return None;
+        }
+
         const LEN_PRIME: usize = 253;
         const ITERATIONS: usize = (49 * LEN_PRIME + 57) / 17;
 
@@ -112,7 +116,7 @@ impl Fq {
             &fiat::FqMontgomeryDomainFieldElement(pre_comp),
         );
 
-        Fq(result)
+        Some(Fq(result))
     }
 }
 
@@ -162,11 +166,11 @@ mod tests {
     #[test]
     fn inversion_test() {
         let one = Fq::one();
-        let one_invert = one.div();
+        let one_invert = one.inverse().unwrap();
         assert_eq!(one_invert, one);
 
         let three = Fq::one().add(Fq::one().add(Fq::one()));
-        let three_invert = three.div();
+        let three_invert = three.inverse().unwrap();
         assert_eq!(three.mul(three_invert), Fq::one());
     }
 }
