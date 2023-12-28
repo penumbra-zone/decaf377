@@ -1,6 +1,5 @@
-use core::ops::{Add, Mul, Neg, Sub};
 use super::fiat;
-use ark_std::println;
+use core::ops::{Add, Mul, Neg, Sub};
 
 #[derive(Copy, Clone)]
 pub struct Fr(fiat::FrMontgomeryDomainFieldElement);
@@ -64,17 +63,17 @@ impl Fr {
         const ITERATIONS: usize = (49 * LEN_PRIME + 57) / 17;
 
         let mut a = fiat::FrNonMontgomeryDomainFieldElement([0; 4]);
-        fiat::fr_from_montgomery(&mut a, &self.0);       
+        fiat::fr_from_montgomery(&mut a, &self.0);
         let mut d = 1;
         let mut f: [u64; 5] = [0u64; 5];
         fiat::fr_msat(&mut f);
-        let mut g = [0u64; 5]; 
+        let mut g = [0u64; 5];
         let mut v = [0u64; 4];
-        let mut r: [u64; 4] = Fr::one().0.0;
+        let mut r: [u64; 4] = Fr::one().0 .0;
         let mut i = 0;
         let mut j = 0;
 
-        while j < 4 { 
+        while j < 4 {
             g[j] = a[j];
             j += 1;
         }
@@ -100,15 +99,19 @@ impl Fr {
         let mut neg = fiat::FrMontgomeryDomainFieldElement([0; 4]);
         fiat::fr_opp(&mut neg, &fiat::FrMontgomeryDomainFieldElement(v));
 
-        let mut v_prime: [u64; 4] = [0u64; 4]; 
+        let mut v_prime: [u64; 4] = [0u64; 4];
         fiat::fr_selectznz(&mut v_prime, s, &v, &neg.0);
 
-        let mut pre_comp: [u64; 4] = [0u64; 4]; 
+        let mut pre_comp: [u64; 4] = [0u64; 4];
         fiat::fr_divstep_precomp(&mut pre_comp);
 
         let mut result = fiat::FrMontgomeryDomainFieldElement([0; 4]);
-        fiat::fr_mul(&mut result, &fiat::FrMontgomeryDomainFieldElement(v_prime), &fiat::FrMontgomeryDomainFieldElement(pre_comp));
-        
+        fiat::fr_mul(
+            &mut result,
+            &fiat::FrMontgomeryDomainFieldElement(v_prime),
+            &fiat::FrMontgomeryDomainFieldElement(pre_comp),
+        );
+
         Fr(result)
     }
 }
@@ -155,7 +158,6 @@ impl Neg for Fr {
 
 mod tests {
     use super::*;
-    use ark_std::println;
 
     #[test]
     fn inversion_test() {

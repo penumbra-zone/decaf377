@@ -1,6 +1,5 @@
-use core::ops::{Add, Mul, Neg, Sub};
-
 use super::fiat;
+use core::ops::{Add, Mul, Neg, Sub};
 
 #[derive(Copy, Clone)]
 pub struct Fq(fiat::FqMontgomeryDomainFieldElement);
@@ -64,17 +63,17 @@ impl Fq {
         const ITERATIONS: usize = (49 * LEN_PRIME + 57) / 17;
 
         let mut a = fiat::FqNonMontgomeryDomainFieldElement([0; 8]);
-        fiat::fq_from_montgomery(&mut a, &self.0);       
+        fiat::fq_from_montgomery(&mut a, &self.0);
         let mut d = 1;
         let mut f: [u32; 9] = [0u32; 9];
         fiat::fq_msat(&mut f);
-        let mut g = [0u32; 9]; 
+        let mut g = [0u32; 9];
         let mut v = [0u32; 8];
-        let mut r: [u32; 8] = Fq::one().0.0;
+        let mut r: [u32; 8] = Fq::one().0 .0;
         let mut i = 0;
         let mut j = 0;
 
-        while j < 8 { 
+        while j < 8 {
             g[j] = a[j];
             j += 1;
         }
@@ -100,15 +99,19 @@ impl Fq {
         let mut neg = fiat::FqMontgomeryDomainFieldElement([0; 8]);
         fiat::fq_opp(&mut neg, &fiat::FqMontgomeryDomainFieldElement(v));
 
-        let mut v_prime: [u32; 8] = [0u32; 8]; 
+        let mut v_prime: [u32; 8] = [0u32; 8];
         fiat::fq_selectznz(&mut v_prime, s, &v, &neg.0);
 
-        let mut pre_comp: [u32; 8] = [0u32; 8]; 
+        let mut pre_comp: [u32; 8] = [0u32; 8];
         fiat::fq_divstep_precomp(&mut pre_comp);
 
         let mut result = fiat::FqMontgomeryDomainFieldElement([0; 8]);
-        fiat::fq_mul(&mut result, &fiat::FqMontgomeryDomainFieldElement(v_prime), &fiat::FqMontgomeryDomainFieldElement(pre_comp));
-        
+        fiat::fq_mul(
+            &mut result,
+            &fiat::FqMontgomeryDomainFieldElement(v_prime),
+            &fiat::FqMontgomeryDomainFieldElement(pre_comp),
+        );
+
         Fq(result)
     }
 }
@@ -155,7 +158,6 @@ impl Neg for Fq {
 
 mod tests {
     use super::*;
-    use ark_std::println;
 
     #[test]
     fn inversion_test() {
