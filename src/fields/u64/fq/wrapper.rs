@@ -82,19 +82,37 @@ impl Fq {
             j += 1;
         }
 
+        let mut out1: u64 = 0;
+        let mut out2: [u64; 5] = [0; 5];
+        let mut out3: [u64; 5] = [0; 5];
+        let mut out4: [u64; 4] = [0; 4];
+        let mut out5: [u64; 4] = [0; 4];
+        let mut out6: u64 = 0;
+        let mut out7: [u64; 5] = [0; 5];
+        let mut out8: [u64; 5] = [0; 5];
+        let mut out9: [u64; 4] = [0; 4];
+        let mut out10: [u64; 4] = [0; 4];
+
         while i < ITERATIONS - ITERATIONS % 2 {
-            let (out1, out2, out3, out4, out5) = fiat::fq_divstep(d, &f, &g, &v, &r);
-            let (out1, out2, out3, out4, out5) = fiat::fq_divstep(out1, &out2, &out3, &out4, &out5);
-            d = out1;
-            f = out2;
-            g = out3;
-            v = out4;
-            r = out5;
+            fiat::fq_divstep(
+                &mut out1, &mut out2, &mut out3, &mut out4, &mut out5, d, &f, &g, &v, &r,
+            );
+            fiat::fq_divstep(
+                &mut out6, &mut out7, &mut out8, &mut out9, &mut out10, out1, &out2, &out3, &out4,
+                &out5,
+            );
+            d = out6;
+            f = out7;
+            g = out8;
+            v = out9;
+            r = out10;
             i += 2;
         }
 
         if ITERATIONS % 2 != 0 {
-            let (_out1, out2, _out3, out4, _out5) = fiat::fq_divstep(d, &f, &g, &v, &r);
+            fiat::fq_divstep(
+                &mut out1, &mut out2, &mut out3, &mut out4, &mut out5, d, &f, &g, &v, &r,
+            );
             v = out4;
             f = out2;
         }

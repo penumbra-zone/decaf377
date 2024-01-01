@@ -10582,17 +10582,17 @@ pub fn fp_divstep_precomp(out1: &mut [u32; 12]) {
 ///   out4: [[0x0 ~> 0xffffffff], [0x0 ~> 0xffffffff], [0x0 ~> 0xffffffff], [0x0 ~> 0xffffffff], [0x0 ~> 0xffffffff], [0x0 ~> 0xffffffff], [0x0 ~> 0xffffffff], [0x0 ~> 0xffffffff], [0x0 ~> 0xffffffff], [0x0 ~> 0xffffffff], [0x0 ~> 0xffffffff], [0x0 ~> 0xffffffff]]
 ///   out5: [[0x0 ~> 0xffffffff], [0x0 ~> 0xffffffff], [0x0 ~> 0xffffffff], [0x0 ~> 0xffffffff], [0x0 ~> 0xffffffff], [0x0 ~> 0xffffffff], [0x0 ~> 0xffffffff], [0x0 ~> 0xffffffff], [0x0 ~> 0xffffffff], [0x0 ~> 0xffffffff], [0x0 ~> 0xffffffff], [0x0 ~> 0xffffffff]]
 pub fn fp_divstep(
+    out1: &mut u32,
+    out2: &mut [u32; 13],
+    out3: &mut [u32; 13],
+    out4: &mut [u32; 12],
+    out5: &mut [u32; 12],
     arg1: u32,
     arg2: &[u32; 13],
     arg3: &[u32; 13],
     arg4: &[u32; 12],
     arg5: &[u32; 12],
-) -> (u32, [u32; 13], [u32; 13], [u32; 12], [u32; 12]) {
-    let mut out1: u32 = 0;
-    let mut out2: [u32; 13] = [0; 13];
-    let mut out3: [u32; 13] = [0; 13];
-    let mut out4: [u32; 12] = [0; 12];
-    let mut out5: [u32; 12] = [0; 12];
+) {
     let mut x1: u32 = 0;
     let mut x2: FpU1 = 0;
     fp_addcarryx_u32(&mut x1, &mut x2, 0x0, (!arg1), (0x1 as u32));
@@ -11137,7 +11137,7 @@ pub fn fp_divstep(
     fp_cmovznz_u32(&mut x333, x295, x290, x266);
     let mut x334: u32 = 0;
     fp_cmovznz_u32(&mut x334, x295, x292, x268);
-    out1 = x296;
+    *out1 = x296;
     out2[0] = x7;
     out2[1] = x8;
     out2[2] = x9;
@@ -11188,5 +11188,4 @@ pub fn fp_divstep(
     out5[9] = x332;
     out5[10] = x333;
     out5[11] = x334;
-    (out1, out2, out3, out4, out5)
 }

@@ -82,19 +82,37 @@ impl Fr {
             j += 1;
         }
 
+        let mut out1: u32 = 0;
+        let mut out2: [u32; 9] = [0; 9];
+        let mut out3: [u32; 9] = [0; 9];
+        let mut out4: [u32; 8] = [0; 8];
+        let mut out5: [u32; 8] = [0; 8];
+        let mut out6: u32 = 0;
+        let mut out7: [u32; 9] = [0; 9];
+        let mut out8: [u32; 9] = [0; 9];
+        let mut out9: [u32; 8] = [0; 8];
+        let mut out10: [u32; 8] = [0; 8];
+
         while i < ITERATIONS - ITERATIONS % 2 {
-            let (out1, out2, out3, out4, out5) = fiat::fr_divstep(d, &f, &g, &v, &r);
-            let (out1, out2, out3, out4, out5) = fiat::fr_divstep(out1, &out2, &out3, &out4, &out5);
-            d = out1;
-            f = out2;
-            g = out3;
-            v = out4;
-            r = out5;
+            fiat::fr_divstep(
+                &mut out1, &mut out2, &mut out3, &mut out4, &mut out5, d, &f, &g, &v, &r,
+            );
+            fiat::fr_divstep(
+                &mut out6, &mut out7, &mut out8, &mut out9, &mut out10, out1, &out2, &out3, &out4,
+                &out5,
+            );
+            d = out6;
+            f = out7;
+            g = out8;
+            v = out9;
+            r = out10;
             i += 2;
         }
 
         if ITERATIONS % 2 != 0 {
-            let (_out1, out2, _out3, out4, _out5) = fiat::fr_divstep(d, &f, &g, &v, &r);
+            fiat::fr_divstep(
+                &mut out1, &mut out2, &mut out3, &mut out4, &mut out5, d, &f, &g, &v, &r,
+            );
             v = out4;
             f = out2;
         }

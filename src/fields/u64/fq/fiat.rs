@@ -1834,17 +1834,17 @@ pub fn fq_divstep_precomp(out1: &mut [u64; 4]) {
 ///   out4: [[0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff]]
 ///   out5: [[0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff]]
 pub fn fq_divstep(
+    out1: &mut u64,
+    out2: &mut [u64; 5],
+    out3: &mut [u64; 5],
+    out4: &mut [u64; 4],
+    out5: &mut [u64; 4],
     arg1: u64,
     arg2: &[u64; 5],
     arg3: &[u64; 5],
     arg4: &[u64; 4],
     arg5: &[u64; 4],
-) -> (u64, [u64; 5], [u64; 5], [u64; 4], [u64; 4]) {
-    let mut out1: u64 = 0;
-    let mut out2: [u64; 5] = [0; 5];
-    let mut out3: [u64; 5] = [0; 5];
-    let mut out4: [u64; 4] = [0; 4];
-    let mut out5: [u64; 4] = [0; 4];
+) {
     let mut x1: u64 = 0;
     let mut x2: FqU1 = 0;
     fq_addcarryx_u64(&mut x1, &mut x2, 0x0, (!arg1), (0x1 as u64));
@@ -2047,7 +2047,7 @@ pub fn fq_divstep(
     fq_cmovznz_u64(&mut x125, x111, x106, x98);
     let mut x126: u64 = 0;
     fq_cmovznz_u64(&mut x126, x111, x108, x100);
-    out1 = x112;
+    *out1 = x112;
     out2[0] = x7;
     out2[1] = x8;
     out2[2] = x9;
@@ -2066,5 +2066,4 @@ pub fn fq_divstep(
     out5[1] = x124;
     out5[2] = x125;
     out5[3] = x126;
-    (out1, out2, out3, out4, out5)
 }

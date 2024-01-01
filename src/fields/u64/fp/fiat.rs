@@ -3356,17 +3356,17 @@ pub fn fp_divstep_precomp(out1: &mut [u64; 6]) {
 ///   out4: [[0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff]]
 ///   out5: [[0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff]]
 pub fn fp_divstep(
+    out1: &mut u64,
+    out2: &mut [u64; 7],
+    out3: &mut [u64; 7],
+    out4: &mut [u64; 6],
+    out5: &mut [u64; 6],
     arg1: u64,
     arg2: &[u64; 7],
     arg3: &[u64; 7],
     arg4: &[u64; 6],
     arg5: &[u64; 6],
-) -> (u64, [u64; 7], [u64; 7], [u64; 6], [u64; 6]) {
-    let mut out1: u64 = 0;
-    let mut out2: [u64; 7] = [0; 7];
-    let mut out3: [u64; 7] = [0; 7];
-    let mut out4: [u64; 6] = [0; 6];
-    let mut out5: [u64; 6] = [0; 6];
+) {
     let mut x1: u64 = 0;
     let mut x2: FpU1 = 0;
     fp_addcarryx_u64(&mut x1, &mut x2, 0x0, (!arg1), (0x1 as u64));
@@ -3653,7 +3653,7 @@ pub fn fp_divstep(
     fp_cmovznz_u64(&mut x177, x157, x152, x140);
     let mut x178: u64 = 0;
     fp_cmovznz_u64(&mut x178, x157, x154, x142);
-    out1 = x158;
+    *out1 = x158;
     out2[0] = x7;
     out2[1] = x8;
     out2[2] = x9;
@@ -3680,5 +3680,4 @@ pub fn fp_divstep(
     out5[3] = x176;
     out5[4] = x177;
     out5[5] = x178;
-    (out1, out2, out3, out4, out5)
 }
