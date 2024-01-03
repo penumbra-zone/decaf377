@@ -1,169 +1,10 @@
-use core::{ops::{Add, Mul, Neg, Sub}, marker::PhantomData};
-
-use super::fiat::{self, FpMontgomeryDomainFieldElement};
-use ark_ff::{BigInt, SqrtPrecomputation};
-use ark_std::{
-    hash::Hash,
-};
-use derivative::Derivative;
+use super::fiat;
 
 #[derive(Copy, Clone)]
-pub struct Fp(FpMontgomeryDomainFieldElement);
-    
-pub trait FpTrait: Send + Sync + 'static + Sized {
-    // fn from_bytes(bytes: &[u8; 48]) -> Self;
-    // fn to_bytes(&self) -> [u8; 48];
-    // fn zero() -> Self;
-    // fn one() -> Self;
-    // fn square(&self) -> Self;
+pub struct Fp(pub fiat::FpMontgomeryDomainFieldElement);
 
-    /// The modulus of the field.
-    const MODULUS: BigInt<6>;
-
-    /// A multiplicative generator of the field.
-    /// `Self::GENERATOR` is an element having multiplicative order
-    /// `Self::MODULUS - 1`.
-    const GENERATOR: Fp;
-
-    /// Additive identity of the field, i.e. the element `e`
-    /// such that, for all elements `f` of the field, `e + f = f`.
-    const ZERO: Fp;
-
-    /// Multiplicative identity of the field, i.e. the element `e`
-    /// such that, for all elements `f` of the field, `e * f = f`.
-    const ONE: Fp;
-
-    /// Let `N` be the size of the multiplicative group defined by the field.
-    /// Then `TWO_ADICITY` is the two-adicity of `N`, i.e. the integer `s`
-    /// such that `N = 2^s * t` for some odd integer `t`.
-    const TWO_ADICITY: u32;
-
-    /// 2^s root of unity computed by GENERATOR^t
-    const TWO_ADIC_ROOT_OF_UNITY: Fp;
-
-    /// An integer `b` such that there exists a multiplicative subgroup
-    /// of size `b^k` for some integer `k`.
-    const SMALL_SUBGROUP_BASE: Option<u32> = None;
-
-    /// The integer `k` such that there exists a multiplicative subgroup
-    /// of size `Self::SMALL_SUBGROUP_BASE^k`.
-    const SMALL_SUBGROUP_BASE_ADICITY: Option<u32> = None;
-
-    /// GENERATOR^((MODULUS-1) / (2^s *
-    /// SMALL_SUBGROUP_BASE^SMALL_SUBGROUP_BASE_ADICITY)) Used for mixed-radix
-    /// FFT.
-    const LARGE_SUBGROUP_ROOT_OF_UNITY: Option<Fp> = None;
-
-    // Precomputed material for use when computing square roots.
-    // Currently uses the generic Tonelli-Shanks,
-    // which works for every modulus.
-    const SQRT_PRECOMP: Option<SqrtPrecomputation<Fp>>;
-
-    /// Set a += b.
-    fn add_assign(self, other: Fp) -> Fp;
-
-    /// Set a -= b.
-    fn sub_assign(self, other: Fp) -> Fp;
-
-    /// Set a = a + a.
-    fn double_in_place(a: &mut Fp);
-
-    /// Set a = -a;
-    fn neg_in_place(self) -> Fp;
-
-    /// Set a *= b.
-    fn mul_assign(self, other: Fp) -> Fp;
-
-    /// Compute the inner product `<a, b>`.
-    fn sum_of_products<const T: usize>(a: &[Fp; T], b: &[Fp; T]) -> Fp;
-
-    /// Set a *= b.
-    fn square_in_place(&self) -> Self;
-
-    /// Compute a^{-1} if `a` is not zero.
-    fn inverse(a: &Fp) -> Option<Fp>;
-
-    /// Construct a field element from an integer in the range
-    /// `0..(Self::MODULUS - 1)`. Returns `None` if the integer is outside
-    /// this range.
-    fn from_bigint(other: BigInt<6>) -> Option<Fp>;
-
-    /// Convert a field element to an integer in the range `0..(Self::MODULUS -
-    /// 1)`.
-    fn into_bigint(other: Fp) -> BigInt<6>;
-
-    fn from_bytes(bytes: &[u8; 48]) -> Self;
-
-    fn to_bytes(&self) -> [u8; 48];
-
-    fn zero() -> Self;
-
-    fn one() -> Self;
-}
-
-impl FpTrait for Fp {
-    const MODULUS: BigInt<6> = ark_ff::BigInt([0; 6]);
-    const GENERATOR: Fp = Fp(FpMontgomeryDomainFieldElement([0; 6]));
-    const ZERO: Fp = Fp(FpMontgomeryDomainFieldElement([0; 6]));
-    const ONE: Fp = Fp(FpMontgomeryDomainFieldElement([0; 6]));
-    const TWO_ADICITY: u32 = 0;
-    const TWO_ADIC_ROOT_OF_UNITY: Fp = Fp(FpMontgomeryDomainFieldElement([0; 6]));
-    const SMALL_SUBGROUP_BASE: Option<u32> = None;
-    const SMALL_SUBGROUP_BASE_ADICITY: Option<u32> = None;
-    const LARGE_SUBGROUP_ROOT_OF_UNITY: Option<Fp> = None;
-    const SQRT_PRECOMP: Option<SqrtPrecomputation<Fp>> = None;
-
-    fn add_assign(self, other: Fp) -> Fp {
-        let mut result = fiat::FpMontgomeryDomainFieldElement([0; 6]);
-        fiat::fp_add(&mut result, &self.0, &other.0);
-        Fp(result)
-    }
-
-    fn sub_assign(self, other: Fp) -> Fp {
-        let mut result = fiat::FpMontgomeryDomainFieldElement([0; 6]);
-        fiat::fp_sub(&mut result, &self.0, &other.0);
-        Fp(result)
-    }
-
-    fn double_in_place(a: &mut Fp) {
-        unimplemented!()
-    }
-
-    fn neg_in_place(self) -> Fp {
-        let mut result = fiat::FpMontgomeryDomainFieldElement([0; 6]);
-        fiat::fp_opp(&mut result, &self.0);
-        Fp(result)
-    }
-
-    fn mul_assign(self, other: Fp) -> Fp {
-        let mut result = fiat::FpMontgomeryDomainFieldElement([0; 6]);
-        fiat::fp_mul(&mut result, &self.0, &other.0);
-        Fp(result)
-    }
-
-    fn sum_of_products<const T: usize>(a: &[Fp; T], b: &[Fp; T]) -> Fp {
-        unimplemented!()
-    }
-
-    fn square_in_place(&self) -> Self {
-        let mut result = fiat::FpMontgomeryDomainFieldElement([0; 6]);
-        fiat::fp_square(&mut result, &self.0);
-        Self(result)
-    }
-
-    fn inverse(a: &Fp) -> Option<Fp> {
-        unimplemented!()
-    }
-
-    fn from_bigint(other: BigInt<6>) -> Option<Fp> {
-        todo!()
-    }
-
-    fn into_bigint(other: Fp) -> BigInt<6> {
-        unimplemented!()
-    }
-
-    fn from_bytes(bytes: &[u8; 48]) -> Self {
+impl Fp {
+    pub fn from_bytes(bytes: &[u8; 48]) -> Self {
         let mut x_non_montgomery = fiat::FpNonMontgomeryDomainFieldElement([0; 6]);
         let mut x = fiat::FpMontgomeryDomainFieldElement([0; 6]);
 
@@ -173,7 +14,7 @@ impl FpTrait for Fp {
         Self(x)
     }
 
-    fn to_bytes(&self) -> [u8; 48] {
+    pub fn to_bytes(&self) -> [u8; 48] {
         let mut x_non_montgomery = fiat::FpNonMontgomeryDomainFieldElement([0; 6]);
         let mut bytes = [0u8; 48];
 
@@ -183,13 +24,122 @@ impl FpTrait for Fp {
         bytes
     }
 
-    fn zero() -> Self {
+    pub fn zero() -> Self {
         Self(fiat::FpMontgomeryDomainFieldElement([0; 6]))
     }
 
-    fn one() -> Self {
+    pub fn one() -> Self {
         let mut one = Self::zero();
         fiat::fp_set_one(&mut one.0);
         one
+    }
+
+    pub fn square(&self) -> Self {
+        let mut result = fiat::FpMontgomeryDomainFieldElement([0; 6]);
+        fiat::fp_square(&mut result, &self.0);
+        Self(result)
+    }
+
+    pub fn inverse(&self) -> Option<Fp> {
+        if self == &Fp::zero() {
+            return None;
+        }
+
+        const LEN_PRIME: usize = 377;
+        const ITERATIONS: usize = (49 * LEN_PRIME + 57) / 17;
+
+        let mut a = fiat::FpNonMontgomeryDomainFieldElement([0; 6]);
+        fiat::fp_from_montgomery(&mut a, &self.0);
+        let mut d = 1;
+        let mut f: [u64; 7] = [0u64; 7];
+        fiat::fp_msat(&mut f);
+        let mut g = [0u64; 7];
+        let mut v = [0u64; 6];
+        let mut r: [u64; 6] = Fp::one().0 .0;
+        let mut i = 0;
+        let mut j = 0;
+
+        while j < 6 {
+            g[j] = a[j];
+            j += 1;
+        }
+
+        let mut out1: u64 = 0;
+        let mut out2: [u64; 7] = [0; 7];
+        let mut out3: [u64; 7] = [0; 7];
+        let mut out4: [u64; 6] = [0; 6];
+        let mut out5: [u64; 6] = [0; 6];
+        let mut out6: u64 = 0;
+        let mut out7: [u64; 7] = [0; 7];
+        let mut out8: [u64; 7] = [0; 7];
+        let mut out9: [u64; 6] = [0; 6];
+        let mut out10: [u64; 6] = [0; 6];
+
+        while i < ITERATIONS - ITERATIONS % 2 {
+            fiat::fp_divstep(
+                &mut out1, &mut out2, &mut out3, &mut out4, &mut out5, d, &f, &g, &v, &r,
+            );
+            fiat::fp_divstep(
+                &mut out6, &mut out7, &mut out8, &mut out9, &mut out10, out1, &out2, &out3, &out4,
+                &out5,
+            );
+            d = out6;
+            f = out7;
+            g = out8;
+            v = out9;
+            r = out10;
+            i += 2;
+        }
+
+        if ITERATIONS % 2 != 0 {
+            fiat::fp_divstep(
+                &mut out1, &mut out2, &mut out3, &mut out4, &mut out5, d, &f, &g, &v, &r,
+            );
+            v = out4;
+            f = out2;
+        }
+
+        let s = ((f[f.len() - 1] >> 64 - 1) & 1) as u8;
+        let mut neg = fiat::FpMontgomeryDomainFieldElement([0; 6]);
+        fiat::fp_opp(&mut neg, &fiat::FpMontgomeryDomainFieldElement(v));
+
+        let mut v_prime: [u64; 6] = [0u64; 6];
+        fiat::fp_selectznz(&mut v_prime, s, &v, &neg.0);
+
+        let mut pre_comp: [u64; 6] = [0u64; 6];
+        fiat::fp_divstep_precomp(&mut pre_comp);
+
+        let mut result = fiat::FpMontgomeryDomainFieldElement([0; 6]);
+        fiat::fp_mul(
+            &mut result,
+            &fiat::FpMontgomeryDomainFieldElement(v_prime),
+            &fiat::FpMontgomeryDomainFieldElement(pre_comp),
+        );
+
+        Some(Fp(result))
+    }
+
+    pub fn add(self, other: Fp) -> Fp {
+        let mut result = fiat::FpMontgomeryDomainFieldElement([0; 6]);
+        fiat::fp_add(&mut result, &self.0, &other.0);
+        Fp(result)
+    }
+
+    pub fn sub(self, other: Fp) -> Fp {
+        let mut result = fiat::FpMontgomeryDomainFieldElement([0; 6]);
+        fiat::fp_sub(&mut result, &self.0, &other.0);
+        Fp(result)
+    }
+
+    pub fn mul(self, other: Fp) -> Fp {
+        let mut result = fiat::FpMontgomeryDomainFieldElement([0; 6]);
+        fiat::fp_mul(&mut result, &self.0, &other.0);
+        Fp(result)
+    }
+
+    pub fn neg(self) -> Fp {
+        let mut result = fiat::FpMontgomeryDomainFieldElement([0; 6]);
+        fiat::fp_opp(&mut result, &self.0);
+        Fp(result)
     }
 }
