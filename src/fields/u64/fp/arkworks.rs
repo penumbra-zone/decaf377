@@ -1,20 +1,31 @@
 use core::{ops::{Neg, Add, AddAssign, Sub, SubAssign, MulAssign, Mul, DivAssign, Div}, iter, fmt::{Formatter, Display}, cmp::Ordering};
-
 use ark_ff::{PrimeField, BigInt, Field, SqrtPrecomputation};
 use ark_serialize::{Flags, CanonicalDeserializeWithFlags, SerializationError, Compress, Validate, CanonicalDeserialize, Valid, CanonicalSerializeWithFlags, CanonicalSerialize};
 use ark_std::{str::FromStr, Zero, One, rand};
 use ark_ff::FftField;
 use core::hash::Hash;
 
-use super::wrapper::Fp;
+use super::{wrapper::Fp, fiat};
 
 impl PrimeField for Fp {
-    type BigInt = BigInt<6>; // change from hardcoded
-    const MODULUS: Self::BigInt = ark_ff::BigInt([0; 6]); // use Fp::Modulus
-    const MODULUS_MINUS_ONE_DIV_TWO: Self::BigInt = unimplemented!(); // Fp::MODULUS.divide_by_2_round_down()
-    const MODULUS_BIT_SIZE: u32 = unimplemented!(); // Fp::MODULUS.const_num_bits()
-    const TRACE: Self::BigInt = unimplemented!(); // Fp::MODULUS.two_adic_coefficient()
-    const TRACE_MINUS_ONE_DIV_TWO: Self::BigInt = unimplemented!(); // Self::TRACE.divide_by_2_round_down()
+    /// A `BigInteger` type that can represent elements of this field.
+    type BigInt = BigInt<6>;
+
+    /// The BLS12-377 base field modulus `p` (258664426012969094010652733694893533536393512754914660539884262666720468348340822774968888139573360124440321458177)
+    const MODULUS: Self::BigInt = ark_ff::BigInt([9586122913090633729, 1660523435060625408, 2230234197602682880, 1883307231910630287, 14284016967150029115, 121098312706494698]); 
+    
+    /// The value `(p - 1)/ 2`.
+    const MODULUS_MINUS_ONE_DIV_TWO: Self::BigInt = BigInt([4793061456545316864, 830261717530312704, 10338489135656117248, 10165025652810090951, 7142008483575014557, 60549156353247349]);
+
+    /// The size of the modulus in bits.
+    const MODULUS_BIT_SIZE: u32 = 377;
+
+    /// The trace of the field is defined as the smallest integer `t` such that by
+    /// `2^s * t = p - 1`, and `t` is coprime to 2.
+    const TRACE: Self::BigInt = BigInt([8435453208297608227, 9853568280881552429, 7479357291536088013, 1657802422768920715, 16796279350917535980, 1720]);
+
+    /// The value `(t - 1)/ 2`.
+    const TRACE_MINUS_ONE_DIV_TWO: Self::BigInt = BigInt([13441098641003579921, 14150156177295552022, 12963050682622819814, 828901211384460357, 8398139675458767990, 860]);
 
     fn from_bigint(repr: Self::BigInt) -> Option<Self> {
         unimplemented!()
@@ -38,36 +49,45 @@ impl Field for Fp {
     type BasePrimeFieldIter = iter::Once<Self::BasePrimeField>;
 
     const SQRT_PRECOMP: Option<SqrtPrecomputation<Self>> = None; // use Fp::SQRT_PRECOMP
-    const ZERO: Self = unimplemented!();
-    const ONE: Self = unimplemented!();
+    
+    const ZERO: Self = Fp(fiat::FpMontgomeryDomainFieldElement([0, 0, 0, 0, 0, 0]));
+
+    // Montomgery representation of one
+    const ONE: Self = Fp(fiat::FpMontgomeryDomainFieldElement([202099033278250856, 5854854902718660529, 11492539364873682930, 8885205928937022213, 5545221690922665192, 39800542322357402]));
 
     fn extension_degree() -> u64 {
-        unimplemented!()
+        1
     }
 
     fn to_base_prime_field_elements(&self) -> Self::BasePrimeFieldIter {
-        unimplemented!()
+        iter::once(*self)
     }
 
     fn from_base_prime_field_elems(elems: &[Self::BasePrimeField]) -> Option<Self> {
-        todo!()
+        if elems.len() != (Self::extension_degree() as usize) {
+            return None;
+        }
+        Some(elems[0])
     }
 
     fn from_base_prime_field(elem: Self::BasePrimeField) -> Self {
-        unimplemented!()
+        elem
     }
 
     fn double(&self) -> Self {
-        unimplemented!()
+        let mut temp = *self;
+        temp.double_in_place();
+        temp
     }
 
     fn double_in_place(&mut self) -> &mut Self {
-        unimplemented!()
+        self.add(*self);
+        self
     }
 
-    // Should this be FpTrait invocation?
     fn neg_in_place(&mut self) -> &mut Self {
-        unimplemented!()
+        self.neg();
+        self
     }
 
     fn from_random_bytes_with_flags<F: ark_serialize::Flags>(bytes: &[u8]) -> Option<(Self, F)> {
@@ -79,19 +99,27 @@ impl Field for Fp {
     }
 
     fn square(&self) -> Self {
-        unimplemented!()
+        let mut temp = *self;
+        temp.square_in_place();
+        temp
     }
 
     fn square_in_place(&mut self) -> &mut Self {
-        unimplemented!()
+        self.square();
+        self
     }
 
     fn inverse(&self) -> Option<Self> {
-        unimplemented!()
+       self.inverse()
     }
 
     fn inverse_in_place(&mut self) -> Option<&mut Self> {
-        unimplemented!()
+        if let Some(inverse) = self.inverse() {
+            *self = inverse;
+            Some(self)
+        } else {
+            None
+        }
     }
 
     fn frobenius_map_in_place(&mut self, power: usize) {
@@ -541,12 +569,6 @@ impl ark_std::rand::distributions::Distribution<Fp>
 
 //////////////////////
 
-impl ark_std::fmt::Debug for Fp {
-    fn fmt(&self, f: &mut Formatter<'_>) -> ark_std::fmt::Result {
-        unimplemented!()
-    }
-}
-
 /// Outputs a string containing the value of `self`,
 /// represented as a decimal without leading zeroes.
 impl Display for Fp {
@@ -650,8 +672,10 @@ impl Hash for Fp {
 }
 
 impl PartialEq for Fp {
-    fn eq(&self, other: &Self) -> bool {
-        unimplemented!()
+    fn eq(&self, other: &Fp) -> bool {
+        let self_bytes = self.to_bytes();
+        let other_bytes = other.to_bytes();
+        self_bytes[..] == other_bytes[..]
     }
 }
 
@@ -660,5 +684,12 @@ impl Eq for Fp {}
 impl Default for Fp {
     fn default() -> Self {
         unimplemented!()
+    }
+}
+
+impl core::fmt::Debug for Fp {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+        let bytes = self.to_bytes();
+        write!(f, "Fp(0x{})", hex::encode(bytes))
     }
 }
