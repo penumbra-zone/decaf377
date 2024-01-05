@@ -1,11 +1,12 @@
-use core::{ops::{Neg, Add, AddAssign, Sub, SubAssign, MulAssign, Mul, DivAssign, Div}, iter, fmt::{Formatter, Display}, cmp::Ordering};
+use core::{ops::{Neg, Add, AddAssign, Sub, SubAssign, MulAssign, Mul, DivAssign, Div}, iter, fmt::{Formatter, Display}, cmp::{Ordering, min}};
 use ark_ff::{PrimeField, BigInt, Field, SqrtPrecomputation};
 use ark_serialize::{Flags, CanonicalDeserializeWithFlags, SerializationError, Compress, Validate, CanonicalDeserialize, Valid, CanonicalSerializeWithFlags, CanonicalSerialize};
 use ark_std::{str::FromStr, Zero, One, rand};
 use ark_ff::FftField;
 use core::hash::Hash;
-
 use super::{wrapper::Fp, fiat};
+use ark_std::println;
+use ark_bls12_377::Fq as ArkFp;
 
 impl PrimeField for Fp {
     /// A `BigInteger` type that can represent elements of this field.
@@ -28,19 +29,27 @@ impl PrimeField for Fp {
     const TRACE_MINUS_ONE_DIV_TWO: Self::BigInt = BigInt([13441098641003579921, 14150156177295552022, 12963050682622819814, 828901211384460357, 8398139675458767990, 860]);
 
     fn from_bigint(repr: Self::BigInt) -> Option<Self> {
-        unimplemented!()
+        Some(Fp(fiat::FpMontgomeryDomainFieldElement(repr.0)))
     }
 
     fn into_bigint(self) -> Self::BigInt {
-        unimplemented!()
+        BigInt(self.0.0)
     }
 
     fn from_be_bytes_mod_order(bytes: &[u8]) -> Self {
-       unimplemented!()
+        let mut bytes_copy = bytes.to_vec();
+        bytes_copy.reverse();
+        Self::from_le_bytes_mod_order(&bytes_copy)
     }
 
     fn from_le_bytes_mod_order(bytes: &[u8]) -> Self {
-        unimplemented!()
+        assert!(bytes.len() == 48);
+
+        let mut t = [0u8; 48];
+        t.copy_from_slice(&bytes[..48]);
+        let modulus_field_montgomery = Fp::from_bytes(&t);
+
+        modulus_field_montgomery
     }
 }
 
@@ -48,7 +57,8 @@ impl Field for Fp {
     type BasePrimeField = Self;
     type BasePrimeFieldIter = iter::Once<Self::BasePrimeField>;
 
-    const SQRT_PRECOMP: Option<SqrtPrecomputation<Self>> = None; // use Fp::SQRT_PRECOMP
+    // TODO: figure out what this should be?
+    const SQRT_PRECOMP: Option<SqrtPrecomputation<Self>> = None; 
     
     const ZERO: Self = Fp(fiat::FpMontgomeryDomainFieldElement([0, 0, 0, 0, 0, 0]));
 
@@ -691,5 +701,70 @@ impl core::fmt::Debug for Fp {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         let bytes = self.to_bytes();
         write!(f, "Fp(0x{})", hex::encode(bytes))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use core::convert::TryInto;
+
+    use super::*;
+    use ark_ff::BigInteger;
+    use ark_std::println;
+    use num_bigint::BigUint;
+    use ark_std::vec::Vec;
+
+    #[test]
+    fn modulus_from_le_bytes_mod_order_test() {
+        // Field modulus - 1 in non-montgomery form that satisfies the fiat-crypto preconditions (< m)
+        let modulus_minus_one = fiat::FpNonMontgomeryDomainFieldElement([9586122913090633728, 1660523435060625408, 2230234197602682880, 1883307231910630287, 14284016967150029115, 121098312706494698]);
+
+        // Convert bytes into montgomery domain
+        let mut modulus_minus_one_montgomery = fiat::FpMontgomeryDomainFieldElement([0; 6]);
+        fiat::fp_to_montgomery(&mut modulus_minus_one_montgomery, &modulus_minus_one);
+        
+        // Convert to [u8; 48] bytes out of montgomery domain
+        let modulus_non_montgomery_bytes = Fp::to_bytes(&Fp(modulus_minus_one_montgomery));
+
+        // Convert [u8; 48] bytes into field element in montgomery domain
+        let modulus_field_montgomery = Fp::from_le_bytes_mod_order(&modulus_non_montgomery_bytes);
+
+        // Convert field element out of montgomery domain
+        let mut x_non_montgomery = fiat::FpNonMontgomeryDomainFieldElement([0; 6]);
+        fiat::fp_from_montgomery(&mut x_non_montgomery, &modulus_field_montgomery.0);
+       
+        // Assertion check against original `FpNonMontgomeryDomainFieldElement`
+        assert_eq!(x_non_montgomery.0, modulus_minus_one.0);
+        
+        // Assertion check against original backend
+        let original_arkworks_backend: BigInt<6> = ArkFp::from_le_bytes_mod_order(&modulus_non_montgomery_bytes).into();
+        assert_eq!(BigInt(x_non_montgomery.0), original_arkworks_backend);
+    }
+
+    #[test]
+    fn zero_from_le_bytes_mod_order_test() {
+        // Field modulus - 1 in non-montgomery form that satisfies the fiat-crypto preconditions (< m)
+        let modulus_minus_one = fiat::FpNonMontgomeryDomainFieldElement([0, 0, 0, 0, 0, 0]);
+
+        // Convert bytes into montgomery domain
+        let mut modulus_minus_one_montgomery = fiat::FpMontgomeryDomainFieldElement([0; 6]);
+        fiat::fp_to_montgomery(&mut modulus_minus_one_montgomery, &modulus_minus_one);
+        
+        // Convert to [u8; 48] bytes out of montgomery domain
+        let modulus_non_montgomery_bytes = Fp::to_bytes(&Fp(modulus_minus_one_montgomery));
+
+        // Convert [u8; 48] bytes into field element in montgomery domain
+        let modulus_field_montgomery = Fp::from_le_bytes_mod_order(&modulus_non_montgomery_bytes);
+
+        // Convert field element out of montgomery domain
+        let mut x_non_montgomery = fiat::FpNonMontgomeryDomainFieldElement([0; 6]);
+        fiat::fp_from_montgomery(&mut x_non_montgomery, &modulus_field_montgomery.0);
+       
+        // Assertion check against original `FpNonMontgomeryDomainFieldElement`
+        assert_eq!(x_non_montgomery.0, modulus_minus_one.0);
+        
+        // Assertion check against original backend
+        let original_arkworks_backend: BigInt<6> = ArkFp::from_le_bytes_mod_order(&modulus_non_montgomery_bytes).into();
+        assert_eq!(BigInt(x_non_montgomery.0), original_arkworks_backend);
     }
 }
