@@ -1,6 +1,6 @@
 use core::{ops::{Neg, Add, AddAssign, Sub, SubAssign, MulAssign, Mul, DivAssign, Div}, iter, fmt::{Formatter, Display}, cmp::{Ordering, min}};
 use ark_ff::{PrimeField, BigInt, Field, SqrtPrecomputation};
-use ark_serialize::{Flags, CanonicalDeserializeWithFlags, SerializationError, Compress, Validate, CanonicalDeserialize, Valid, CanonicalSerializeWithFlags, CanonicalSerialize};
+use ark_serialize::{Flags, CanonicalDeserializeWithFlags, SerializationError, Compress, Validate, CanonicalDeserialize, Valid, CanonicalSerializeWithFlags, CanonicalSerialize, EmptyFlags};
 use ark_std::{str::FromStr, Zero, One, rand};
 use ark_ff::FftField;
 use core::hash::Hash;
@@ -29,7 +29,11 @@ impl PrimeField for Fp {
     const TRACE_MINUS_ONE_DIV_TWO: Self::BigInt = BigInt([13441098641003579921, 14150156177295552022, 12963050682622819814, 828901211384460357, 8398139675458767990, 860]);
 
     fn from_bigint(repr: Self::BigInt) -> Option<Self> {
-        Some(Fp(fiat::FpMontgomeryDomainFieldElement(repr.0)))
+        if repr >= Fp::MODULUS {
+            None
+        } else {
+            Some(Fp(fiat::FpMontgomeryDomainFieldElement(repr.0)))
+        }
     }
 
     fn into_bigint(self) -> Self::BigInt {
@@ -84,6 +88,7 @@ impl Field for Fp {
         elem
     }
 
+    // Fix 
     fn double(&self) -> Self {
         let mut temp = *self;
         temp.double_in_place();
@@ -101,7 +106,7 @@ impl Field for Fp {
     }
 
     fn from_random_bytes_with_flags<F: ark_serialize::Flags>(bytes: &[u8]) -> Option<(Self, F)> {
-        unimplemented!()
+        Some((Self::from_le_bytes_mod_order(bytes), F::default()))
     }
 
     fn legendre(&self) -> ark_ff::LegendreSymbol {
@@ -137,11 +142,11 @@ impl Field for Fp {
     }
 
     fn characteristic() -> &'static [u64] {
-        unimplemented!()
+        Fp::MODULUS.as_ref()
     }
 
     fn from_random_bytes(bytes: &[u8]) -> Option<Self> {
-        unimplemented!()
+        Some(Self::from_le_bytes_mod_order(bytes))
     }
 
     fn sqrt(&self) -> Option<Self> {
@@ -211,17 +216,14 @@ impl Neg for Fp {
     #[inline]
     #[must_use]
     fn neg(mut self) -> Self {
-        Fp::neg_in_place(&mut self);
-        self
+        self.neg()
     }
 }
-
-//////////////////////
 
 impl<'a> AddAssign<&'a Self> for Fp {
     #[inline]
     fn add_assign(&mut self, other: &Self) {
-        Fp::add_assign(self, other)
+        Fp::add(*self, *other);
     }
 }
 
@@ -241,16 +243,13 @@ impl<'a> core::ops::AddAssign<&'a mut Self> for Fp {
     }
 }
 
-//////////////////////
-
 #[allow(unused_qualifications)]
 impl core::ops::Add<Self> for Fp {
     type Output = Self;
 
     #[inline]
     fn add(mut self, other: Self) -> Self {
-        self.add_assign(&other);
-        self
+        self.add(other)
     }
 }
 
@@ -259,8 +258,7 @@ impl<'a> Add<&'a Fp> for Fp {
 
     #[inline]
     fn add(mut self, other: &Self) -> Self {
-        self.add_assign(other);
-        self
+        self.add(*other)
     }
 }
 
@@ -270,12 +268,9 @@ impl<'a> core::ops::Add<&'a mut Self> for Fp {
 
     #[inline]
     fn add(mut self, other: &'a mut Self) -> Self {
-        self.add_assign(&*other);
-        self
+        self.add(*other)
     }
 }
-
-//////////////////////
 
 impl<'a> SubAssign<&'a Self> for Fp {
     #[inline]
@@ -300,16 +295,13 @@ impl<'a> core::ops::SubAssign<&'a mut Self> for Fp {
     }
 }
 
-//////////////////////
-
 #[allow(unused_qualifications)]
 impl core::ops::Sub<Self> for Fp {
     type Output = Self;
 
     #[inline]
     fn sub(mut self, other: Self) -> Self {
-        self.sub_assign(&other);
-        self
+        self.sub(other)
     }
 }
 
@@ -318,8 +310,7 @@ impl<'a> Sub<&'a Fp> for Fp {
 
     #[inline]
     fn sub(mut self, other: &Self) -> Self {
-        self.sub_assign(other);
-        self
+        self.sub(*other)
     }
 }
 
@@ -329,12 +320,9 @@ impl<'a> core::ops::Sub<&'a mut Self> for Fp {
 
     #[inline]
     fn sub(mut self, other: &'a mut Self) -> Self {
-        self.sub_assign(&*other);
-        self
+        self.sub(*other)
     }
 }
-
-//////////////////////
 
 impl<'a> MulAssign<&'a Self> for Fp {
     fn mul_assign(&mut self, other: &Self) {
@@ -358,16 +346,13 @@ impl<'a> core::ops::MulAssign<&'a mut Self> for Fp {
     }
 }
 
-//////////////////////
-
 #[allow(unused_qualifications)]
 impl core::ops::Mul<Self> for Fp {
     type Output = Self;
 
     #[inline(always)]
     fn mul(mut self, other: Self) -> Self {
-        self.mul_assign(&other);
-        self
+        self.mul(other)
     }
 }
 
@@ -376,8 +361,7 @@ impl<'a> Mul<&'a Fp> for Fp {
 
     #[inline]
     fn mul(mut self, other: &Self) -> Self {
-        self.mul_assign(other);
-        self
+        self.mul(*other)
     }
 }
 
@@ -387,15 +371,12 @@ impl<'a> core::ops::Mul<&'a mut Self> for Fp {
 
     #[inline(always)]
     fn mul(mut self, other: &'a mut Self) -> Self {
-        self.mul_assign(&*other);
-        self
+        self.mul(*other)
     }
 }
 
 //////////////////////
 
-/// Computes `self *= other.inverse()` if `other.inverse()` is `Some`, and
-/// panics otherwise.
 impl<'a> DivAssign<&'a Self> for Fp {
     #[inline(always)]
     fn div_assign(&mut self, other: &Self) {
@@ -713,38 +694,227 @@ mod tests {
     use ark_std::println;
     use num_bigint::BigUint;
     use ark_std::vec::Vec;
+    use proptest::prelude::*;
 
-    #[test]
-    fn modulus_from_le_bytes_mod_order_test() {
-        // Field modulus - 1 in non-montgomery form that satisfies the fiat-crypto preconditions (< m)
-        let modulus_minus_one = fiat::FpNonMontgomeryDomainFieldElement([9586122913090633728, 1660523435060625408, 2230234197602682880, 1883307231910630287, 14284016967150029115, 121098312706494698]);
+    prop_compose! {
+        fn arb_bls377()(
+            z0 in 0..u64::MAX,
+            z1 in 0..u64::MAX,
+            z2 in 0..u64::MAX,
+            z3 in 0..u64::MAX,
+            z4 in 0..u64::MAX,
+            z5 in 0..u64::MAX
+        ) -> [u64; 6] {
+            [z0, z1, z2, z3, z4, z5]
+        }
+    }
 
-        // Convert bytes into montgomery domain
-        let mut modulus_minus_one_montgomery = fiat::FpMontgomeryDomainFieldElement([0; 6]);
-        fiat::fp_to_montgomery(&mut modulus_minus_one_montgomery, &modulus_minus_one);
-        
-        // Convert to [u8; 48] bytes out of montgomery domain
-        let modulus_non_montgomery_bytes = Fp::to_bytes(&Fp(modulus_minus_one_montgomery));
+    proptest! {
+        #[test]
+        fn test_addition_commutative(a in arb_bls377(), b in arb_bls377()) {
+            let a = Fp(fiat::FpMontgomeryDomainFieldElement(a));
+            let b = Fp(fiat::FpMontgomeryDomainFieldElement(b));
+   
+            assert_eq!(a + b, b + a);
+        }
+    }
 
-        // Convert [u8; 48] bytes into field element in montgomery domain
-        let modulus_field_montgomery = Fp::from_le_bytes_mod_order(&modulus_non_montgomery_bytes);
+    proptest! {
+        #[test]
+        fn test_addition_associative(a in arb_bls377(), b in arb_bls377(), c in arb_bls377()) {
+            let a = Fp(fiat::FpMontgomeryDomainFieldElement(a));
+            let b = Fp(fiat::FpMontgomeryDomainFieldElement(b));
+            let c = Fp(fiat::FpMontgomeryDomainFieldElement(c));
 
-        // Convert field element out of montgomery domain
-        let mut x_non_montgomery = fiat::FpNonMontgomeryDomainFieldElement([0; 6]);
-        fiat::fp_from_montgomery(&mut x_non_montgomery, &modulus_field_montgomery.0);
-       
-        // Assertion check against original `FpNonMontgomeryDomainFieldElement`
-        assert_eq!(x_non_montgomery.0, modulus_minus_one.0);
-        
-        // Assertion check against original backend
-        let original_arkworks_backend: BigInt<6> = ArkFp::from_le_bytes_mod_order(&modulus_non_montgomery_bytes).into();
-        assert_eq!(BigInt(x_non_montgomery.0), original_arkworks_backend);
+            assert_eq!(a + (b + c), (a + b) + c);
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn test_add_zero_identity(a in arb_bls377()) {
+            let a = Fp(fiat::FpMontgomeryDomainFieldElement(a));
+            let zero = Fp::zero();
+
+            assert_eq!(a + zero, a);
+            assert_eq!(zero + a, a);
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn test_subtract_self_is_zero(a in arb_bls377()) {
+            let a = Fp(fiat::FpMontgomeryDomainFieldElement(a));
+            let zero = Fp::zero();
+
+            assert_eq!(a - a, zero);
+        }
+    }
+
+    // FAILING
+    proptest! {
+        #[test]
+        fn test_doubling_is_just_addition(a in arb_bls377()) {
+            let a = Fp(fiat::FpMontgomeryDomainFieldElement(a));
+            let two = fiat::FpNonMontgomeryDomainFieldElement([2, 0, 0, 0, 0, 0]);
+
+            let mut two_to_mont = fiat::FpMontgomeryDomainFieldElement([0; 6]);
+            fiat::fp_to_montgomery(&mut two_to_mont, &two);
+
+            assert_eq!(a * Fp(two_to_mont), a + a);
+        }
+    }
+
+    // Failing, fix to actual scale test
+    proptest! {
+        #[test]
+        fn test_multiplying_scaling(a in arb_bls377(), u in arb_bls377(), v in arb_bls377()) {
+            let a = Fp(fiat::FpMontgomeryDomainFieldElement(a));
+            let u = Fp(fiat::FpMontgomeryDomainFieldElement(u));
+            let v = Fp(fiat::FpMontgomeryDomainFieldElement(v));
+
+            assert_eq!((a * u) * v, a * (u * v))
+        }
+    }
+
+    // FAILING
+    proptest! {
+        #[test]
+        fn test_adding_scaling(a in arb_bls377(), u in arb_bls377(), v in arb_bls377()) {
+            let a = Fp(fiat::FpMontgomeryDomainFieldElement(a));
+            let u = Fp(fiat::FpMontgomeryDomainFieldElement(u));
+            let v = Fp(fiat::FpMontgomeryDomainFieldElement(v));
+            
+            assert_eq!(a * (u + v), a * u + a * v)
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn test_adding_negation(a in arb_bls377()) {
+            let a = Fp(fiat::FpMontgomeryDomainFieldElement(a));
+
+            assert_eq!(a + -a, Fp::ZERO)
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn test_multiplication_commutative(a in arb_bls377(), b in arb_bls377()) {
+            let a = Fp(fiat::FpMontgomeryDomainFieldElement(a));
+            let b = Fp(fiat::FpMontgomeryDomainFieldElement(b));
+
+            assert_eq!(a * b, b * a);
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn test_multiplication_associative(a in arb_bls377(), b in arb_bls377(), c in arb_bls377()) {
+            let a = Fp(fiat::FpMontgomeryDomainFieldElement(a));
+            let b = Fp(fiat::FpMontgomeryDomainFieldElement(b));
+            let c = Fp(fiat::FpMontgomeryDomainFieldElement(c));
+            
+            assert_eq!(a * (b * c), (a * b) * c);
+        }
+    }
+
+    // FAILING
+    proptest! {
+        #[test]
+        fn test_multiplication_distributive(a in arb_bls377(), b in arb_bls377(), c in arb_bls377()) {
+            let a = Fp(fiat::FpMontgomeryDomainFieldElement(a));
+            let b = Fp(fiat::FpMontgomeryDomainFieldElement(b));
+            let c = Fp(fiat::FpMontgomeryDomainFieldElement(c));
+
+            assert_eq!(a * (b + c), a * b + a * c);
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn test_multiply_one_identity(a in arb_bls377()) {
+            let a = Fp(fiat::FpMontgomeryDomainFieldElement(a));
+
+            assert_eq!(a * Fp::ONE, a);
+            assert_eq!(Fp::ONE * a, a);
+        }
+    }
+
+    // FAILING
+    proptest! {
+        #[test]
+        fn test_multiply_minus_one_is_negation(a in arb_bls377()) {
+            let a = Fp(fiat::FpMontgomeryDomainFieldElement(a));
+
+            assert_eq!(-(Fp::ONE) * a, -a);
+            assert_eq!(a * -Fp::ONE, -a);
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn test_square_is_multiply(a in arb_bls377()) {
+            let a = Fp(fiat::FpMontgomeryDomainFieldElement(a));
+
+            assert_eq!(a.square(), a * a);
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn test_inverse(a in arb_bls377()) {
+            let a = Fp(fiat::FpMontgomeryDomainFieldElement(a));
+
+            assert_eq!(a * a.inverse().unwrap(), Fp::ONE);
+        }
     }
 
     #[test]
-    fn zero_from_le_bytes_mod_order_test() {
+    fn test_addition_examples() {
+        let z1 = Fp(fiat::FpMontgomeryDomainFieldElement([1, 1, 1, 1, 1, 1]));
+        let z2 = Fp(fiat::FpMontgomeryDomainFieldElement([2, 2, 2, 2, 2, 2]));
+        let z3 = Fp(fiat::FpMontgomeryDomainFieldElement([3, 3, 3, 3, 3, 3]));
+
+        assert_eq!(z3, z1 + z2);
+    }
+
+    // FAILING sub_assign
+    #[test]
+    fn test_subtraction_examples() {
+        let mut z1 = Fp(fiat::FpMontgomeryDomainFieldElement([1, 1, 1, 1, 1, 1]));
+
+        z1 -= z1;
+        assert_eq!(z1, Fp::ZERO);
+    }
+
+    // FAILING
+    #[test]
+    fn test_small_multiplication_examples() {
+        let z1 = Fp(fiat::FpMontgomeryDomainFieldElement([1, 0, 0, 0, 0, 0]));
+        let z2 = Fp(fiat::FpMontgomeryDomainFieldElement([2, 0, 0, 0, 0, 0]));
+        let z3 = Fp(fiat::FpMontgomeryDomainFieldElement([3, 3, 3, 3, 3, 3]));
+
+        assert_eq!(z1 + z1, z1 * z2);
+        assert_eq!(z1 + z1 + z1, z1 * z3);
+    }
+
+    #[test]
+    fn test_2192_times_zero() {
+        let two192 = Fp(fiat::FpMontgomeryDomainFieldElement([0, 0, 0, 0, 0, 1]));
+        assert_eq!(two192 * Fp::zero(), Fp::ZERO);
+    }
+
+    #[test]
+    fn test_minus_one_squared() {
+        let mut minus_one = Fp::zero() - Fp::one();
+        assert_eq!(minus_one.square(), Fp::ONE);
+    }
+
+    #[test]
+    fn test_modulus_from_le_bytes_mod_order() {
         // Field modulus - 1 in non-montgomery form that satisfies the fiat-crypto preconditions (< m)
-        let modulus_minus_one = fiat::FpNonMontgomeryDomainFieldElement([0, 0, 0, 0, 0, 0]);
+        let modulus_minus_one = fiat::FpNonMontgomeryDomainFieldElement([9586122913090633728, 1660523435060625408, 2230234197602682880, 1883307231910630287, 14284016967150029115, 121098312706494698]);
 
         // Convert bytes into montgomery domain
         let mut modulus_minus_one_montgomery = fiat::FpMontgomeryDomainFieldElement([0; 6]);
