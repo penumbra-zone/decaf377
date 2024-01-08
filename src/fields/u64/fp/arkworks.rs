@@ -174,6 +174,19 @@ impl Field for Fp {
     }
 }
 
+impl FftField for Fp {
+    const GENERATOR: Self = unimplemented!(); // use Fp::GENERATOR
+    const TWO_ADICITY: u32 = unimplemented!(); // use Fp::TWO_ADICITY
+    const TWO_ADIC_ROOT_OF_UNITY: Self = unimplemented!(); // Fp::TWO_ADIC_ROOT_OF_UNITY
+    const SMALL_SUBGROUP_BASE: Option<u32> = unimplemented!(); // Fp::SMALL_SUBGROUP_BASE
+    const SMALL_SUBGROUP_BASE_ADICITY: Option<u32> = unimplemented!(); // Fp::SMALL_SUBGROUP_BASE_ADICITY
+    const LARGE_SUBGROUP_ROOT_OF_UNITY: Option<Self> = unimplemented!(); // Fp::LARGE_SUBGROUP_ROOT_OF_UNITY
+
+    fn get_root_of_unity(n: u64) -> Option<Self> {
+        unimplemented!()
+    }
+}
+
 impl From<u128> for Fp {
     fn from(value: u128) -> Self {
         unimplemented!()
@@ -224,7 +237,7 @@ impl Neg for Fp {
 impl<'a> AddAssign<&'a Self> for Fp {
     #[inline]
     fn add_assign(&mut self, other: &Self) {
-        Fp::add(*self, *other);
+        *self = self.add(*other);
     }
 }
 
@@ -232,7 +245,7 @@ impl<'a> AddAssign<&'a Self> for Fp {
 impl core::ops::AddAssign<Self> for Fp {
     #[inline(always)]
     fn add_assign(&mut self, other: Self) {
-        self.add_assign(&other)
+        *self = self.add(other);
     }
 }
 
@@ -240,7 +253,7 @@ impl core::ops::AddAssign<Self> for Fp {
 impl<'a> core::ops::AddAssign<&'a mut Self> for Fp {
     #[inline(always)]
     fn add_assign(&mut self, other: &'a mut Self) {
-        self.add_assign(&*other)
+        *self = self.add(*other);
     }
 }
 
@@ -327,7 +340,7 @@ impl<'a> core::ops::Sub<&'a mut Self> for Fp {
 
 impl<'a> MulAssign<&'a Self> for Fp {
     fn mul_assign(&mut self, other: &Self) {
-        Fp::mul_assign(self, other)
+        *self = self.mul(*other);
     }
 }
 
@@ -335,7 +348,7 @@ impl<'a> MulAssign<&'a Self> for Fp {
 impl core::ops::MulAssign<Self> for Fp {
     #[inline(always)]
     fn mul_assign(&mut self, other: Self) {
-        self.mul_assign(&other)
+        *self = self.mul(other);
     }
 }
 
@@ -343,7 +356,7 @@ impl core::ops::MulAssign<Self> for Fp {
 impl<'a> core::ops::MulAssign<&'a mut Self> for Fp {
     #[inline(always)]
     fn mul_assign(&mut self, other: &'a mut Self) {
-        self.mul_assign(&*other)
+        *self = self.mul(*other);
     }
 }
 
@@ -376,8 +389,6 @@ impl<'a> core::ops::Mul<&'a mut Self> for Fp {
     }
 }
 
-//////////////////////
-
 impl<'a> DivAssign<&'a Self> for Fp {
     #[inline(always)]
     fn div_assign(&mut self, other: &Self) {
@@ -401,8 +412,6 @@ impl<'a> core::ops::DivAssign<&'a mut Self> for Fp {
     }
 }
 
-//////////////////////
-
 #[allow(unused_qualifications)]
 impl core::ops::Div<Self> for Fp {
     type Output = Self;
@@ -417,8 +426,6 @@ impl core::ops::Div<Self> for Fp {
 impl<'a> Div<&'a Fp> for Fp {
     type Output = Self;
 
-    /// Returns `self * other.inverse()` if `other.inverse()` is `Some`, and
-    /// panics otherwise.
     #[inline]
     fn div(mut self, other: &Self) -> Self {
         self.mul_assign(&other.inverse().unwrap());
@@ -436,8 +443,6 @@ impl<'a> core::ops::Div<&'a mut Self> for Fp {
         self
     }
 }
-
-//////////////////////
 
 impl Zero for Fp {
     #[inline]
@@ -491,8 +496,6 @@ impl<'a> core::iter::Product<&'a Self> for Fp {
     }
 }
 
-//////////////////////
-
 impl CanonicalDeserializeWithFlags for Fp {
     fn deserialize_with_flags<R: ark_std::io::Read, F: Flags>(
         reader: R,
@@ -542,10 +545,6 @@ impl CanonicalSerializeWithFlags for Fp {
         unimplemented!()
     }
 
-    // Let `m = 8 * n` for some `n` be the smallest multiple of 8 greater
-    // than `Fp::MODULUS_BIT_SIZE`.
-    // If `(m - Fp::MODULUS_BIT_SIZE) >= F::BIT_SIZE` , then this method returns `n`;
-    // otherwise, it returns `n + 1`.
     fn serialized_size_with_flags<F: Flags>(&self) -> usize {
         unimplemented!()
     }
@@ -559,10 +558,6 @@ impl ark_std::rand::distributions::Distribution<Fp>
     }
 }
 
-//////////////////////
-
-/// Outputs a string containing the value of `self`,
-/// represented as a decimal without leading zeroes.
 impl Display for Fp {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         unimplemented!()
@@ -570,19 +565,11 @@ impl Display for Fp {
 }
 
 impl zeroize::Zeroize for Fp {
-    // The phantom data does not contain element-specific data
-    // and thus does not need to be zeroized.
     fn zeroize(&mut self) {
         unimplemented!()
     }
 }
 
-/// Note that this implementation of `Ord` compares field elements viewing
-/// them as integers in the range 0, 1, ..., Fp::MODULUS - 1. However, other
-/// implementations of `PrimeField` might choose a different ordering, and
-/// as such, users should use this `Ord` for applications where
-/// any ordering suffices (like in a BTreeMap), and not in applications
-/// where a particular ordering is required.
 impl Ord for Fp {
     #[inline(always)]
     fn cmp(&self, other: &Self) -> Ordering {
@@ -590,12 +577,6 @@ impl Ord for Fp {
     }
 }
 
-/// Note that this implementation of `PartialOrd` compares field elements
-/// viewing them as integers in the range 0, 1, ..., `Fp::MODULUS` - 1. However,
-/// other implementations of `PrimeField` might choose a different ordering, and
-/// as such, users should use this `PartialOrd` for applications where
-/// any ordering suffices (like in a BTreeMap), and not in applications
-/// where a particular ordering is required.
 impl PartialOrd for Fp {
     #[inline(always)]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
@@ -603,13 +584,9 @@ impl PartialOrd for Fp {
     }
 }
 
-//////////////////////
-
 impl FromStr for Fp {
     type Err = ();
 
-    /// Interpret a string of numbers as a (congruent) prime field element.
-    /// Does not accept unnecessary leading zeroes or a blank string.
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         unimplemented!()
     }
@@ -640,19 +617,6 @@ impl From<BigInt<6>> for Fp {
     /// Converts `Self::BigInteger` into `Self`
     #[inline(always)]
     fn from(int: BigInt<6>) -> Self {
-        unimplemented!()
-    }
-}
-
-impl FftField for Fp {
-    const GENERATOR: Self = unimplemented!(); // use Fp::GENERATOR
-    const TWO_ADICITY: u32 = unimplemented!(); // use Fp::TWO_ADICITY
-    const TWO_ADIC_ROOT_OF_UNITY: Self = unimplemented!(); // Fp::TWO_ADIC_ROOT_OF_UNITY
-    const SMALL_SUBGROUP_BASE: Option<u32> = unimplemented!(); // Fp::SMALL_SUBGROUP_BASE
-    const SMALL_SUBGROUP_BASE_ADICITY: Option<u32> = unimplemented!(); // Fp::SMALL_SUBGROUP_BASE_ADICITY
-    const LARGE_SUBGROUP_ROOT_OF_UNITY: Option<Self> = unimplemented!(); // Fp::LARGE_SUBGROUP_ROOT_OF_UNITY
-
-    fn get_root_of_unity(n: u64) -> Option<Self> {
         unimplemented!()
     }
 }
