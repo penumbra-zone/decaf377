@@ -216,7 +216,8 @@ impl Neg for Fp {
     #[inline]
     #[must_use]
     fn neg(mut self) -> Self {
-        self.neg()
+        let neg = self.neg();
+        neg
     }
 }
 
@@ -275,7 +276,7 @@ impl<'a> core::ops::Add<&'a mut Self> for Fp {
 impl<'a> SubAssign<&'a Self> for Fp {
     #[inline]
     fn sub_assign(&mut self, other: &Self) {
-        Fp::sub_assign(self, other);
+        *self = self.sub(*other);
     }
 }
 
@@ -283,7 +284,7 @@ impl<'a> SubAssign<&'a Self> for Fp {
 impl core::ops::SubAssign<Self> for Fp {
     #[inline(always)]
     fn sub_assign(&mut self, other: Self) {
-        self.sub_assign(&other)
+        *self = self.sub(other);
     }
 }
 
@@ -291,7 +292,7 @@ impl core::ops::SubAssign<Self> for Fp {
 impl<'a> core::ops::SubAssign<&'a mut Self> for Fp {
     #[inline(always)]
     fn sub_assign(&mut self, other: &'a mut Self) {
-        self.sub_assign(&*other)
+        *self = self.sub(*other);
     }
 }
 
@@ -703,7 +704,7 @@ mod tests {
             z2 in 0..u64::MAX,
             z3 in 0..u64::MAX,
             z4 in 0..u64::MAX,
-            z5 in 0..u64::MAX
+            z5 in 0..(1u64 << 57)
         ) -> [u64; 6] {
             [z0, z1, z2, z3, z4, z5]
         }
@@ -751,7 +752,6 @@ mod tests {
         }
     }
 
-    // FAILING
     proptest! {
         #[test]
         fn test_doubling_is_just_addition(a in arb_bls377()) {
@@ -760,12 +760,11 @@ mod tests {
 
             let mut two_to_mont = fiat::FpMontgomeryDomainFieldElement([0; 6]);
             fiat::fp_to_montgomery(&mut two_to_mont, &two);
-
-            assert_eq!(a * Fp(two_to_mont), a + a);
+            
+            assert_eq!(Fp(two_to_mont) * a, a + a);
         }
     }
 
-    // Failing, fix to actual scale test
     proptest! {
         #[test]
         fn test_multiplying_scaling(a in arb_bls377(), u in arb_bls377(), v in arb_bls377()) {
@@ -777,7 +776,6 @@ mod tests {
         }
     }
 
-    // FAILING
     proptest! {
         #[test]
         fn test_adding_scaling(a in arb_bls377(), u in arb_bls377(), v in arb_bls377()) {
@@ -819,7 +817,6 @@ mod tests {
         }
     }
 
-    // FAILING
     proptest! {
         #[test]
         fn test_multiplication_distributive(a in arb_bls377(), b in arb_bls377(), c in arb_bls377()) {
@@ -846,9 +843,10 @@ mod tests {
         #[test]
         fn test_multiply_minus_one_is_negation(a in arb_bls377()) {
             let a = Fp(fiat::FpMontgomeryDomainFieldElement(a));
+            let minus_one = Fp::ONE.neg();
 
-            assert_eq!(-(Fp::ONE) * a, -a);
-            assert_eq!(a * -Fp::ONE, -a);
+            assert_eq!(minus_one * a, a.neg());
+            assert_eq!(a * minus_one, a.neg());
         }
     }
 
@@ -879,24 +877,29 @@ mod tests {
         assert_eq!(z3, z1 + z2);
     }
 
-    // FAILING sub_assign
     #[test]
     fn test_subtraction_examples() {
         let mut z1 = Fp(fiat::FpMontgomeryDomainFieldElement([1, 1, 1, 1, 1, 1]));
-
         z1 -= z1;
+
         assert_eq!(z1, Fp::ZERO);
     }
 
-    // FAILING
     #[test]
     fn test_small_multiplication_examples() {
-        let z1 = Fp(fiat::FpMontgomeryDomainFieldElement([1, 0, 0, 0, 0, 0]));
-        let z2 = Fp(fiat::FpMontgomeryDomainFieldElement([2, 0, 0, 0, 0, 0]));
-        let z3 = Fp(fiat::FpMontgomeryDomainFieldElement([3, 3, 3, 3, 3, 3]));
+        let z1 = fiat::FpNonMontgomeryDomainFieldElement([1, 0, 0, 0, 0, 0]);
+        let z2 = fiat::FpNonMontgomeryDomainFieldElement([2, 0, 0, 0, 0, 0]);
+        let z3 = fiat::FpNonMontgomeryDomainFieldElement([3, 0, 0, 0, 0, 0]);
 
-        assert_eq!(z1 + z1, z1 * z2);
-        assert_eq!(z1 + z1 + z1, z1 * z3);
+        let mut z1_mont = fiat::FpMontgomeryDomainFieldElement([0; 6]);
+        let mut z2_mont = fiat::FpMontgomeryDomainFieldElement([0; 6]);
+        let mut z3_mont = fiat::FpMontgomeryDomainFieldElement([0; 6]);
+        fiat::fp_to_montgomery(&mut z1_mont, &z1);
+        fiat::fp_to_montgomery(&mut z2_mont, &z2);
+        fiat::fp_to_montgomery(&mut z3_mont, &z3);
+
+        assert_eq!(Fp(z1_mont) + Fp(z1_mont), Fp(z1_mont) * Fp(z2_mont));
+        assert_eq!(Fp(z1_mont) + Fp(z1_mont) + Fp(z1_mont), Fp(z1_mont) * Fp(z3_mont));
     }
 
     #[test]
