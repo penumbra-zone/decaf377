@@ -75,6 +75,22 @@ impl PrimeField for Fp {
     fn into_bigint(self) -> Self::BigInt {
         BigInt(self.0 .0)
     }
+
+    fn from_be_bytes_mod_order(bytes: &[u8]) -> Self {
+        let mut bytes_copy = bytes.to_vec();
+        bytes_copy.reverse();
+        Self::from_le_bytes_mod_order(&bytes_copy)
+    }
+
+    fn from_le_bytes_mod_order(bytes: &[u8]) -> Self {
+        assert!(bytes.len() == 48);
+
+        let mut t = [0u8; 48];
+        t.copy_from_slice(&bytes[..48]);
+        let modulus_field_montgomery = Fp::from_bytes(&t);
+
+        modulus_field_montgomery
+    }
 }
 
 impl Field for Fp {
