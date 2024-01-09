@@ -98,7 +98,19 @@ impl Field for Fp {
     type BasePrimeFieldIter = iter::Once<Self::BasePrimeField>;
 
     // TODO: figure out what this should be?
-    const SQRT_PRECOMP: Option<SqrtPrecomputation<Self>> = None;
+    const SQRT_PRECOMP: Option<SqrtPrecomputation<Self>> =
+        Some(SqrtPrecomputation::TonelliShanks {
+            two_adicity: 46,
+            quadratic_nonresidue_to_trace: Fp(fiat::FpMontgomeryDomainFieldElement([
+                7563926049028936178,
+                2688164645460651601,
+                12112688591437172399,
+                3177973240564633687,
+                14764383749841851163,
+                52487407124055189,
+            ])),
+            trace_of_modulus_minus_one_div_two: todo!(),
+        });
 
     const ZERO: Self = Fp(fiat::FpMontgomeryDomainFieldElement([0, 0, 0, 0, 0, 0]));
 

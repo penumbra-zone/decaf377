@@ -25,6 +25,28 @@ class Properties:
         """
         return (self.p - 1) >> self.two_adicity()
 
+    def mod_exp(self, a, e):
+        insert = a
+        acc = 1
+        while e != 0:
+            if e & 1 == 1:
+                acc = acc * insert % self.p
+            insert = (insert * insert) % self.p
+            e = e >> 1
+        return acc
+
+    def legendre_symbol(self, x):
+        return self.mod_exp(x, (self.p - 1) >> 1)
+
+    def quadratic_non_residue(self):
+        acc = 1
+        while self.legendre_symbol(acc) == 1:
+            acc += 1
+        return acc
+
+    def quadratic_non_residue_to_trace(self):
+        return self.mod_exp(self.quadratic_non_residue(), self.trace())
+
 
 def to_le_limbs(x, size=64):
     """
