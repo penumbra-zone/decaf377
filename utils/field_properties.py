@@ -6,12 +6,20 @@ class Properties:
         self.p = p
 
     def two_adicity(self) -> int:
-        return (1 << 64) | 2
+        """
+        Calculate the two-adicity of this field.
+        """
+        acc = self.p - 1
+        count = 0
+        while acc & 1 == 0:
+            count += 1
+            acc >>= 1
+        return count
 
 
 def to_le_limbs(x, size=64):
     """
-    Convert a number
+    Convert a number to little endian limbs, with a certain bit size.
     """
     acc = []
     while x > 0:
