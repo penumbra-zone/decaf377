@@ -25,6 +25,9 @@ class Properties:
         """
         return (self.p - 1) >> self.two_adicity()
 
+    def trace_minus_one_div_two(self):
+        return (self.trace() - 1) >> 1
+
     def mod_exp(self, a, e):
         insert = a
         acc = 1

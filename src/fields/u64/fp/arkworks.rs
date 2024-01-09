@@ -97,7 +97,6 @@ impl Field for Fp {
     type BasePrimeField = Self;
     type BasePrimeFieldIter = iter::Once<Self::BasePrimeField>;
 
-    // TODO: figure out what this should be?
     const SQRT_PRECOMP: Option<SqrtPrecomputation<Self>> =
         Some(SqrtPrecomputation::TonelliShanks {
             two_adicity: 46,
@@ -109,7 +108,14 @@ impl Field for Fp {
                 14764383749841851163,
                 52487407124055189,
             ])),
-            trace_of_modulus_minus_one_div_two: todo!(),
+            trace_of_modulus_minus_one_div_two: &[
+                13441098641003579921,
+                14150156177295552022,
+                12963050682622819814,
+                828901211384460357,
+                8398139675458767990,
+                860,
+            ],
         });
 
     const ZERO: Self = Fp(fiat::FpMontgomeryDomainFieldElement([0, 0, 0, 0, 0, 0]));
@@ -187,40 +193,9 @@ impl Field for Fp {
         }
     }
 
-    fn frobenius_map_in_place(&mut self, power: usize) {
-        unimplemented!()
-    }
-
-    fn characteristic() -> &'static [u64] {
-        Fp::MODULUS.as_ref()
-    }
-
-    fn from_random_bytes(bytes: &[u8]) -> Option<Self> {
-        Some(Self::from_le_bytes_mod_order(bytes))
-    }
-
-    fn sqrt(&self) -> Option<Self> {
-        unimplemented!()
-    }
-
-    fn sqrt_in_place(&mut self) -> Option<&mut Self> {
-        unimplemented!()
-    }
-
-    fn sum_of_products<const T: usize>(a: &[Self; T], b: &[Self; T]) -> Self {
-        unimplemented!()
-    }
-
-    fn frobenius_map(&self, power: usize) -> Self {
-        unimplemented!()
-    }
-
-    fn pow<S: AsRef<[u64]>>(&self, exp: S) -> Self {
-        unimplemented!()
-    }
-
-    fn pow_with_table<S: AsRef<[u64]>>(powers_of_2: &[Self], exp: S) -> Option<Self> {
-        unimplemented!()
+    fn frobenius_map_in_place(&mut self, _power: usize) {
+        // Because this is a prime field, we don't need to do anything,
+        // the automorphism is trivial.
     }
 }
 
