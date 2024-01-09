@@ -619,14 +619,14 @@ impl zeroize::Zeroize for Fp {
 impl Ord for Fp {
     #[inline(always)]
     fn cmp(&self, other: &Self) -> Ordering {
-        unimplemented!()
+        self.into_bigint().cmp(&other.into_bigint())
     }
 }
 
 impl PartialOrd for Fp {
     #[inline(always)]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        unimplemented!()
+        Some(self.cmp(other))
     }
 }
 
@@ -641,21 +641,21 @@ impl FromStr for Fp {
 impl From<num_bigint::BigUint> for Fp {
     #[inline]
     fn from(val: num_bigint::BigUint) -> Fp {
-        unimplemented!()
+        Fp::from_le_bytes_mod_order(&val.to_bytes_le())
     }
 }
 
 impl From<Fp> for num_bigint::BigUint {
     #[inline(always)]
     fn from(other: Fp) -> Self {
-        unimplemented!()
+        other.into_bigint().into()
     }
 }
 
 impl From<Fp> for BigInt<6> {
     #[inline(always)]
     fn from(fp: Fp) -> Self {
-        unimplemented!()
+        fp.into_bigint()
     }
 }
 
@@ -663,7 +663,7 @@ impl From<BigInt<6>> for Fp {
     /// Converts `Self::BigInteger` into `Self`
     #[inline(always)]
     fn from(int: BigInt<6>) -> Self {
-        unimplemented!()
+        Fp(fiat::FpMontgomeryDomainFieldElement(int.0))
     }
 }
 
@@ -685,7 +685,7 @@ impl Eq for Fp {}
 
 impl Default for Fp {
     fn default() -> Self {
-        unimplemented!()
+        Fp(fiat::FpMontgomeryDomainFieldElement([0, 0, 0, 0, 0, 0]))
     }
 }
 
