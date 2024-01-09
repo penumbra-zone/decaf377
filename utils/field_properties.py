@@ -16,6 +16,12 @@ class Properties:
             acc >>= 1
         return count
 
+    def trace(self):
+        """
+        (self - 1) / 2^two_adicity
+        """
+        return (self.p - 1) >> self.two_adicity()
+
 
 def to_le_limbs(x, size=64):
     """
