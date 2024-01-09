@@ -5,6 +5,9 @@ class Properties:
     def __init__(self, p: int):
         self.p = p
 
+    def one(self):
+        return 1
+
     def two_adicity(self) -> int:
         """
         Calculate the two-adicity of this field.
@@ -34,15 +37,26 @@ def to_le_limbs(x, size=64):
     return acc
 
 
-def main(size: int, p: int, what_to_generate: str, as_hex: bool):
+def to_monty(x, size, p):
+    shift = len(to_le_limbs(p - 1, size)) * size
+    return (x << shift) % p
+
+
+def main(size: int, p: int, what_to_generate: str, mode):
     properties = Properties(p)
-    prop = getattr(properties, what_to_generate)()
-    if as_hex:
+    prop = getattr(properties, what_to_generate)
+    if callable(prop):
+        prop = prop()
+    if mode == "hex":
         print(hex(prop))
+    elif mode == "monty":
+        print(to_le_limbs(to_monty(prop, size, p), size))
+    elif mode == "monty_hex":
+        print(hex(to_monty(prop, size, p)))
     else:
-        print(to_le_limbs(prop))
+        print(to_le_limbs(prop, size))
 
 
 if __name__ == '__main__':
     main(int(sys.argv[1]), int(sys.argv[2], 16),
-         sys.argv[3], bool(sys.argv[4] if len(sys.argv) >= 5 else None))
+         sys.argv[3], sys.argv[4] if len(sys.argv) >= 5 else None)
