@@ -828,6 +828,16 @@ mod tests {
         }
     }
 
+    proptest! {
+        #[test]
+        fn test_sqrt(a in arb_fp()) {
+            match a.sqrt() {
+                Some(x) => assert_eq!(x * x, a),
+                None => {}
+            }
+        }
+    }
+
     #[test]
     fn test_addition_examples() {
         let z1 = Fp(fiat::FpMontgomeryDomainFieldElement([1, 1, 1, 1, 1, 1]));
