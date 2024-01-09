@@ -707,31 +707,34 @@ mod tests {
         }
     }
 
+    prop_compose! {
+        fn arb_fp()(a in arb_bls377()) -> Fp {
+            let a = fiat::FpNonMontgomeryDomainFieldElement(a);
+
+            let mut a_to_mont = fiat::FpMontgomeryDomainFieldElement([0; 6]);
+            fiat::fp_to_montgomery(&mut a_to_mont, &a);
+
+            Fp(a_to_mont)
+        }
+    }
+
     proptest! {
         #[test]
-        fn test_addition_commutative(a in arb_bls377(), b in arb_bls377()) {
-            let a = Fp(fiat::FpMontgomeryDomainFieldElement(a));
-            let b = Fp(fiat::FpMontgomeryDomainFieldElement(b));
-
+        fn test_addition_commutative(a in arb_fp(), b in arb_fp()) {
             assert_eq!(a + b, b + a);
         }
     }
 
     proptest! {
         #[test]
-        fn test_addition_associative(a in arb_bls377(), b in arb_bls377(), c in arb_bls377()) {
-            let a = Fp(fiat::FpMontgomeryDomainFieldElement(a));
-            let b = Fp(fiat::FpMontgomeryDomainFieldElement(b));
-            let c = Fp(fiat::FpMontgomeryDomainFieldElement(c));
-
+        fn test_addition_associative(a in arb_fp(), b in arb_fp(), c in arb_fp()) {
             assert_eq!(a + (b + c), (a + b) + c);
         }
     }
 
     proptest! {
         #[test]
-        fn test_add_zero_identity(a in arb_bls377()) {
-            let a = Fp(fiat::FpMontgomeryDomainFieldElement(a));
+        fn test_add_zero_identity(a in arb_fp()) {
             let zero = Fp::zero();
 
             assert_eq!(a + zero, a);
@@ -741,8 +744,7 @@ mod tests {
 
     proptest! {
         #[test]
-        fn test_subtract_self_is_zero(a in arb_bls377()) {
-            let a = Fp(fiat::FpMontgomeryDomainFieldElement(a));
+        fn test_subtract_self_is_zero(a in arb_fp()) {
             let zero = Fp::zero();
 
             assert_eq!(a - a, zero);
@@ -751,8 +753,7 @@ mod tests {
 
     proptest! {
         #[test]
-        fn test_doubling_is_just_addition(a in arb_bls377()) {
-            let mut a = Fp(fiat::FpMontgomeryDomainFieldElement(a));
+        fn test_doubling_is_just_addition(a in arb_fp()) {
             let two = fiat::FpNonMontgomeryDomainFieldElement([2, 0, 0, 0, 0, 0]);
 
             let mut two_to_mont = fiat::FpMontgomeryDomainFieldElement([0; 6]);
@@ -761,28 +762,6 @@ mod tests {
             assert_eq!(Fp(two_to_mont) * a, a + a);
             assert_eq!(a.double(), a + a);
             assert_eq!(*(a.clone().double_in_place()), a + a);
-        }
-    }
-
-    proptest! {
-        #[test]
-        fn test_multiplying_scaling(a in arb_bls377(), u in arb_bls377(), v in arb_bls377()) {
-            let a = Fp(fiat::FpMontgomeryDomainFieldElement(a));
-            let u = Fp(fiat::FpMontgomeryDomainFieldElement(u));
-            let v = Fp(fiat::FpMontgomeryDomainFieldElement(v));
-
-            assert_eq!((a * u) * v, a * (u * v))
-        }
-    }
-
-    proptest! {
-        #[test]
-        fn test_adding_scaling(a in arb_bls377(), u in arb_bls377(), v in arb_bls377()) {
-            let a = Fp(fiat::FpMontgomeryDomainFieldElement(a));
-            let u = Fp(fiat::FpMontgomeryDomainFieldElement(u));
-            let v = Fp(fiat::FpMontgomeryDomainFieldElement(v));
-
-            assert_eq!(a * (u + v), a * u + a * v)
         }
     }
 
@@ -797,66 +776,45 @@ mod tests {
 
     proptest! {
         #[test]
-        fn test_multiplication_commutative(a in arb_bls377(), b in arb_bls377()) {
-            let a = Fp(fiat::FpMontgomeryDomainFieldElement(a));
-            let b = Fp(fiat::FpMontgomeryDomainFieldElement(b));
-
+        fn test_multiplication_commutative(a in arb_fp(), b in arb_fp()) {
             assert_eq!(a * b, b * a);
         }
     }
 
     proptest! {
         #[test]
-        fn test_multiplication_associative(a in arb_bls377(), b in arb_bls377(), c in arb_bls377()) {
-            let a = Fp(fiat::FpMontgomeryDomainFieldElement(a));
-            let b = Fp(fiat::FpMontgomeryDomainFieldElement(b));
-            let c = Fp(fiat::FpMontgomeryDomainFieldElement(c));
-
+        fn test_multiplication_associative(a in arb_fp(), b in arb_fp(), c in arb_fp()) {
             assert_eq!(a * (b * c), (a * b) * c);
         }
     }
 
     proptest! {
         #[test]
-        fn test_multiplication_distributive(a in arb_bls377(), b in arb_bls377(), c in arb_bls377()) {
-            let a = Fp(fiat::FpMontgomeryDomainFieldElement(a));
-            let b = Fp(fiat::FpMontgomeryDomainFieldElement(b));
-            let c = Fp(fiat::FpMontgomeryDomainFieldElement(c));
-
+        fn test_multiplication_distributive(a in arb_fp(), b in arb_fp(), c in arb_fp()) {
             assert_eq!(a * (b + c), a * b + a * c);
         }
     }
 
     proptest! {
         #[test]
-        fn test_multiply_one_identity(a in arb_bls377()) {
-            let a = Fp(fiat::FpMontgomeryDomainFieldElement(a));
-
+        fn test_multiply_one_identity(a in arb_fp()) {
             assert_eq!(a * Fp::ONE, a);
             assert_eq!(Fp::ONE * a, a);
         }
     }
 
-    // FAILING
     proptest! {
         #[test]
-        fn test_multiply_minus_one_is_negation(a in arb_bls377()) {
-            let a = fiat::FpNonMontgomeryDomainFieldElement(a);
-
-            let mut a_to_mont = fiat::FpMontgomeryDomainFieldElement([0; 6]);
-            fiat::fp_to_montgomery(&mut a_to_mont, &a);
+        fn test_multiply_minus_one_is_negation(a in arb_fp()) {
             let minus_one = -Fp::ONE;
 
-            assert_eq!(Fp(a_to_mont) * minus_one, Fp(a_to_mont).neg());
-            assert_eq!(minus_one * Fp(a_to_mont), Fp(a_to_mont).neg());
+            assert_eq!(a * minus_one, a.neg());
         }
     }
 
     proptest! {
         #[test]
-        fn test_square_is_multiply(a in arb_bls377()) {
-            let mut a = Fp(fiat::FpMontgomeryDomainFieldElement(a));
-
+        fn test_square_is_multiply(a in arb_fp()) {
             assert_eq!(a.square(), a * a);
             assert_eq!(*(a.clone().square_in_place()), a * a);
         }
@@ -864,9 +822,7 @@ mod tests {
 
     proptest! {
         #[test]
-        fn test_inverse(a in arb_bls377()) {
-            let a = Fp(fiat::FpMontgomeryDomainFieldElement(a));
-
+        fn test_inverse(a in arb_fp()) {
             assert_eq!(a * a.inverse().unwrap(), Fp::ONE);
             assert_eq!(a * *(a.clone().inverse_in_place().unwrap()), Fp::ONE);
         }
@@ -917,7 +873,7 @@ mod tests {
 
     #[test]
     fn test_minus_one_squared() {
-        let mut minus_one = Fp::zero() - Fp::one();
+        let minus_one = Fp::zero() - Fp::one();
         assert_eq!(minus_one.square(), Fp::ONE);
     }
 
