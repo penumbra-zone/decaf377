@@ -170,12 +170,12 @@ impl Field for Fp {
 }
 
 impl FftField for Fp {
-    const GENERATOR: Self = unimplemented!(); // use Fp::GENERATOR
-    const TWO_ADICITY: u32 = unimplemented!(); // use Fp::TWO_ADICITY
-    const TWO_ADIC_ROOT_OF_UNITY: Self = unimplemented!(); // Fp::TWO_ADIC_ROOT_OF_UNITY
-    const SMALL_SUBGROUP_BASE: Option<u32> = unimplemented!(); // Fp::SMALL_SUBGROUP_BASE
-    const SMALL_SUBGROUP_BASE_ADICITY: Option<u32> = unimplemented!(); // Fp::SMALL_SUBGROUP_BASE_ADICITY
-    const LARGE_SUBGROUP_ROOT_OF_UNITY: Option<Self> = unimplemented!(); // Fp::LARGE_SUBGROUP_ROOT_OF_UNITY
+    const GENERATOR: Self = Fp(fiat::FpMontgomeryDomainFieldElement([15, 0, 0, 0, 0, 0]));
+    const TWO_ADICITY: u32 = 46;
+    const TWO_ADIC_ROOT_OF_UNITY: Self = Fp(fiat::FpMontgomeryDomainFieldElement([9136220608200423841, 495125767030442947, 12992209043373160646, 4682582920187257812, 3526690454729915547, 15385663861525120]));
+    const SMALL_SUBGROUP_BASE: Option<u32> = None;
+    const SMALL_SUBGROUP_BASE_ADICITY: Option<u32> = None;
+    const LARGE_SUBGROUP_ROOT_OF_UNITY: Option<Self> = None;
 
     fn get_root_of_unity(n: u64) -> Option<Self> {
         unimplemented!()
@@ -183,38 +183,42 @@ impl FftField for Fp {
 }
 
 impl From<u128> for Fp {
-    fn from(value: u128) -> Self {
-        unimplemented!()
+    fn from(mut other: u128) -> Self {
+        println!("!!!!!!!!!!!!!!!!!!!!!!");
+        let mut result = BigInt::default();
+        result.0[0] = ((other << 64) >> 64) as u64;
+        result.0[1] = (other >> 64) as u64;
+        Self::from_bigint(result).unwrap()
     }
 }
 
 impl From<u64> for Fp {
-    fn from(value: u64) -> Self {
-        unimplemented!()
+    fn from(other: u64) -> Self {
+        Self::from_bigint(BigInt::from(other)).unwrap()
     }
 }
 
 impl From<u32> for Fp {
-    fn from(value: u32) -> Self {
-        unimplemented!()
+    fn from(other: u32) -> Self {
+        Self::from_bigint(BigInt::from(other)).unwrap()
     }
 }
 
 impl From<u16> for Fp {
-    fn from(value: u16) -> Self {
-        unimplemented!()
+    fn from(other: u16) -> Self {
+        Self::from_bigint(BigInt::from(other)).unwrap()
     }
 }
 
 impl From<u8> for Fp {
-    fn from(value: u8) -> Self {
-        unimplemented!()
+    fn from(other: u8) -> Self {
+        Self::from_bigint(BigInt::from(other)).unwrap()
     }
 }
 
 impl From<bool> for Fp {
-    fn from(value: bool) -> Self {
-        unimplemented!()
+    fn from(other: bool) -> Self {
+        Self::from_bigint(BigInt::from(u64::from(other))).unwrap()
     }
 }
 
