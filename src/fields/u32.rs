@@ -5,6 +5,6 @@ pub mod fp;
 pub mod fq;
 pub mod fr;
 
-pub use fp::wrapper::Fp;
-pub use fq::wrapper::Fq;
-pub use fr::wrapper::Fr;
+pub use fp::wrapper::Fp as Fp32;
+pub use fq::wrapper::Fq as Fq32;
+pub use fr::wrapper::Fr as Fr32;
