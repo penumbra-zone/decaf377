@@ -1,16 +1,14 @@
 use super::{fiat, wrapper::Fp};
-use ark_bls12_377::Fq as ArkFp;
 use ark_ff::FftField;
 use ark_ff::{BigInt, Field, PrimeField, SqrtPrecomputation};
 use ark_serialize::{
     CanonicalDeserialize, CanonicalDeserializeWithFlags, CanonicalSerialize,
-    CanonicalSerializeWithFlags, Compress, EmptyFlags, Flags, SerializationError, Valid, Validate,
+    CanonicalSerializeWithFlags, Compress, Flags, SerializationError, Valid, Validate,
 };
-use ark_std::println;
-use ark_std::{rand, str::FromStr, One, Zero};
+use ark_std::{rand, str::FromStr, string::ToString, One, Zero};
 use core::hash::Hash;
 use core::{
-    cmp::{min, Ordering},
+    cmp::Ordering,
     fmt::{Display, Formatter},
     iter,
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
@@ -216,7 +214,7 @@ impl FftField for Fp {
 }
 
 impl From<u128> for Fp {
-    fn from(mut other: u128) -> Self {
+    fn from(other: u128) -> Self {
         let mut result = BigInt::default();
         result.0[0] = ((other << 64) >> 64) as u64;
         result.0[1] = (other >> 64) as u64;
@@ -259,7 +257,7 @@ impl Neg for Fp {
 
     #[inline]
     #[must_use]
-    fn neg(mut self) -> Self {
+    fn neg(self) -> Self {
         let neg = self.neg();
         neg
     }
@@ -293,7 +291,7 @@ impl core::ops::Add<Self> for Fp {
     type Output = Self;
 
     #[inline]
-    fn add(mut self, other: Self) -> Self {
+    fn add(self, other: Self) -> Self {
         self.add(other)
     }
 }
@@ -302,7 +300,7 @@ impl<'a> Add<&'a Fp> for Fp {
     type Output = Self;
 
     #[inline]
-    fn add(mut self, other: &Self) -> Self {
+    fn add(self, other: &Self) -> Self {
         self.add(*other)
     }
 }
@@ -312,7 +310,7 @@ impl<'a> core::ops::Add<&'a mut Self> for Fp {
     type Output = Self;
 
     #[inline]
-    fn add(mut self, other: &'a mut Self) -> Self {
+    fn add(self, other: &'a mut Self) -> Self {
         self.add(*other)
     }
 }
@@ -345,7 +343,7 @@ impl core::ops::Sub<Self> for Fp {
     type Output = Self;
 
     #[inline]
-    fn sub(mut self, other: Self) -> Self {
+    fn sub(self, other: Self) -> Self {
         self.sub(other)
     }
 }
@@ -354,7 +352,7 @@ impl<'a> Sub<&'a Fp> for Fp {
     type Output = Self;
 
     #[inline]
-    fn sub(mut self, other: &Self) -> Self {
+    fn sub(self, other: &Self) -> Self {
         self.sub(*other)
     }
 }
@@ -364,7 +362,7 @@ impl<'a> core::ops::Sub<&'a mut Self> for Fp {
     type Output = Self;
 
     #[inline]
-    fn sub(mut self, other: &'a mut Self) -> Self {
+    fn sub(self, other: &'a mut Self) -> Self {
         self.sub(*other)
     }
 }
@@ -396,7 +394,7 @@ impl core::ops::Mul<Self> for Fp {
     type Output = Self;
 
     #[inline(always)]
-    fn mul(mut self, other: Self) -> Self {
+    fn mul(self, other: Self) -> Self {
         self.mul(other)
     }
 }
@@ -405,7 +403,7 @@ impl<'a> Mul<&'a Fp> for Fp {
     type Output = Self;
 
     #[inline]
-    fn mul(mut self, other: &Self) -> Self {
+    fn mul(self, other: &Self) -> Self {
         self.mul(*other)
     }
 }
@@ -415,7 +413,7 @@ impl<'a> core::ops::Mul<&'a mut Self> for Fp {
     type Output = Self;
 
     #[inline(always)]
-    fn mul(mut self, other: &'a mut Self) -> Self {
+    fn mul(self, other: &'a mut Self) -> Self {
         self.mul(*other)
     }
 }
@@ -529,7 +527,7 @@ impl<'a> core::iter::Product<&'a Self> for Fp {
 
 impl CanonicalDeserializeWithFlags for Fp {
     fn deserialize_with_flags<R: ark_std::io::Read, F: Flags>(
-        reader: R,
+        _reader: R,
     ) -> Result<(Self, F), SerializationError> {
         unimplemented!()
     }
@@ -543,7 +541,7 @@ impl Valid for Fp {
 
 impl CanonicalDeserialize for Fp {
     fn deserialize_with_mode<R: ark_std::io::Read>(
-        reader: R,
+        _reader: R,
         _compress: Compress,
         _validate: Validate,
     ) -> Result<Self, SerializationError> {
@@ -555,7 +553,7 @@ impl CanonicalSerialize for Fp {
     #[inline]
     fn serialize_with_mode<W: ark_std::io::Write>(
         &self,
-        writer: W,
+        _writer: W,
         _compress: Compress,
     ) -> Result<(), SerializationError> {
         unimplemented!()
@@ -570,8 +568,8 @@ impl CanonicalSerialize for Fp {
 impl CanonicalSerializeWithFlags for Fp {
     fn serialize_with_flags<W: ark_std::io::Write, F: Flags>(
         &self,
-        writer: W,
-        flags: F,
+        _writer: W,
+        _flags: F,
     ) -> Result<(), SerializationError> {
         unimplemented!()
     }
@@ -582,14 +580,15 @@ impl CanonicalSerializeWithFlags for Fp {
 }
 
 impl ark_std::rand::distributions::Distribution<Fp> for ark_std::rand::distributions::Standard {
-    fn sample<R: rand::prelude::Rng + ?Sized>(&self, rng: &mut R) -> Fp {
+    fn sample<R: rand::prelude::Rng + ?Sized>(&self, _rng: &mut R) -> Fp {
         todo!()
     }
 }
 
 impl Display for Fp {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        unimplemented!()
+        let string = self.into_bigint().to_string();
+        write!(f, "{}", string.trim_start_matches('0'))
     }
 }
 
@@ -616,7 +615,7 @@ impl PartialOrd for Fp {
 impl FromStr for Fp {
     type Err = ();
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(_s: &str) -> Result<Self, Self::Err> {
         unimplemented!()
     }
 }
@@ -651,7 +650,7 @@ impl From<BigInt<6>> for Fp {
 }
 
 impl Hash for Fp {
-    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+    fn hash<H: core::hash::Hasher>(&self, _state: &mut H) {
         unimplemented!()
     }
 }
@@ -681,13 +680,8 @@ impl core::fmt::Debug for Fp {
 
 #[cfg(test)]
 mod tests {
-    use core::convert::TryInto;
-
     use super::*;
-    use ark_ff::BigInteger;
-    use ark_std::println;
-    use ark_std::vec::Vec;
-    use num_bigint::BigUint;
+    use ark_bls12_377::Fq as ArkFp;
     use proptest::prelude::*;
 
     prop_compose! {
