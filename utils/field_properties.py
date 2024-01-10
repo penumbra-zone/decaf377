@@ -50,6 +50,9 @@ class Properties:
     def quadratic_non_residue_to_trace(self):
         return self.mod_exp(self.quadratic_non_residue(), self.trace())
 
+    def modulus_minus_one_div_two(self):
+        return ((self.p - 1) >> 1)
+
 
 def to_le_limbs(x, size=64):
     """

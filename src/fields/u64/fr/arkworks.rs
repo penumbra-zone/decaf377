@@ -1,4 +1,3 @@
-
 use super::{fiat, wrapper::Fr};
 use ark_ff::FftField;
 use ark_ff::{BigInt, Field, PrimeField, SqrtPrecomputation};
@@ -21,20 +20,40 @@ impl PrimeField for Fr {
     type BigInt = BigInt<4>;
 
     /// The Decaf377 scalar field modulus `r` (2111115437357092606062206234695386632838870926408408195193685246394721360383)
-    const MODULUS: Self::BigInt = ark_ff::BigInt([13356249993388743167, 5950279507993463550, 10965441865914903552, 336320092672043349]);
+    const MODULUS: Self::BigInt = ark_ff::BigInt([
+        13356249993388743167,
+        5950279507993463550,
+        10965441865914903552,
+        336320092672043349,
+    ]);
 
     /// The value `(p - 1)/ 2`.
-    const MODULUS_MINUS_ONE_DIV_TWO: Self::BigInt = unimplemented!();
+    const MODULUS_MINUS_ONE_DIV_TWO: Self::BigInt = ark_ff::BigInt([
+        6678124996694371583,
+        2975139753996731775,
+        14706092969812227584,
+        168160046336021674,
+    ]);
 
     /// The size of the modulus in bits.
     const MODULUS_BIT_SIZE: u32 = 251;
 
     /// The trace of the field is defined as the smallest integer `t` such that by
     /// `2^s * t = p - 1`, and `t` is coprime to 2.
-    const TRACE: Self::BigInt = unimplemented!();
+    const TRACE: Self::BigInt = ark_ff::BigInt([
+        6678124996694371583,
+        2975139753996731775,
+        14706092969812227584,
+        168160046336021674,
+    ]);
 
     /// The value `(t - 1)/ 2`.
-    const TRACE_MINUS_ONE_DIV_TWO: Self::BigInt = unimplemented!();
+    const TRACE_MINUS_ONE_DIV_TWO: Self::BigInt = ark_ff::BigInt([
+        12562434535201961599,
+        1487569876998365887,
+        7353046484906113792,
+        84080023168010837,
+    ]);
 
     fn from_bigint(repr: Self::BigInt) -> Option<Self> {
         if repr >= Fr::MODULUS {
@@ -69,26 +88,31 @@ impl Field for Fr {
     type BasePrimeField = Self;
     type BasePrimeFieldIter = iter::Once<Self::BasePrimeField>;
 
-    const SQRT_PRECOMP: Option<SqrtPrecomputation<Self>> = None;
-        // Some(SqrtPrecomputation::TonelliShanks {
-        //     two_adicity: 47,
-        //     quadratic_nonresidue_to_trace: Fr(fiat::FrMontgomeryDomainFieldElement([
-        //         4340692304772210610,
-        //         11102725085307959083,
-        //         15540458298643990566,
-        //         944526744080888988,
-        //     ])),
-        //     trace_of_modulus_minus_one_div_two: &[
-        //         8574519438978648593,
-        //         5556980384467605930,
-        //         7304445162184663220,
-        //         4779,
-        //     ],
-        // });
+    const SQRT_PRECOMP: Option<SqrtPrecomputation<Self>> =
+        Some(SqrtPrecomputation::TonelliShanks {
+            two_adicity: 1,
+            quadratic_nonresidue_to_trace: Fr(fiat::FrMontgomeryDomainFieldElement([
+                13356249993388743166,
+                5950279507993463550,
+                10965441865914903552,
+                336320092672043349,
+            ])),
+            trace_of_modulus_minus_one_div_two: &[
+                12562434535201961599,
+                1487569876998365887,
+                7353046484906113792,
+                84080023168010837,
+            ],
+        });
 
     const ZERO: Self = Fr(fiat::FrMontgomeryDomainFieldElement([0, 0, 0, 0]));
 
-    const ONE: Self = Fr(fiat::FrMontgomeryDomainFieldElement([16632263305389933622, 10726299895124897348, 16608693673010411502, 285459069419210737]));
+    const ONE: Self = Fr(fiat::FrMontgomeryDomainFieldElement([
+        16632263305389933622,
+        10726299895124897348,
+        16608693673010411502,
+        285459069419210737,
+    ]));
 
     fn extension_degree() -> u64 {
         1
@@ -160,8 +184,8 @@ impl Field for Fr {
 }
 
 impl FftField for Fr {
-    const GENERATOR: Self = unimplemented!();
-    const TWO_ADICITY: u32 = unimplemented!();
+    const GENERATOR: Self = Fr(fiat::FrMontgomeryDomainFieldElement([8, 0, 0, 0]));
+    const TWO_ADICITY: u32 = 1;
     const TWO_ADIC_ROOT_OF_UNITY: Self = unimplemented!();
     const SMALL_SUBGROUP_BASE: Option<u32> = None;
     const SMALL_SUBGROUP_BASE_ADICITY: Option<u32> = None;
@@ -637,6 +661,8 @@ mod tests {
     use core::convert::TryInto;
 
     use super::*;
+    use crate::Element;
+    use ark_ec::Group;
     use ark_ff::BigInteger;
     use ark_std::println;
     use ark_std::vec::Vec;
@@ -775,15 +801,15 @@ mod tests {
         }
     }
 
-    // proptest! {
-    //     #[test]
-    //     fn test_sqrt(a in arb_fr()) {
-    //         match a.sqrt() {
-    //             Some(x) => assert_eq!(x * x, a),
-    //             None => {}
-    //         }
-    //     }
-    // }
+    proptest! {
+        #[test]
+        fn test_sqrt(a in arb_fr()) {
+            match a.sqrt() {
+                Some(x) => assert_eq!(x * x, a),
+                None => {}
+            }
+        }
+    }
 
     #[test]
     fn test_addition_examples() {
@@ -837,7 +863,12 @@ mod tests {
     #[test]
     fn test_modulus_from_le_bytes_mod_order() {
         // Field modulus - 1 in non-montgomery form that satisfies the fiat-crypto preconditions (< m)
-        let modulus_minus_one = fiat::FrNonMontgomeryDomainFieldElement([13356249993388743167, 5950279507993463550, 10965441865914903552, 336320092672043348]);
+        let modulus_minus_one = fiat::FrNonMontgomeryDomainFieldElement([
+            13356249993388743167,
+            5950279507993463550,
+            10965441865914903552,
+            336320092672043348,
+        ]);
 
         // Convert bytes into montgomery domain
         let mut modulus_minus_one_montgomery = fiat::FrMontgomeryDomainFieldElement([0; 4]);
