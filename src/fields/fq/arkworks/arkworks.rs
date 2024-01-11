@@ -1,4 +1,4 @@
-use super::{fiat, wrapper::Fq};
+use super::super::u64::{fiat, wrapper::Fp};
 use ark_ff::FftField;
 use ark_ff::{BigInt, Field, PrimeField, SqrtPrecomputation};
 use ark_serialize::{

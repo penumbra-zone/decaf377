@@ -17,5 +17,6 @@
 //! The different backends should have identical external interfaces, so they can be
 //! used with a cfg-able type alias.
 
-pub mod u32;
-pub mod u64;
+pub mod fp;
+pub mod fq;
+pub mod fr;
