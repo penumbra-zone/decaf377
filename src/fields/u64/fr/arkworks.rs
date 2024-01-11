@@ -3,13 +3,12 @@ use ark_ff::FftField;
 use ark_ff::{BigInt, Field, PrimeField, SqrtPrecomputation};
 use ark_serialize::{
     CanonicalDeserialize, CanonicalDeserializeWithFlags, CanonicalSerialize,
-    CanonicalSerializeWithFlags, Compress, EmptyFlags, Flags, SerializationError, Valid, Validate,
+    CanonicalSerializeWithFlags, Compress, Flags, SerializationError, Valid, Validate,
 };
-use ark_std::println;
 use ark_std::{rand, str::FromStr, One, Zero};
 use core::hash::Hash;
 use core::{
-    cmp::{min, Ordering},
+    cmp::Ordering,
     fmt::{Display, Formatter},
     iter,
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
@@ -658,15 +657,7 @@ impl core::fmt::Debug for Fr {
 
 #[cfg(test)]
 mod tests {
-    use core::convert::TryInto;
-
     use super::*;
-    use crate::Element;
-    use ark_ec::Group;
-    use ark_ff::BigInteger;
-    use ark_std::println;
-    use ark_std::vec::Vec;
-    use num_bigint::BigUint;
     use proptest::prelude::*;
 
     prop_compose! {
