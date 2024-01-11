@@ -181,17 +181,27 @@ impl Neg for Fq {
     }
 }
 
+#[cfg(test)]
 mod tests {
+    use proptest::prelude::*;
+    use proptest::{
+        arbitrary::any,
+        strategy::{BoxedStrategy, Strategy},
+    };
+
     use super::*;
 
-    #[test]
-    fn inversion_test() {
-        let one = Fq::one();
-        let one_invert = one.inverse().unwrap();
-        assert_eq!(one_invert, one);
+    fn fp_strategy() -> BoxedStrategy<Fq> {
+        any::<[u8; 32]>()
+            .prop_map(|bytes| Fq::from_bytes(&bytes))
+            .boxed()
+    }
 
-        let three = Fq::one().add(Fq::one().add(Fq::one()));
-        let three_invert = three.inverse().unwrap();
-        assert_eq!(three.mul(three_invert), Fq::one());
+    proptest! {
+        #[test]
+        fn inversion_proptest(element in fp_strategy().prop_filter("Non-zero element", |e| e != &Fq::zero())) {
+            let inverse = element.inverse().unwrap();
+            assert_eq!(element.mul(inverse), Fq::one());
+        }
     }
 }
