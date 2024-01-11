@@ -1,6 +1,9 @@
 use super::fiat;
 use core::ops::{Add, Mul, Neg, Sub};
 
+const NUM_LIMBS: usize = 8;
+const PRIME_ORDER: usize = 251;
+
 #[derive(Copy, Clone)]
 pub struct Fr(fiat::FrMontgomeryDomainFieldElement);
 
@@ -23,8 +26,8 @@ impl Eq for Fr {}
 
 impl Fr {
     pub fn from_bytes(bytes: &[u8; 32]) -> Self {
-        let mut x_non_montgomery = fiat::FrNonMontgomeryDomainFieldElement([0; 8]);
-        let mut x = fiat::FrMontgomeryDomainFieldElement([0; 8]);
+        let mut x_non_montgomery = fiat::FrNonMontgomeryDomainFieldElement([0; NUM_LIMBS]);
+        let mut x = fiat::FrMontgomeryDomainFieldElement([0; NUM_LIMBS]);
 
         fiat::fr_from_bytes(&mut x_non_montgomery.0, &bytes);
         fiat::fr_to_montgomery(&mut x, &x_non_montgomery);
@@ -33,7 +36,7 @@ impl Fr {
     }
 
     pub fn to_bytes(&self) -> [u8; 32] {
-        let mut x_non_montgomery = fiat::FrNonMontgomeryDomainFieldElement([0; 8]);
+        let mut x_non_montgomery = fiat::FrNonMontgomeryDomainFieldElement([0; NUM_LIMBS]);
         let mut bytes = [0u8; 32];
 
         fiat::fr_from_montgomery(&mut x_non_montgomery, &self.0);
@@ -43,7 +46,7 @@ impl Fr {
     }
 
     pub fn zero() -> Self {
-        Self(fiat::FrMontgomeryDomainFieldElement([0; 8]))
+        Self(fiat::FrMontgomeryDomainFieldElement([0; NUM_LIMBS]))
     }
 
     pub fn one() -> Self {
@@ -53,7 +56,7 @@ impl Fr {
     }
 
     pub fn square(&self) -> Self {
-        let mut result = fiat::FrMontgomeryDomainFieldElement([0; 8]);
+        let mut result = fiat::FrMontgomeryDomainFieldElement([0; NUM_LIMBS]);
         fiat::fr_square(&mut result, &self.0);
         Self(result)
     }
@@ -63,35 +66,35 @@ impl Fr {
             return None;
         }
 
-        const LEN_PRIME: usize = 251;
+        const LEN_PRIME: usize = PRIME_ORDER;
         const ITERATIONS: usize = (49 * LEN_PRIME + 57) / 17;
 
-        let mut a = fiat::FrNonMontgomeryDomainFieldElement([0; 8]);
+        let mut a = fiat::FrNonMontgomeryDomainFieldElement([0; NUM_LIMBS]);
         fiat::fr_from_montgomery(&mut a, &self.0);
         let mut d = 1;
-        let mut f: [u32; 9] = [0u32; 9];
+        let mut f: [u32; NUM_LIMBS + 1] = [0u32; NUM_LIMBS + 1];
         fiat::fr_msat(&mut f);
-        let mut g = [0u32; 9];
-        let mut v = [0u32; 8];
-        let mut r: [u32; 8] = Fr::one().0 .0;
+        let mut g: [u32; NUM_LIMBS + 1] = [0u32; NUM_LIMBS + 1];
+        let mut v: [u32; NUM_LIMBS] = [0u32; NUM_LIMBS];
+        let mut r: [u32; NUM_LIMBS] = Fr::one().0 .0;
         let mut i = 0;
         let mut j = 0;
 
-        while j < 8 {
+        while j < NUM_LIMBS {
             g[j] = a[j];
             j += 1;
         }
 
         let mut out1: u32 = 0;
-        let mut out2: [u32; 9] = [0; 9];
-        let mut out3: [u32; 9] = [0; 9];
-        let mut out4: [u32; 8] = [0; 8];
-        let mut out5: [u32; 8] = [0; 8];
+        let mut out2: [u32; NUM_LIMBS + 1] = [0; NUM_LIMBS + 1];
+        let mut out3: [u32; NUM_LIMBS + 1] = [0; NUM_LIMBS + 1];
+        let mut out4: [u32; NUM_LIMBS] = [0; NUM_LIMBS];
+        let mut out5: [u32; NUM_LIMBS] = [0; NUM_LIMBS];
         let mut out6: u32 = 0;
-        let mut out7: [u32; 9] = [0; 9];
-        let mut out8: [u32; 9] = [0; 9];
-        let mut out9: [u32; 8] = [0; 8];
-        let mut out10: [u32; 8] = [0; 8];
+        let mut out7: [u32; NUM_LIMBS + 1] = [0; NUM_LIMBS + 1];
+        let mut out8: [u32; NUM_LIMBS + 1] = [0; NUM_LIMBS + 1];
+        let mut out9: [u32; NUM_LIMBS] = [0; NUM_LIMBS];
+        let mut out10: [u32; NUM_LIMBS] = [0; NUM_LIMBS];
 
         while i < ITERATIONS - ITERATIONS % 2 {
             fiat::fr_divstep(
@@ -118,16 +121,16 @@ impl Fr {
         }
 
         let s = ((f[f.len() - 1] >> 32 - 1) & 1) as u8;
-        let mut neg = fiat::FrMontgomeryDomainFieldElement([0; 8]);
+        let mut neg = fiat::FrMontgomeryDomainFieldElement([0; NUM_LIMBS]);
         fiat::fr_opp(&mut neg, &fiat::FrMontgomeryDomainFieldElement(v));
 
-        let mut v_prime: [u32; 8] = [0u32; 8];
+        let mut v_prime: [u32; NUM_LIMBS] = [0u32; NUM_LIMBS];
         fiat::fr_selectznz(&mut v_prime, s, &v, &neg.0);
 
-        let mut pre_comp: [u32; 8] = [0u32; 8];
+        let mut pre_comp: [u32; NUM_LIMBS] = [0u32; NUM_LIMBS];
         fiat::fr_divstep_precomp(&mut pre_comp);
 
-        let mut result = fiat::FrMontgomeryDomainFieldElement([0; 8]);
+        let mut result = fiat::FrMontgomeryDomainFieldElement([0; NUM_LIMBS]);
         fiat::fr_mul(
             &mut result,
             &fiat::FrMontgomeryDomainFieldElement(v_prime),
@@ -142,7 +145,7 @@ impl Add<Fr> for Fr {
     type Output = Fr;
 
     fn add(self, other: Fr) -> Fr {
-        let mut result = fiat::FrMontgomeryDomainFieldElement([0; 8]);
+        let mut result = fiat::FrMontgomeryDomainFieldElement([0; NUM_LIMBS]);
         fiat::fr_add(&mut result, &self.0, &other.0);
         Fr(result)
     }
@@ -152,7 +155,7 @@ impl Sub<Fr> for Fr {
     type Output = Fr;
 
     fn sub(self, other: Fr) -> Fr {
-        let mut result = fiat::FrMontgomeryDomainFieldElement([0; 8]);
+        let mut result = fiat::FrMontgomeryDomainFieldElement([0; NUM_LIMBS]);
         fiat::fr_sub(&mut result, &self.0, &other.0);
         Fr(result)
     }
@@ -162,7 +165,7 @@ impl Mul<Fr> for Fr {
     type Output = Fr;
 
     fn mul(self, other: Fr) -> Fr {
-        let mut result = fiat::FrMontgomeryDomainFieldElement([0; 8]);
+        let mut result = fiat::FrMontgomeryDomainFieldElement([0; NUM_LIMBS]);
         fiat::fr_mul(&mut result, &self.0, &other.0);
         Fr(result)
     }
@@ -172,7 +175,7 @@ impl Neg for Fr {
     type Output = Fr;
 
     fn neg(self) -> Fr {
-        let mut result = fiat::FrMontgomeryDomainFieldElement([0; 8]);
+        let mut result = fiat::FrMontgomeryDomainFieldElement([0; NUM_LIMBS]);
         fiat::fr_opp(&mut result, &self.0);
         Fr(result)
     }
