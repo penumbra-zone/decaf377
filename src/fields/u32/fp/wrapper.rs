@@ -1,26 +1,7 @@
-use core::ops::{Add, Mul, Neg, Sub};
-
 use super::fiat;
 
 #[derive(Copy, Clone)]
-pub struct Fp(fiat::FpMontgomeryDomainFieldElement);
-
-impl core::fmt::Debug for Fp {
-    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-        let bytes = self.to_bytes();
-        write!(f, "Fp(0x{})", hex::encode(bytes))
-    }
-}
-
-impl PartialEq for Fp {
-    fn eq(&self, other: &Fp) -> bool {
-        let self_bytes = self.to_bytes();
-        let other_bytes = other.to_bytes();
-        self_bytes[..] == other_bytes[..]
-    }
-}
-
-impl Eq for Fp {}
+pub struct Fp(pub fiat::FpMontgomeryDomainFieldElement);
 
 impl Fp {
     pub fn from_bytes(bytes: &[u8; 48]) -> Self {
@@ -58,42 +39,105 @@ impl Fp {
         fiat::fp_square(&mut result, &self.0);
         Self(result)
     }
-}
 
-impl Add<Fp> for Fp {
-    type Output = Fp;
+    pub fn inverse(&self) -> Option<Fp> {
+        if self == &Fp::zero() {
+            return None;
+        }
 
-    fn add(self, other: Fp) -> Fp {
+        const LEN_PRIME: usize = 377;
+        const ITERATIONS: usize = (49 * LEN_PRIME + 57) / 17;
+
+        let mut a = fiat::FpNonMontgomeryDomainFieldElement([0; 12]);
+        fiat::fp_from_montgomery(&mut a, &self.0);
+        let mut d = 1;
+        let mut f: [u32; 13] = [0u32; 13];
+        fiat::fp_msat(&mut f);
+        let mut g = [0u32; 13];
+        let mut v = [0u32; 12];
+        let mut r: [u32; 12] = Fp::one().0 .0;
+        let mut i = 0;
+        let mut j = 0;
+
+        while j < 12 {
+            g[j] = a[j];
+            j += 1;
+        }
+
+        let mut out1: u32 = 0;
+        let mut out2: [u32; 13] = [0; 13];
+        let mut out3: [u32; 13] = [0; 13];
+        let mut out4: [u32; 12] = [0; 12];
+        let mut out5: [u32; 12] = [0; 12];
+        let mut out6: u32 = 0;
+        let mut out7: [u32; 13] = [0; 13];
+        let mut out8: [u32; 13] = [0; 13];
+        let mut out9: [u32; 12] = [0; 12];
+        let mut out10: [u32; 12] = [0; 12];
+
+        while i < ITERATIONS - ITERATIONS % 2 {
+            fiat::fp_divstep(
+                &mut out1, &mut out2, &mut out3, &mut out4, &mut out5, d, &f, &g, &v, &r,
+            );
+            fiat::fp_divstep(
+                &mut out6, &mut out7, &mut out8, &mut out9, &mut out10, out1, &out2, &out3, &out4,
+                &out5,
+            );
+            d = out6;
+            f = out7;
+            g = out8;
+            v = out9;
+            r = out10;
+            i += 2;
+        }
+
+        if ITERATIONS % 2 != 0 {
+            fiat::fp_divstep(
+                &mut out1, &mut out2, &mut out3, &mut out4, &mut out5, d, &f, &g, &v, &r,
+            );
+            v = out4;
+            f = out2;
+        }
+
+        let s = ((f[f.len() - 1] >> 32 - 1) & 1) as u8;
+        let mut neg = fiat::FpMontgomeryDomainFieldElement([0; 12]);
+        fiat::fp_opp(&mut neg, &fiat::FpMontgomeryDomainFieldElement(v));
+
+        let mut v_prime: [u32; 12] = [0u32; 12];
+        fiat::fp_selectznz(&mut v_prime, s, &v, &neg.0);
+
+        let mut pre_comp: [u32; 12] = [0u32; 12];
+        fiat::fp_divstep_precomp(&mut pre_comp);
+
+        let mut result = fiat::FpMontgomeryDomainFieldElement([0; 12]);
+        fiat::fp_mul(
+            &mut result,
+            &fiat::FpMontgomeryDomainFieldElement(v_prime),
+            &fiat::FpMontgomeryDomainFieldElement(pre_comp),
+        );
+
+        Some(Fp(result))
+    }
+
+    pub fn add(self, other: Fp) -> Fp {
         let mut result = fiat::FpMontgomeryDomainFieldElement([0; 12]);
         fiat::fp_add(&mut result, &self.0, &other.0);
         Fp(result)
     }
-}
 
-impl Sub<Fp> for Fp {
-    type Output = Fp;
-
-    fn sub(self, other: Fp) -> Fp {
+    pub fn sub(self, other: Fp) -> Fp {
         let mut result = fiat::FpMontgomeryDomainFieldElement([0; 12]);
         fiat::fp_sub(&mut result, &self.0, &other.0);
         Fp(result)
     }
-}
 
-impl Mul<Fp> for Fp {
-    type Output = Fp;
-
-    fn mul(self, other: Fp) -> Fp {
+    pub fn mul(self, other: Fp) -> Fp {
         let mut result = fiat::FpMontgomeryDomainFieldElement([0; 12]);
         fiat::fp_mul(&mut result, &self.0, &other.0);
         Fp(result)
     }
-}
 
-impl Neg for Fp {
-    type Output = Fp;
-
-    fn neg(self) -> Fp {
+    pub fn neg(self) -> Fp {
         let mut result = fiat::FpMontgomeryDomainFieldElement([0; 12]);
         fiat::fp_opp(&mut result, &self.0);
         Fp(result)
