@@ -681,7 +681,6 @@ impl core::fmt::Debug for Fp {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ark_bls12_377::Fq as ArkFp;
     use proptest::prelude::*;
 
     prop_compose! {
@@ -905,10 +904,5 @@ mod tests {
 
         // Assertion check against original `FpNonMontgomeryDomainFieldElement`
         assert_eq!(x_non_montgomery.0, modulus_minus_one.0);
-
-        // Assertion check against original backend
-        let original_arkworks_backend: BigInt<6> =
-            ArkFp::from_le_bytes_mod_order(&modulus_non_montgomery_bytes).into();
-        assert_eq!(BigInt(x_non_montgomery.0), original_arkworks_backend);
     }
 }

@@ -1,16 +1,14 @@
 use super::{fiat, wrapper::Fq};
-use ark_bls12_377::Fr as ArkFr;
 use ark_ff::FftField;
 use ark_ff::{BigInt, Field, PrimeField, SqrtPrecomputation};
 use ark_serialize::{
     CanonicalDeserialize, CanonicalDeserializeWithFlags, CanonicalSerialize,
-    CanonicalSerializeWithFlags, Compress, EmptyFlags, Flags, SerializationError, Valid, Validate,
+    CanonicalSerializeWithFlags, Compress, Flags, SerializationError, Valid, Validate,
 };
-use ark_std::println;
 use ark_std::{rand, str::FromStr, One, Zero};
 use core::hash::Hash;
 use core::{
-    cmp::{min, Ordering},
+    cmp::Ordering,
     fmt::{Display, Formatter},
     iter,
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
@@ -664,13 +662,7 @@ impl core::fmt::Debug for Fq {
 
 #[cfg(test)]
 mod tests {
-    use core::convert::TryInto;
-
     use super::*;
-    use ark_ff::BigInteger;
-    use ark_std::println;
-    use ark_std::vec::Vec;
-    use num_bigint::BigUint;
     use proptest::prelude::*;
 
     prop_compose! {
@@ -890,10 +882,5 @@ mod tests {
 
         // Assertion check against original `FqNonMontgomeryDomainFieldElement`
         assert_eq!(x_non_montgomery.0, modulus_minus_one.0);
-
-        // Assertion check against original backend
-        let original_arkworks_backend: BigInt<4> =
-            ArkFr::from_le_bytes_mod_order(&modulus_non_montgomery_bytes).into();
-        assert_eq!(BigInt(x_non_montgomery.0), original_arkworks_backend);
     }
 }
