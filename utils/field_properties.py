@@ -15,6 +15,9 @@ class Properties:
     def modulus(self):
         return self.p
 
+    def modulus_plus_1(self):
+        return self.p + 1
+
     def modulus_bit_size(self):
         return self.p.bit_length()
 

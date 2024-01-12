@@ -855,6 +855,40 @@ mod tests {
         }
     }
 
+    fn naive_from_le_bytes_mod_order(bytes: &[u8]) -> Fp {
+        let mut acc = Fp::zero();
+        let mut insert = Fp::one();
+        for byte in bytes {
+            for i in 0..8 {
+                if (byte >> i) & 1 == 1 {
+                    acc += insert;
+                }
+                insert.double_in_place();
+            }
+        }
+        acc
+    }
+
+    proptest! {
+        #[test]
+        fn test_from_le_bytes_mod_order_vs_naive(bytes in any::<[u8; 48]>()) {
+            let way1 = Fp::from_le_bytes_mod_order(&bytes);
+            let way2 = naive_from_le_bytes_mod_order(&bytes);
+            assert_eq!(way1, way2);
+        }
+    }
+
+    #[test]
+    fn test_from_le_bytes_mod_order_examples() {
+        let p_plus_1_bytes: [u8; 48] = [
+            2, 0, 0, 0, 0, 192, 8, 133, 0, 0, 0, 48, 68, 93, 11, 23, 0, 72, 9, 186, 47, 98, 243,
+            30, 143, 19, 245, 0, 243, 217, 34, 26, 59, 73, 161, 108, 192, 5, 59, 198, 234, 16, 197,
+            23, 70, 58, 174, 1,
+        ];
+
+        assert_eq!(Fp::from_le_bytes_mod_order(&p_plus_1_bytes), Fp::one());
+    }
+
     #[test]
     fn test_addition_examples() {
         let z1: Fp = BigInt([1, 1, 1, 1, 1, 1]).into();
