@@ -885,8 +885,17 @@ mod tests {
             30, 143, 19, 245, 0, 243, 217, 34, 26, 59, 73, 161, 108, 192, 5, 59, 198, 234, 16, 197,
             23, 70, 58, 174, 1,
         ];
+        let bytes_for_1 = {
+            let mut out = [0u8; 48];
+            out[0] = 1;
+            out
+        };
 
         assert_eq!(Fp::from_le_bytes_mod_order(&p_plus_1_bytes), Fp::one());
+        assert_eq!(
+            Fp::from_le_bytes_mod_order(&p_plus_1_bytes).to_bytes_le(),
+            bytes_for_1
+        );
     }
 
     #[test]
