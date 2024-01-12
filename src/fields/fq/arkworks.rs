@@ -674,35 +674,35 @@ mod tests {
     }
 
     prop_compose! {
-        fn arb_fp()(a in arb_fp_limbs()) -> Fq {
+        fn arb_fq()(a in arb_fp_limbs()) -> Fq {
             // Will be fine because of the bounds in the arb_fp_limbs
             Fq::from_bigint(BigInt(a)).unwrap_or(Fq::zero())
         }
     }
 
     prop_compose! {
-        fn arb_nonzero_fp()(a in arb_fp()) -> Fq {
+        fn arb_nonzero_fq()(a in arb_fq()) -> Fq {
             if a == Fq::zero() { Fq::one() } else { a }
         }
     }
 
     proptest! {
         #[test]
-        fn test_addition_commutative(a in arb_fp(), b in arb_fp()) {
+        fn test_addition_commutative(a in arb_fq(), b in arb_fq()) {
             assert_eq!(a + b, b + a);
         }
     }
 
     proptest! {
         #[test]
-        fn test_addition_associative(a in arb_fp(), b in arb_fp(), c in arb_fp()) {
+        fn test_addition_associative(a in arb_fq(), b in arb_fq(), c in arb_fq()) {
             assert_eq!(a + (b + c), (a + b) + c);
         }
     }
 
     proptest! {
         #[test]
-        fn test_add_zero_identity(a in arb_fp()) {
+        fn test_add_zero_identity(a in arb_fq()) {
             let zero = Fq::zero();
 
             assert_eq!(a + zero, a);
@@ -712,7 +712,7 @@ mod tests {
 
     proptest! {
         #[test]
-        fn test_subtract_self_is_zero(a in arb_fp()) {
+        fn test_subtract_self_is_zero(a in arb_fq()) {
             let zero = Fq::zero();
 
             assert_eq!(a - a, zero);
@@ -721,7 +721,7 @@ mod tests {
 
     proptest! {
         #[test]
-        fn test_doubling_is_just_addition(a in arb_fp()) {
+        fn test_doubling_is_just_addition(a in arb_fq()) {
             let two = Fq::from(2u64);
 
             assert_eq!(two * a, a + a);
@@ -732,35 +732,35 @@ mod tests {
 
     proptest! {
         #[test]
-        fn test_adding_negation(a in arb_fp()) {
+        fn test_adding_negation(a in arb_fq()) {
             assert_eq!(a + -a, Fq::ZERO)
         }
     }
 
     proptest! {
         #[test]
-        fn test_multiplication_commutative(a in arb_fp(), b in arb_fp()) {
+        fn test_multiplication_commutative(a in arb_fq(), b in arb_fq()) {
             assert_eq!(a * b, b * a);
         }
     }
 
     proptest! {
         #[test]
-        fn test_multiplication_associative(a in arb_fp(), b in arb_fp(), c in arb_fp()) {
+        fn test_multiplication_associative(a in arb_fq(), b in arb_fq(), c in arb_fq()) {
             assert_eq!(a * (b * c), (a * b) * c);
         }
     }
 
     proptest! {
         #[test]
-        fn test_multiplication_distributive(a in arb_fp(), b in arb_fp(), c in arb_fp()) {
+        fn test_multiplication_distributive(a in arb_fq(), b in arb_fq(), c in arb_fq()) {
             assert_eq!(a * (b + c), a * b + a * c);
         }
     }
 
     proptest! {
         #[test]
-        fn test_multiply_one_identity(a in arb_fp()) {
+        fn test_multiply_one_identity(a in arb_fq()) {
             assert_eq!(a * Fq::ONE, a);
             assert_eq!(Fq::ONE * a, a);
         }
@@ -768,7 +768,7 @@ mod tests {
 
     proptest! {
         #[test]
-        fn test_multiply_minus_one_is_negation(a in arb_fp()) {
+        fn test_multiply_minus_one_is_negation(a in arb_fq()) {
             let minus_one = -Fq::ONE;
 
             assert_eq!(a * minus_one, a.neg());
@@ -777,7 +777,7 @@ mod tests {
 
     proptest! {
         #[test]
-        fn test_square_is_multiply(a in arb_fp()) {
+        fn test_square_is_multiply(a in arb_fq()) {
             assert_eq!(a.square(), a * a);
             assert_eq!(*(a.clone().square_in_place()), a * a);
         }
@@ -785,15 +785,26 @@ mod tests {
 
     proptest! {
         #[test]
-        fn test_inverse(a in arb_nonzero_fp()) {
+        fn test_inverse(a in arb_nonzero_fq()) {
             assert_eq!(a * a.inverse().unwrap(), Fq::ONE);
             assert_eq!(a * *(a.clone().inverse_in_place().unwrap()), Fq::ONE);
         }
     }
 
+    fn naive_inverse(a: Fq) -> Fq {
+        a.pow(&(-Fq::from(2u64)).into_bigint().0)
+    }
+
     proptest! {
         #[test]
-        fn test_sqrt(a in arb_fp()) {
+        fn test_inverse_vs_naive_inverse(a in arb_nonzero_fq()) {
+            assert_eq!(a.inverse().unwrap(), naive_inverse(a));
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn test_sqrt(a in arb_fq()) {
             match a.sqrt() {
                 Some(x) => assert_eq!(x * x, a),
                 None => {}
@@ -803,7 +814,7 @@ mod tests {
 
     proptest! {
         #[test]
-        fn test_into_bigint_monomorphism(a in arb_fp()) {
+        fn test_into_bigint_monomorphism(a in arb_fq()) {
             let as_bigint = a.into_bigint();
             let roundtrip = Fq::from_bigint(as_bigint);
 
@@ -813,7 +824,7 @@ mod tests {
 
     proptest! {
         #[test]
-        fn test_conversion_to_bytes_via_bigint(a in arb_fp()) {
+        fn test_conversion_to_bytes_via_bigint(a in arb_fq()) {
             let way1 = a.to_bytes_le();
             let way2 = a.into_bigint().to_bytes_le();
             assert_eq!(way1.as_slice(), way2.as_slice());
@@ -822,14 +833,14 @@ mod tests {
 
     proptest! {
         #[test]
-        fn test_legendre_symbol(a in arb_nonzero_fp()) {
+        fn test_legendre_symbol(a in arb_nonzero_fq()) {
             assert_eq!((a * a).legendre(), ark_ff::LegendreSymbol::QuadraticResidue);
         }
     }
 
     proptest! {
         #[test]
-        fn test_canonical_serialize_monomorphism(a in arb_fp()) {
+        fn test_canonical_serialize_monomorphism(a in arb_fq()) {
             let mut bytes: Vec<u8> = Vec::new();
             let roundtrip = a.serialize_compressed(&mut bytes).and_then(|_| Fq::deserialize_compressed(&*bytes));
             assert!(roundtrip.is_ok());
