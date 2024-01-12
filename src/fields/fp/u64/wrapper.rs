@@ -14,6 +14,12 @@ impl PartialEq for Fp {
 
 impl Eq for Fp {}
 
+impl zeroize::Zeroize for Fp {
+    fn zeroize(&mut self) {
+        self.0 .0.zeroize()
+    }
+}
+
 impl Fp {
     pub fn from_le_limbs(limbs: [u64; 6]) -> Self {
         let x_non_monty = fiat::FpNonMontgomeryDomainFieldElement(limbs);

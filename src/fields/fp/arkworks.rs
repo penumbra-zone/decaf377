@@ -545,12 +545,6 @@ impl Display for Fp {
     }
 }
 
-impl zeroize::Zeroize for Fp {
-    fn zeroize(&mut self) {
-        unimplemented!()
-    }
-}
-
 impl Ord for Fp {
     #[inline(always)]
     fn cmp(&self, other: &Self) -> Ordering {
