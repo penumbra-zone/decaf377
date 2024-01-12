@@ -597,8 +597,8 @@ impl From<BigInt<6>> for Fp {
 }
 
 impl Hash for Fp {
-    fn hash<H: core::hash::Hasher>(&self, _state: &mut H) {
-        unimplemented!()
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        state.write(&self.to_bytes_le())
     }
 }
 
