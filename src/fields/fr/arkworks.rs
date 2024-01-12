@@ -792,6 +792,17 @@ mod tests {
         }
     }
 
+    fn naive_inverse(a: Fr) -> Fr {
+        a.pow(&(-Fr::from(2u64)).into_bigint().0)
+    }
+
+    proptest! {
+        #[test]
+        fn test_inverse_vs_naive_inverse(a in arb_nonzero_fr()) {
+            assert_eq!(a.inverse().unwrap(), naive_inverse(a));
+        }
+    }
+
     proptest! {
         #[test]
         fn test_sqrt(a in arb_fr()) {
