@@ -39,6 +39,8 @@ parallel = ["ark-ff/parallel", "ark-ec/parallel", "ark-groth16/parallel", "ark-s
 r1cs = ["ark-r1cs-std", "ark-groth16", "ark-snark"]
 # TODO: eventually, feature-gate all arkworks deps behind this feature.
 arkworks = []
+u32 = []
+u64 = []
 
 [dev-dependencies]
 proptest = "1"

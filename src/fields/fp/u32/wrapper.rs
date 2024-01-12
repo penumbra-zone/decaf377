@@ -5,7 +5,7 @@ pub struct Fp(pub fiat::FpMontgomeryDomainFieldElement);
 
 impl PartialEq for Fp {
     fn eq(&self, other: &Self) -> bool {
-        let sub = self.sub(*other);
+        let sub = self.sub(other);
         let mut check_word = 0;
         fiat::fp_nonzero(&mut check_word, &sub.0 .0);
         check_word == 0
@@ -21,7 +21,15 @@ impl zeroize::Zeroize for Fp {
 }
 
 impl Fp {
-    pub fn from_le_limbs(limbs: [u32; 12]) -> Fp {
+    pub fn from_le_limbs(limbs: [u64; 6]) -> Fp {
+        let limbs = {
+            let mut out = [0u32; 12];
+            for i in 0..6 {
+                out[2 * i] = (limbs[i] & 0xFFFF_FFFF_FFFF_FFFF) as u32;
+                out[2 * i + 1] = (limbs[i] >> 32) as u32;
+            }
+            out
+        };
         let x_non_monty = fiat::FpNonMontgomeryDomainFieldElement(limbs);
         let mut x = fiat::FpMontgomeryDomainFieldElement([0; 12]);
         fiat::fp_to_montgomery(&mut x, &x_non_monty);
@@ -38,15 +46,22 @@ impl Fp {
         Self(x)
     }
 
-    pub fn to_le_limbs(&self) -> [u32; 12] {
+    pub fn to_le_limbs(&self) -> [u64; 6] {
         let mut x_non_montgomery = fiat::FpNonMontgomeryDomainFieldElement([0; 12]);
         fiat::fp_from_montgomery(&mut x_non_montgomery, &self.0);
-        x_non_montgomery.0
+        let limbs = x_non_montgomery.0;
+        let mut out = [0u64; 6];
+        for i in 0..6 {
+            out[i] = (limbs[2 * i] as u64) | ((limbs[2 * i + 1] as u64) << 32);
+        }
+        out
     }
 
     pub fn to_bytes_le(&self) -> [u8; 48] {
         let mut bytes = [0u8; 48];
-        fiat::fp_to_bytes(&mut bytes, &self.to_le_limbs());
+        let mut x_non_montgomery = fiat::FpNonMontgomeryDomainFieldElement([0; 12]);
+        fiat::fp_from_montgomery(&mut x_non_montgomery, &self.0);
+        fiat::fp_to_bytes(&mut bytes, &x_non_montgomery.0);
         bytes
     }
 
@@ -54,14 +69,15 @@ impl Fp {
         Self(fiat::FpMontgomeryDomainFieldElement(limbs))
     }
 
-    pub fn zero() -> Fp {
+    pub const fn zero() -> Fp {
         Self(fiat::FpMontgomeryDomainFieldElement([0; 12]))
     }
 
-    pub fn one() -> Fp {
-        let mut one = Self::zero();
-        fiat::fp_set_one(&mut one.0);
-        one
+    pub const fn one() -> Self {
+        Self(fiat::FpMontgomeryDomainFieldElement([
+            4294967144, 47054847, 2147483569, 1363189635, 2323464178, 2675815337, 1853645573,
+            2068748215, 2151449832, 1291097535, 3808294042, 9266785,
+        ]))
     }
 
     pub fn square(&self) -> Fp {
@@ -149,19 +165,19 @@ impl Fp {
         Some(Fp(result))
     }
 
-    pub fn add(self, other: Fp) -> Fp {
+    pub fn add(self, other: &Fp) -> Fp {
         let mut result = fiat::FpMontgomeryDomainFieldElement([0; 12]);
         fiat::fp_add(&mut result, &self.0, &other.0);
         Fp(result)
     }
 
-    pub fn sub(self, other: Fp) -> Fp {
+    pub fn sub(self, other: &Fp) -> Fp {
         let mut result = fiat::FpMontgomeryDomainFieldElement([0; 12]);
         fiat::fp_sub(&mut result, &self.0, &other.0);
         Fp(result)
     }
 
-    pub fn mul(self, other: Fp) -> Fp {
+    pub fn mul(self, other: &Fp) -> Fp {
         let mut result = fiat::FpMontgomeryDomainFieldElement([0; 12]);
         fiat::fp_mul(&mut result, &self.0, &other.0);
         Fp(result)
