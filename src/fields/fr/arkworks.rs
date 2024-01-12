@@ -17,7 +17,7 @@ use core::{
 
 impl PrimeField for Fr {
     /// A `BigInteger` type that can represent elements of this field.
-    type BigInt = BigInt<6>;
+    type BigInt = BigInt<4>;
 
     /// The BLS12-377 base field modulus `p` = 0x4aad957a68b2955982d1347970dec005293a3afc43c8afeb95aee9ac33fd9ff
     const MODULUS: Self::BigInt = ark_ff::BigInt(MODULUS_LIMBS);
@@ -55,10 +55,10 @@ impl PrimeField for Fr {
     }
 
     fn from_le_bytes_mod_order(bytes: &[u8]) -> Self {
-        assert!(bytes.len() == 48);
+        assert!(bytes.len() == 32);
 
-        let mut t = [0u8; 48];
-        t.copy_from_slice(&bytes[..48]);
+        let mut t = [0u8; 32];
+        t.copy_from_slice(&bytes[..32]);
         let modulus_field_montgomery = Fr::from_bytes(&t);
 
         modulus_field_montgomery
@@ -69,12 +69,14 @@ impl Field for Fr {
     type BasePrimeField = Self;
     type BasePrimeFieldIter = iter::Once<Self::BasePrimeField>;
 
-    const SQRT_PRECOMP: Option<SqrtPrecomputation<Self>> =
-        Some(SqrtPrecomputation::TonelliShanks {
-            two_adicity: TWO_ADICITY,
-            quadratic_nonresidue_to_trace: QUADRATIC_NON_RESIDUE_TO_TRACE,
-            trace_of_modulus_minus_one_div_two: &TRACE_MINUS_ONE_DIV_TWO_LIMBS,
-        });
+    const SQRT_PRECOMP: Option<SqrtPrecomputation<Self>> = Some(SqrtPrecomputation::Case3Mod4 {
+        modulus_plus_one_div_four: &[
+            12562434535201961600,
+            1487569876998365887,
+            7353046484906113792,
+            84080023168010837,
+        ],
+    });
 
     const ZERO: Self = Self::zero();
 
@@ -492,8 +494,8 @@ impl CanonicalDeserializeWithFlags for Fr {
             .ok_or(SerializationError::UnexpectedFlags)?;
         // Then, convert the bytes to limbs, to benefit from the canonical check we have for
         // bigint.
-        let mut limbs = [0u64; 6];
-        for (limb, chunk) in limbs.iter_mut().zip(bytes[..48].chunks_exact(8)) {
+        let mut limbs = [0u64; 4];
+        for (limb, chunk) in limbs.iter_mut().zip(bytes[..32].chunks_exact(8)) {
             *limb = u64::from_le_bytes(chunk.try_into().expect("chunk will have the right size"));
         }
         let out = Self::from_bigint(BigInt(limbs)).ok_or(SerializationError::InvalidData)?;
@@ -618,17 +620,17 @@ impl From<Fr> for num_bigint::BigUint {
     }
 }
 
-impl From<Fr> for BigInt<6> {
+impl From<Fr> for BigInt<4> {
     #[inline(always)]
-    fn from(Fr: Fr) -> Self {
-        Fr.into_bigint()
+    fn from(fr: Fr) -> Self {
+        fr.into_bigint()
     }
 }
 
-impl From<BigInt<6>> for Fr {
+impl From<BigInt<4>> for Fr {
     /// Converts `Self::BigInteger` into `Self`
     #[inline(always)]
-    fn from(int: BigInt<6>) -> Self {
+    fn from(int: BigInt<4>) -> Self {
         Fr::from_le_bytes_mod_order(&int.to_bytes_le())
     }
 }
@@ -657,54 +659,51 @@ mod tests {
     use super::*;
     extern crate alloc;
     use alloc::vec::Vec;
-    use ark_bls12_377::Fq as ArkFr;
     use proptest::prelude::*;
 
     prop_compose! {
         // Technically this might overflow, but we won't miss any values,
         // just return 0 if you overflow when consuming.
-        fn arb_Fr_limbs()(
+        fn arb_fr_limbs()(
             z0 in 0..u64::MAX,
             z1 in 0..u64::MAX,
             z2 in 0..u64::MAX,
-            z3 in 0..u64::MAX,
-            z4 in 0..u64::MAX,
-            z5 in 0..0x1ae3a4617c510eu64
-        ) -> [u64; 6] {
-            [z0, z1, z2, z3, z4, z5]
+            z3 in 0..336320092672043349u64
+        ) -> [u64; 4] {
+            [z0, z1, z2, z3]
         }
     }
 
     prop_compose! {
-        fn arb_Fr()(a in arb_Fr_limbs()) -> Fr {
-            // Will be fine because of the bounds in the arb_Fr_limbs
+        fn arb_fr()(a in arb_fr_limbs()) -> Fr {
+            // Will be fine because of the bounds in the arb_fr_limbs
             Fr::from_bigint(BigInt(a)).unwrap_or(Fr::zero())
         }
     }
 
     prop_compose! {
-        fn arb_nonzero_Fr()(a in arb_Fr()) -> Fr {
+        fn arb_nonzero_fr()(a in arb_fr()) -> Fr {
             if a == Fr::zero() { Fr::one() } else { a }
         }
     }
 
     proptest! {
         #[test]
-        fn test_addition_commutative(a in arb_Fr(), b in arb_Fr()) {
+        fn test_addition_commutative(a in arb_fr(), b in arb_fr()) {
             assert_eq!(a + b, b + a);
         }
     }
 
     proptest! {
         #[test]
-        fn test_addition_associative(a in arb_Fr(), b in arb_Fr(), c in arb_Fr()) {
+        fn test_addition_associative(a in arb_fr(), b in arb_fr(), c in arb_fr()) {
             assert_eq!(a + (b + c), (a + b) + c);
         }
     }
 
     proptest! {
         #[test]
-        fn test_add_zero_identity(a in arb_Fr()) {
+        fn test_add_zero_identity(a in arb_fr()) {
             let zero = Fr::zero();
 
             assert_eq!(a + zero, a);
@@ -714,7 +713,7 @@ mod tests {
 
     proptest! {
         #[test]
-        fn test_subtract_self_is_zero(a in arb_Fr()) {
+        fn test_subtract_self_is_zero(a in arb_fr()) {
             let zero = Fr::zero();
 
             assert_eq!(a - a, zero);
@@ -723,7 +722,7 @@ mod tests {
 
     proptest! {
         #[test]
-        fn test_doubling_is_just_addition(a in arb_Fr()) {
+        fn test_doubling_is_just_addition(a in arb_fr()) {
             let two = Fr::from(2u64);
 
             assert_eq!(two * a, a + a);
@@ -734,35 +733,35 @@ mod tests {
 
     proptest! {
         #[test]
-        fn test_adding_negation(a in arb_Fr()) {
+        fn test_adding_negation(a in arb_fr()) {
             assert_eq!(a + -a, Fr::ZERO)
         }
     }
 
     proptest! {
         #[test]
-        fn test_multiplication_commutative(a in arb_Fr(), b in arb_Fr()) {
+        fn test_multiplication_commutative(a in arb_fr(), b in arb_fr()) {
             assert_eq!(a * b, b * a);
         }
     }
 
     proptest! {
         #[test]
-        fn test_multiplication_associative(a in arb_Fr(), b in arb_Fr(), c in arb_Fr()) {
+        fn test_multiplication_associative(a in arb_fr(), b in arb_fr(), c in arb_fr()) {
             assert_eq!(a * (b * c), (a * b) * c);
         }
     }
 
     proptest! {
         #[test]
-        fn test_multiplication_distributive(a in arb_Fr(), b in arb_Fr(), c in arb_Fr()) {
+        fn test_multiplication_distributive(a in arb_fr(), b in arb_fr(), c in arb_fr()) {
             assert_eq!(a * (b + c), a * b + a * c);
         }
     }
 
     proptest! {
         #[test]
-        fn test_multiply_one_identity(a in arb_Fr()) {
+        fn test_multiply_one_identity(a in arb_fr()) {
             assert_eq!(a * Fr::ONE, a);
             assert_eq!(Fr::ONE * a, a);
         }
@@ -770,7 +769,7 @@ mod tests {
 
     proptest! {
         #[test]
-        fn test_multiply_minus_one_is_negation(a in arb_Fr()) {
+        fn test_multiply_minus_one_is_negation(a in arb_fr()) {
             let minus_one = -Fr::ONE;
 
             assert_eq!(a * minus_one, a.neg());
@@ -779,7 +778,7 @@ mod tests {
 
     proptest! {
         #[test]
-        fn test_square_is_multiply(a in arb_Fr()) {
+        fn test_square_is_multiply(a in arb_fr()) {
             assert_eq!(a.square(), a * a);
             assert_eq!(*(a.clone().square_in_place()), a * a);
         }
@@ -787,7 +786,7 @@ mod tests {
 
     proptest! {
         #[test]
-        fn test_inverse(a in arb_nonzero_Fr()) {
+        fn test_inverse(a in arb_nonzero_fr()) {
             assert_eq!(a * a.inverse().unwrap(), Fr::ONE);
             assert_eq!(a * *(a.clone().inverse_in_place().unwrap()), Fr::ONE);
         }
@@ -795,7 +794,7 @@ mod tests {
 
     proptest! {
         #[test]
-        fn test_sqrt(a in arb_Fr()) {
+        fn test_sqrt(a in arb_fr()) {
             match a.sqrt() {
                 Some(x) => assert_eq!(x * x, a),
                 None => {}
@@ -805,7 +804,7 @@ mod tests {
 
     proptest! {
         #[test]
-        fn test_into_bigint_monomorphism(a in arb_Fr()) {
+        fn test_into_bigint_monomorphism(a in arb_fr()) {
             let as_bigint = a.into_bigint();
             let roundtrip = Fr::from_bigint(as_bigint);
 
@@ -815,7 +814,7 @@ mod tests {
 
     proptest! {
         #[test]
-        fn test_conversion_to_bytes_via_bigint(a in arb_Fr()) {
+        fn test_conversion_to_bytes_via_bigint(a in arb_fr()) {
             let way1 = a.to_bytes_le();
             let way2 = a.into_bigint().to_bytes_le();
             assert_eq!(way1.as_slice(), way2.as_slice());
@@ -824,34 +823,18 @@ mod tests {
 
     proptest! {
         #[test]
-        fn test_legendre_symbol(a in arb_nonzero_Fr()) {
+        fn test_legendre_symbol(a in arb_nonzero_fr()) {
             assert_eq!((a * a).legendre(), ark_ff::LegendreSymbol::QuadraticResidue);
         }
     }
 
     proptest! {
         #[test]
-        fn test_canonical_serialize_monomorphism(a in arb_Fr()) {
+        fn test_canonical_serialize_monomorphism(a in arb_fr()) {
             let mut bytes: Vec<u8> = Vec::new();
             let roundtrip = a.serialize_compressed(&mut bytes).and_then(|_| Fr::deserialize_compressed(&*bytes));
             assert!(roundtrip.is_ok());
             assert_eq!(*roundtrip.as_ref().clone().unwrap(), a);
-        }
-    }
-
-    proptest! {
-        #[test]
-        fn test_serialize_matches_arkworks(a in arb_Fr_limbs()) {
-            let our_value: Fr = BigInt(a).into();
-            let their_value: ArkFr = BigInt(a).into();
-
-            let mut our_bytes: Vec<u8> = Vec::new();
-            assert!(our_value.serialize_compressed(&mut our_bytes).is_ok());
-
-            let mut their_bytes: Vec<u8> = Vec::new();
-            assert!(their_value.serialize_compressed(&mut their_bytes).is_ok());
-
-            assert_eq!(our_bytes, their_bytes);
         }
     }
 
@@ -871,7 +854,7 @@ mod tests {
 
     proptest! {
         #[test]
-        fn test_from_le_bytes_mod_order_vs_naive(bytes in any::<[u8; 48]>()) {
+        fn test_from_le_bytes_mod_order_vs_naive(bytes in any::<[u8; 32]>()) {
             let way1 = Fr::from_le_bytes_mod_order(&bytes);
             let way2 = naive_from_le_bytes_mod_order(&bytes);
             assert_eq!(way1, way2);
@@ -880,37 +863,34 @@ mod tests {
 
     #[test]
     fn test_from_le_bytes_mod_order_examples() {
-        unimplemented!()
-        // let p_plus_1_bytes: [u8; 48] = [
-        //     2, 0, 0, 0, 0, 192, 8, 133, 0, 0, 0, 48, 68, 93, 11, 23, 0, 72, 9, 186, 47, 98, 243,
-        //     30, 143, 19, 245, 0, 243, 217, 34, 26, 59, 73, 161, 108, 192, 5, 59, 198, 234, 16, 197,
-        //     23, 70, 58, 174, 1,
-        // ];
-        // let bytes_for_1 = {
-        //     let mut out = [0u8; 48];
-        //     out[0] = 1;
-        //     out
-        // };
-
-        // assert_eq!(Fr::from_le_bytes_mod_order(&p_plus_1_bytes), Fr::one());
-        // assert_eq!(
-        //     Fr::from_le_bytes_mod_order(&p_plus_1_bytes).to_bytes_le(),
-        //     bytes_for_1
-        // );
+        let p_plus_1_bytes: [u8; 32] = [
+            0, 218, 63, 195, 154, 238, 90, 185, 254, 138, 60, 196, 175, 163, 147, 82, 0, 236, 13,
+            151, 71, 19, 45, 152, 85, 41, 139, 166, 87, 217, 170, 4,
+        ];
+        let bytes_for_1 = {
+            let mut out = [0u8; 32];
+            out[0] = 1;
+            out
+        };
+        assert_eq!(Fr::from_le_bytes_mod_order(&p_plus_1_bytes), Fr::one());
+        assert_eq!(
+            Fr::from_le_bytes_mod_order(&p_plus_1_bytes).to_bytes_le(),
+            bytes_for_1
+        );
     }
 
     #[test]
     fn test_addition_examples() {
-        let z1: Fr = BigInt([1, 1, 1, 1, 1, 1]).into();
-        let z2: Fr = BigInt([2, 2, 2, 2, 2, 2]).into();
-        let z3: Fr = BigInt([3, 3, 3, 3, 3, 3]).into();
+        let z1: Fr = BigInt([1, 1, 1, 1]).into();
+        let z2: Fr = BigInt([2, 2, 2, 2]).into();
+        let z3: Fr = BigInt([3, 3, 3, 3]).into();
 
         assert_eq!(z3, z1 + z2);
     }
 
     #[test]
     fn test_subtraction_examples() {
-        let mut z1: Fr = BigInt([1, 1, 1, 1, 1, 1]).into();
+        let mut z1: Fr = BigInt([1, 1, 1, 1]).into();
         z1 -= z1;
 
         assert_eq!(z1, Fr::ZERO);
@@ -918,9 +898,9 @@ mod tests {
 
     #[test]
     fn test_small_multiplication_examples() {
-        let z1: Fr = BigInt([1, 0, 0, 0, 0, 0]).into();
-        let z2: Fr = BigInt([2, 0, 0, 0, 0, 0]).into();
-        let z3: Fr = BigInt([3, 0, 0, 0, 0, 0]).into();
+        let z1: Fr = BigInt([1, 0, 0, 0]).into();
+        let z2: Fr = BigInt([2, 0, 0, 0]).into();
+        let z3: Fr = BigInt([3, 0, 0, 0]).into();
 
         assert_eq!(z1 + z1, z1 * z2);
         assert_eq!(z1 + z1 + z1, z1 * z3);
@@ -928,7 +908,7 @@ mod tests {
 
     #[test]
     fn test_2192_times_zero() {
-        let two192: Fr = BigInt([0, 0, 0, 0, 0, 1]).into();
+        let two192: Fr = BigInt([0, 0, 0, 1]).into();
         assert_eq!(two192 * Fr::zero(), Fr::ZERO);
     }
 
@@ -942,12 +922,10 @@ mod tests {
     fn test_modulus_from_le_bytes_mod_order() {
         // Field modulus - 1 in non-montgomery form that satisfies the fiat-crypto preconditions (< m)
         let modulus_minus_one: Fr = BigInt([
-            9586122913090633728,
-            1660523435060625408,
-            2230234197602682880,
-            1883307231910630287,
-            14284016967150029115,
-            121098312706494698,
+            13356249993388743166,
+            5950279507993463550,
+            10965441865914903552,
+            336320092672043349,
         ])
         .into();
 
