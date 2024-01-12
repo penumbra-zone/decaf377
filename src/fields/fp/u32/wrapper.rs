@@ -14,8 +14,21 @@ impl PartialEq for Fp {
 
 impl Eq for Fp {}
 
+impl zeroize::Zeroize for Fp {
+    fn zeroize(&mut self) {
+        self.0 .0.zeroize()
+    }
+}
+
 impl Fp {
-    pub fn from_bytes(bytes: &[u8; 48]) -> Self {
+    pub fn from_le_limbs(limbs: [u32; 12]) -> Fp {
+        let x_non_monty = fiat::FpNonMontgomeryDomainFieldElement(limbs);
+        let mut x = fiat::FpMontgomeryDomainFieldElement([0; 12]);
+        fiat::fp_to_montgomery(&mut x, &x_non_monty);
+        Self(x)
+    }
+
+    pub fn from_bytes(bytes: &[u8; 48]) -> Fp {
         let mut x_non_montgomery = fiat::FpNonMontgomeryDomainFieldElement([0; 12]);
         let mut x = fiat::FpMontgomeryDomainFieldElement([0; 12]);
 
@@ -25,27 +38,33 @@ impl Fp {
         Self(x)
     }
 
-    pub fn to_bytes(&self) -> [u8; 48] {
+    pub fn to_le_limbs(&self) -> [u32; 12] {
         let mut x_non_montgomery = fiat::FpNonMontgomeryDomainFieldElement([0; 12]);
-        let mut bytes = [0u8; 48];
-
         fiat::fp_from_montgomery(&mut x_non_montgomery, &self.0);
-        fiat::fp_to_bytes(&mut bytes, &x_non_montgomery.0);
+        x_non_montgomery.0
+    }
 
+    pub fn to_bytes_le(&self) -> [u8; 48] {
+        let mut bytes = [0u8; 48];
+        fiat::fp_to_bytes(&mut bytes, &self.to_le_limbs());
         bytes
     }
 
-    pub fn zero() -> Self {
+    pub const fn from_montgomery_limbs(limbs: [u32; 12]) -> Fp {
+        Self(fiat::FpMontgomeryDomainFieldElement(limbs))
+    }
+
+    pub fn zero() -> Fp {
         Self(fiat::FpMontgomeryDomainFieldElement([0; 12]))
     }
 
-    pub fn one() -> Self {
+    pub fn one() -> Fp {
         let mut one = Self::zero();
         fiat::fp_set_one(&mut one.0);
         one
     }
 
-    pub fn square(&self) -> Self {
+    pub fn square(&self) -> Fp {
         let mut result = fiat::FpMontgomeryDomainFieldElement([0; 12]);
         fiat::fp_square(&mut result, &self.0);
         Self(result)
