@@ -13,10 +13,11 @@ impl core::fmt::Debug for Fq {
 }
 
 impl PartialEq for Fq {
-    fn eq(&self, other: &Fq) -> bool {
-        let self_bytes = self.to_bytes();
-        let other_bytes = other.to_bytes();
-        self_bytes[..] == other_bytes[..]
+    fn eq(&self, other: &Self) -> bool {
+        let sub = self.sub(*other);
+        let mut check_word = 0;
+        fiat::fq_nonzero(&mut check_word, &sub.0 .0);
+        check_word == 0
     }
 }
 

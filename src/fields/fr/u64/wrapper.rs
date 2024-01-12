@@ -3,6 +3,17 @@ use super::fiat;
 #[derive(Copy, Clone)]
 pub struct Fr(pub fiat::FrMontgomeryDomainFieldElement);
 
+impl PartialEq for Fr {
+    fn eq(&self, other: &Self) -> bool {
+        let sub = self.sub(*other);
+        let mut check_word = 0;
+        fiat::fr_nonzero(&mut check_word, &sub.0 .0);
+        check_word == 0
+    }
+}
+
+impl Eq for Fr {}
+
 impl Fr {
     pub fn from_bytes(bytes: &[u8; 32]) -> Self {
         let mut x_non_montgomery = fiat::FrNonMontgomeryDomainFieldElement([0; 4]);
