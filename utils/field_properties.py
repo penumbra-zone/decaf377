@@ -83,7 +83,7 @@ class Properties:
         return self.mod_exp(self.generator(), self.trace())
 
 
-def to_le_limbs(x, size=64):
+def to_le_limbs(x, size=64, expected_limb_count=0):
     """
     Convert a number to little endian limbs, with a certain bit size.
     """
@@ -91,6 +91,8 @@ def to_le_limbs(x, size=64):
     while x > 0:
         acc.append(x & ((1 << size) - 1))
         x >>= size
+    while len(acc) < expected_limb_count:
+        acc.append(0)
     return acc
 
 
@@ -102,16 +104,18 @@ def to_monty(x, size, p):
 def main(size: int, p: int, what_to_generate: str, mode):
     properties = Properties(p)
     prop = getattr(properties, what_to_generate)
+    expected_limb_count = (
+        properties.modulus_minus_1().bit_length() + size - 1) // size
     if callable(prop):
         prop = prop()
     if mode == "hex":
         print(hex(prop))
     elif mode == "monty":
-        print(to_le_limbs(to_monty(prop, size, p), size))
+        print(to_le_limbs(to_monty(prop, size, p), size, expected_limb_count))
     elif mode == "monty_hex":
         print(hex(to_monty(prop, size, p)))
     else:
-        print(to_le_limbs(prop, size))
+        print(to_le_limbs(prop, size, expected_limb_count))
 
 
 if __name__ == '__main__':
