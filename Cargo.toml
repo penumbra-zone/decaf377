@@ -40,7 +40,6 @@ r1cs = ["ark-r1cs-std", "ark-groth16", "ark-snark"]
 # TODO: eventually, feature-gate all arkworks deps behind this feature.
 arkworks = []
 u32_backend = []
-u64_backend = []
 
 [dev-dependencies]
 proptest = "1"
