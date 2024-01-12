@@ -14,6 +14,7 @@ use core::{
     iter,
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
+use ark_std::println;
 
 impl PrimeField for Fp {
     /// A `BigInteger` type that can represent elements of this field.
@@ -571,7 +572,7 @@ impl CanonicalSerializeWithFlags for Fp {
 
 impl ark_std::rand::distributions::Distribution<Fp> for ark_std::rand::distributions::Standard {
     fn sample<R: rand::prelude::Rng + ?Sized>(&self, _rng: &mut R) -> Fp {
-        todo!()
+        unimplemented!()
     }
 }
 
@@ -658,6 +659,7 @@ mod tests {
     extern crate alloc;
     use alloc::vec::Vec;
     use proptest::prelude::*;
+    use ark_bls12_377::Fq as ArkFp;
 
     prop_compose! {
         // Technically this might overflow, but we won't miss any values,
@@ -807,6 +809,7 @@ mod tests {
         fn test_into_bigint_monomorphism(a in arb_fp()) {
             let as_bigint = a.into_bigint();
             let roundtrip = Fp::from_bigint(as_bigint);
+
             assert_eq!(Some(a), roundtrip);
         }
     }
@@ -833,7 +836,16 @@ mod tests {
             let mut bytes: Vec<u8> = Vec::new();
             let roundtrip = a.serialize_compressed(&mut bytes).and_then(|_| Fp::deserialize_compressed(&*bytes));
             assert!(roundtrip.is_ok());
-            assert_eq!(roundtrip.unwrap(), a);
+            assert_eq!(*roundtrip.as_ref().clone().unwrap(), a);
+
+            let value: ArkFp = ark_ff::BigInt(a.0.0).into();
+            let mut bytes_2: Vec<u8> = Vec::new();
+            let roundtrip_arkworks = value.serialize_compressed(&mut bytes_2).and_then(|_| ArkFp::deserialize_compressed(&*bytes_2));
+            assert!(roundtrip_arkworks.is_ok());
+            assert_eq!(*roundtrip_arkworks.as_ref().clone().unwrap(), value);
+
+            // Check serialization against arkworks backend
+            assert_eq!(BigInt(roundtrip.unwrap().0.0), roundtrip_arkworks.unwrap().into());
         }
     }
 
