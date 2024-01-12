@@ -3,9 +3,10 @@ use ark_ff::{BigInt, Field, PrimeField, SqrtPrecomputation};
 use ark_ff::{BigInteger, FftField};
 use ark_serialize::{
     CanonicalDeserialize, CanonicalDeserializeWithFlags, CanonicalSerialize,
-    CanonicalSerializeWithFlags, Compress, Flags, SerializationError, Valid, Validate,
+    CanonicalSerializeWithFlags, Compress, EmptyFlags, Flags, SerializationError, Valid, Validate,
 };
 use ark_std::{rand, str::FromStr, string::ToString, One, Zero};
+use core::convert::TryInto;
 use core::hash::Hash;
 use core::{
     cmp::Ordering,
@@ -480,25 +481,44 @@ impl<'a> core::iter::Product<&'a Self> for Fp {
 
 impl CanonicalDeserializeWithFlags for Fp {
     fn deserialize_with_flags<R: ark_std::io::Read, F: Flags>(
-        _reader: R,
+        mut reader: R,
     ) -> Result<(Self, F), SerializationError> {
-        unimplemented!()
+        // Enough for the field element + 8 bits of flags. The last byte may or may not contain flags.
+        let mut bytes = [0u8; (Self::MODULUS_BIT_SIZE as usize + 8 + 7) / 8];
+
+        let expected_len = (Self::MODULUS_BIT_SIZE as usize + F::BIT_SIZE + 7) / 8;
+        reader.read_exact(&mut bytes[..expected_len])?;
+        let flags = F::from_u8(bytes[bytes.len() - 1] & !(!0 >> F::BIT_SIZE))
+            .ok_or(SerializationError::UnexpectedFlags)?;
+        // Then, convert the bytes to limbs, to benefit from the canonical check we have for
+        // bigint.
+        let mut limbs = [0u64; 6];
+        for (limb, chunk) in limbs.iter_mut().zip(bytes[..48].chunks_exact(8)) {
+            *limb = u64::from_le_bytes(chunk.try_into().expect("chunk will have the right size"));
+        }
+        let out = Self::from_bigint(BigInt(limbs)).ok_or(SerializationError::InvalidData)?;
+        Ok((out, flags))
     }
 }
 
 impl Valid for Fp {
     fn check(&self) -> Result<(), SerializationError> {
-        unimplemented!()
+        Ok(())
     }
 }
 
 impl CanonicalDeserialize for Fp {
     fn deserialize_with_mode<R: ark_std::io::Read>(
-        _reader: R,
+        reader: R,
         _compress: Compress,
-        _validate: Validate,
+        validate: Validate,
     ) -> Result<Self, SerializationError> {
-        unimplemented!()
+        let (out, _) = Self::deserialize_with_flags::<R, EmptyFlags>(reader)?;
+        match validate {
+            Validate::Yes => out.check(),
+            Validate::No => Ok(()),
+        }?;
+        Ok(out)
     }
 }
 
@@ -506,29 +526,46 @@ impl CanonicalSerialize for Fp {
     #[inline]
     fn serialize_with_mode<W: ark_std::io::Write>(
         &self,
-        _writer: W,
+        writer: W,
         _compress: Compress,
     ) -> Result<(), SerializationError> {
-        unimplemented!()
+        self.serialize_with_flags(writer, EmptyFlags)
     }
 
     #[inline]
     fn serialized_size(&self, _compress: Compress) -> usize {
-        unimplemented!()
+        self.serialized_size_with_flags::<EmptyFlags>()
     }
 }
 
 impl CanonicalSerializeWithFlags for Fp {
     fn serialize_with_flags<W: ark_std::io::Write, F: Flags>(
         &self,
-        _writer: W,
-        _flags: F,
+        mut writer: W,
+        flags: F,
     ) -> Result<(), SerializationError> {
-        unimplemented!()
+        // Arkworks imposes this constraint
+        if F::BIT_SIZE > 8 {
+            return Err(SerializationError::NotEnoughSpace);
+        }
+
+        // We can't just write the bytes out, because the last byte might be masked by flags.
+        let mut bytes = self.to_bytes_le();
+        // Either the flags fit into the last byte...
+        if bytes.len() == self.serialized_size_with_flags::<F>() {
+            // In which case we have to mask the last byte
+            bytes[bytes.len() - 1] |= flags.u8_bitmask();
+            writer.write_all(&bytes)?;
+        } else {
+            // Or else we create a new byte
+            writer.write_all(&bytes)?;
+            writer.write_all(&[flags.u8_bitmask()])?;
+        }
+        Ok(())
     }
 
     fn serialized_size_with_flags<F: Flags>(&self) -> usize {
-        unimplemented!()
+        (Self::MODULUS_BIT_SIZE as usize + F::BIT_SIZE + 7) / 8
     }
 }
 
@@ -618,6 +655,8 @@ impl core::fmt::Debug for Fp {
 #[cfg(test)]
 mod tests {
     use super::*;
+    extern crate alloc;
+    use alloc::vec::Vec;
     use proptest::prelude::*;
 
     prop_compose! {
@@ -785,6 +824,16 @@ mod tests {
         #[test]
         fn test_legendre_symbol(a in arb_nonzero_fp()) {
             assert_eq!((a * a).legendre(), ark_ff::LegendreSymbol::QuadraticResidue);
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn test_canonical_serialize_monomorphism(a in arb_fp()) {
+            let mut bytes: Vec<u8> = Vec::new();
+            let roundtrip = a.serialize_compressed(&mut bytes).and_then(|_| Fp::deserialize_compressed(&*bytes));
+            assert!(roundtrip.is_ok());
+            assert_eq!(roundtrip.unwrap(), a);
         }
     }
 
