@@ -74,6 +74,23 @@ impl Fp {
         Self(fiat::FpMontgomeryDomainFieldElement(limbs))
     }
 
+    pub const fn from_montgomery_limbs_64(limbs: [u64; N_64]) -> Fp {
+        Self(fiat::FpMontgomeryDomainFieldElement([
+            limbs[0] as u32,
+            (limbs[0] >> 32) as u32,
+            limbs[1] as u32,
+            (limbs[1] >> 32) as u32,
+            limbs[2] as u32,
+            (limbs[2] >> 32) as u32,
+            limbs[3] as u32,
+            (limbs[3] >> 32) as u32,
+            limbs[4] as u32,
+            (limbs[4] >> 32) as u32,
+            limbs[5] as u32,
+            (limbs[5] >> 32) as u32,
+        ]))
+    }
+
     pub const fn zero() -> Fp {
         Self(fiat::FpMontgomeryDomainFieldElement([0; N]))
     }
@@ -82,6 +99,20 @@ impl Fp {
         Self(fiat::FpMontgomeryDomainFieldElement([
             4294967144, 47054847, 2147483569, 1363189635, 2323464178, 2675815337, 1853645573,
             2068748215, 2151449832, 1291097535, 3808294042, 9266785,
+        ]))
+    }
+
+    pub const fn quadratic_non_residue() -> Fp {
+        Self(fiat::FpMontgomeryDomainFieldElement([
+            762, 4228612096, 3758096779, 2547227894, 3214954564, 544358927, 3648796674, 3418144080,
+            1477704171, 196026051, 3230948050, 10056866,
+        ]))
+    }
+
+    pub const fn minus_one() -> Self {
+        Self(fiat::FpMontgomeryDomainFieldElement([
+            153, 2184888320, 2952790095, 3318398400, 797706253, 2138418822, 2457383049, 2664710715,
+            3966026834, 2034659328, 885464144, 18928612,
         ]))
     }
 

@@ -74,6 +74,19 @@ impl Fq {
         Self(fiat::FqMontgomeryDomainFieldElement(limbs))
     }
 
+    pub const fn from_montgomery_limbs_64(limbs: [u64; N_64]) -> Fq {
+        Self(fiat::FqMontgomeryDomainFieldElement([
+            limbs[0] as u32,
+            (limbs[0] >> 32) as u32,
+            limbs[1] as u32,
+            (limbs[1] >> 32) as u32,
+            limbs[2] as u32,
+            (limbs[2] >> 32) as u32,
+            limbs[3] as u32,
+            (limbs[3] >> 32) as u32,
+        ]))
+    }
+
     pub const fn zero() -> Fq {
         Self(fiat::FqMontgomeryDomainFieldElement([0; N]))
     }
