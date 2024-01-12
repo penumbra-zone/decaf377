@@ -149,7 +149,7 @@ impl Fr {
             f = out2;
         }
 
-        let s = ((f[f.len() - 1] >> 32 - 1) & 1) as u8;
+        let s = ((f[f.len() - 1] >> (32 - 1)) & 1) as u8;
         let mut neg = fiat::FrMontgomeryDomainFieldElement([0; N]);
         fiat::fr_opp(&mut neg, &fiat::FrMontgomeryDomainFieldElement(v));
 

@@ -138,7 +138,7 @@ impl Fq {
             f = out2;
         }
 
-        let s = ((f[f.len() - 1] >> 32 - 1) & 1) as u8;
+        let s = ((f[f.len() - 1] >> (64 - 1)) & 1) as u8;
         let mut neg = fiat::FqMontgomeryDomainFieldElement([0; N]);
         fiat::fq_opp(&mut neg, &fiat::FqMontgomeryDomainFieldElement(v));
 
