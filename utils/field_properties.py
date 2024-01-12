@@ -1,5 +1,9 @@
 import sys
 
+GENERATORS = {
+    0x01ae3a4617c510eac63b05c06ca1493b1a22d9f300f5138f1ef3622fba094800170b5d44300000008508c00000000001: 15
+}
+
 
 class Properties:
     def __init__(self, p: int):
@@ -7,6 +11,12 @@ class Properties:
 
     def one(self):
         return 1
+
+    def modulus(self):
+        return self.p
+
+    def modulus_bit_size(self):
+        return self.p.bit_length()
 
     def two_adicity(self) -> int:
         """
@@ -52,6 +62,14 @@ class Properties:
 
     def modulus_minus_one_div_two(self):
         return ((self.p - 1) >> 1)
+
+    def generator(self):
+        if self.p in GENERATORS:
+            return GENERATORS[self.p]
+        raise ValueError(f"no known generator for {hex(self.p)}")
+
+    def two_adic_root_of_unity(self):
+        return self.mod_exp(self.generator(), self.trace())
 
 
 def to_le_limbs(x, size=64):
