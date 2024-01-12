@@ -33,7 +33,7 @@ hashbrown = "0.14.3"
 # a default feature of std - without the ark-std std feature, decaf377 doesn't
 # compile
 [features]
-default = ["std"]
+default = ["std", "u64"]
 std = ["ark-std/std", "tracing/std", "anyhow/std", "tracing-subscriber/std", "zeroize/std", "once_cell/std", "num-bigint/std", "hex/std" ]
 parallel = ["ark-ff/parallel", "ark-ec/parallel", "ark-groth16/parallel", "ark-std/parallel", "ark-r1cs-std/parallel"]
 r1cs = ["ark-r1cs-std", "ark-groth16", "ark-snark"]
