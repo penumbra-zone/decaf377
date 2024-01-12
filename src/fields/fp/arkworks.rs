@@ -118,7 +118,15 @@ impl Field for Fp {
     }
 
     fn legendre(&self) -> ark_ff::LegendreSymbol {
-        unimplemented!()
+        use ark_ff::LegendreSymbol::*;
+
+        if self.is_zero() {
+            return Zero;
+        }
+        if self.pow(&Self::MODULUS_MINUS_ONE_DIV_TWO.0).is_one() {
+            return QuadraticResidue;
+        }
+        return QuadraticNonResidue;
     }
 
     fn square(&self) -> Self {
@@ -776,6 +784,13 @@ mod tests {
             let way1 = a.to_bytes_le();
             let way2 = a.into_bigint().to_bytes_le();
             assert_eq!(way1.as_slice(), way2.as_slice());
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn test_legendre_symbol(a in arb_nonzero_fp()) {
+            assert_eq!((a * a).legendre(), ark_ff::LegendreSymbol::QuadraticResidue);
         }
     }
 
