@@ -23,6 +23,9 @@ class Properties:
     def modulus_minus_1(self):
         return self.p - 1
 
+    def modulus_minus_5(self):
+        return self.p - 5
+
     def modulus_bit_size(self):
         return self.p.bit_length()
 
@@ -103,19 +106,20 @@ def to_monty(x, size, p):
 
 def main(size: int, p: int, what_to_generate: str, mode):
     properties = Properties(p)
-    prop = getattr(properties, what_to_generate)
+    prop = eval(what_to_generate, {'properties': properties})
     expected_limb_count = (
         properties.modulus_minus_1().bit_length() + size - 1) // size
-    if callable(prop):
-        prop = prop()
-    if mode == "hex":
-        print(hex(prop))
-    elif mode == "monty":
-        print(to_le_limbs(to_monty(prop, size, p), size, expected_limb_count))
-    elif mode == "monty_hex":
-        print(hex(to_monty(prop, size, p)))
-    else:
-        print(to_le_limbs(prop, size, expected_limb_count))
+    if not isinstance(prop, list):
+        prop = [prop]
+    for x in prop:
+        if mode == "hex":
+            print(hex(x))
+        elif mode == "monty":
+            print(to_le_limbs(to_monty(x, size, p), size, expected_limb_count))
+        elif mode == "monty_hex":
+            print(hex(to_monty(x, size, p)))
+        else:
+            print(to_le_limbs(x, size, expected_limb_count))
 
 
 if __name__ == '__main__':
