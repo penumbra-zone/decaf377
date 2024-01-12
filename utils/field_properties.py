@@ -2,7 +2,8 @@ import sys
 
 GENERATORS = {
     0x01ae3a4617c510eac63b05c06ca1493b1a22d9f300f5138f1ef3622fba094800170b5d44300000008508c00000000001: 15,
-    0x12ab655e9a2ca55660b44d1e5c37b00159aa76fed00000010a11800000000001: 22
+    0x12ab655e9a2ca55660b44d1e5c37b00159aa76fed00000010a11800000000001: 22,
+    0x4aad957a68b2955982d1347970dec005293a3afc43c8afeb95aee9ac33fd9ff: 5
 }
 
 
@@ -24,6 +25,9 @@ class Properties:
 
     def modulus_bit_size(self):
         return self.p.bit_length()
+
+    def modulus_plus_1_div_4(self):
+        return (self.p + 1) // 4
 
     def two_adicity(self) -> int:
         """
