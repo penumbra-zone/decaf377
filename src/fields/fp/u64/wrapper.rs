@@ -33,7 +33,7 @@ impl Fp {
         Self(x)
     }
 
-    pub fn from_bytes(bytes: &[u8; N_8]) -> Fp {
+    pub fn from_raw_bytes(bytes: &[u8; N_8]) -> Fp {
         let mut x_non_montgomery = fiat::FpNonMontgomeryDomainFieldElement([0; N]);
         let mut x = fiat::FpMontgomeryDomainFieldElement([0; N]);
 

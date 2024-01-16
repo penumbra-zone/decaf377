@@ -41,7 +41,7 @@ impl Fq {
         Self(x)
     }
 
-    pub fn from_bytes(bytes: &[u8; N_8]) -> Fq {
+    pub fn from_raw_bytes(bytes: &[u8; N_8]) -> Fq {
         let mut x_non_montgomery = fiat::FqNonMontgomeryDomainFieldElement([0; N]);
         let mut x = fiat::FqMontgomeryDomainFieldElement([0; N]);
 
