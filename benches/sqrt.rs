@@ -1,4 +1,4 @@
-use ark_ed_on_bls12_377::Fq;
+use crate::Fq;
 use ark_ff::{Field, PrimeField, Zero};
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use decaf377::{SqrtRatioZeta, ZETA};

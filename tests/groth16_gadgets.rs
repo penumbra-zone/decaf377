@@ -104,7 +104,7 @@ proptest! {
         let scalar = scalar_arr;
         let public = Fr::from_le_bytes_mod_order(&scalar_arr[..]) * basepoint();
 
-        let wrong_public = Fr::from(666) * basepoint();
+        let wrong_public = Fr::from(666u64) * basepoint();
 
         // Prover POV
         let circuit = DiscreteLogCircuit { scalar, public };
@@ -153,7 +153,7 @@ impl ConstraintSynthesizer<Fq> for CompressionCircuit {
 impl CompressionCircuit {
     fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
         //let point = Fr::from(100) * decaf377::basepoint();
-        let point = Fr::from(2) * decaf377::basepoint();
+        let point = Fr::from(2u64) * decaf377::basepoint();
         //let point = Element::default();
         let field_element = point.vartime_compress_to_field();
         let circuit = CompressionCircuit {
@@ -263,7 +263,7 @@ impl ConstraintSynthesizer<Fq> for DecompressionCircuit {
 
 impl DecompressionCircuit {
     fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
-        let point = Fr::from(100) * decaf377::basepoint();
+        let point = Fr::from(100u64) * decaf377::basepoint();
         let field_element = point.vartime_compress_to_field();
         let circuit = DecompressionCircuit {
             point,
@@ -326,7 +326,7 @@ proptest! {
 
     // Verifier POV
     let processed_pvk = Groth16::<Bls12_377, LibsnarkReduction>::process_vk(&vk).expect("can process verifying key");
-    let public_inputs = (Fr::from(600) * decaf377::basepoint()).to_field_elements().unwrap();
+    let public_inputs = (Fr::from(600u64) * decaf377::basepoint()).to_field_elements().unwrap();
     let proof_result =
         Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
 
@@ -364,7 +364,7 @@ impl ConstraintSynthesizer<Fq> for ElligatorCircuit {
 
 impl ElligatorCircuit {
     fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
-        let field_element = Fq::from(100);
+        let field_element = Fq::from(100u64);
         let point = Element::encode_to_curve(&field_element);
         let circuit = ElligatorCircuit {
             point,
@@ -587,7 +587,7 @@ proptest! {
 #[test]
 fn groth16_add_addassign(a in element_strategy(), b in element_strategy()) {
     let test_a = decaf377::basepoint();
-    let test_b = decaf377::basepoint() * Fr::from(2);
+    let test_b = decaf377::basepoint() * Fr::from(2u64);
     let test_circuit = AddAssignAddCircuit {
         a: test_a,
         b: test_b,

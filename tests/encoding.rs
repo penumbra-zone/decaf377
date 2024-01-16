@@ -104,9 +104,8 @@ proptest! {
 
     #[test]
     fn scalar_encoding_round_trip_if_successful(bytes: [u8; 32]) {
-        if let Ok(x) = Fr::from_bytes(bytes) {
-            let bytes2 = x.to_bytes();
-            assert_eq!(bytes, bytes2);
-        }
+        let x = Fr::from_bytes(&bytes);
+        let bytes2 = x.to_bytes();
+        assert_eq!(bytes, bytes2);
     }
 }

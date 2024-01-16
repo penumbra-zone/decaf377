@@ -66,8 +66,7 @@ impl LazyElementVar {
 
 #[cfg(test)]
 mod tests {
-    use crate::{Element, Fq};
-    use ark_bls12_377::Bls12_377;
+    use crate::{Bls12_377, Element, Fq};
     use ark_groth16::{r1cs_to_qap::LibsnarkReduction, Groth16, ProvingKey, VerifyingKey};
     use ark_r1cs_std::prelude::AllocVar;
     use ark_relations::r1cs::ConstraintSynthesizer;
