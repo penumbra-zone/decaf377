@@ -59,7 +59,7 @@ impl PrimeField for Fr {
 
         let mut t = [0u8; 32];
         t.copy_from_slice(&bytes[..32]);
-        let modulus_field_montgomery = Fr::from_bytes(&t);
+        let modulus_field_montgomery = Fr::from_raw_bytes(&t);
 
         modulus_field_montgomery
     }
