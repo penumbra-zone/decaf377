@@ -4,15 +4,17 @@ mod inner;
 mod lazy;
 pub mod ops;
 
-pub use ark_ed_on_bls12_377::constraints::FqVar;
 use ark_ff::ToConstraintField;
 use ark_std::vec::Vec;
 pub use element::ElementVar;
 
 use crate::{Element, Fq};
+use ark_r1cs_std::fields::fp::FpVar;
 use ark_relations::r1cs::{
     ConstraintSynthesizer, ConstraintSystem, OptimizationGoal, SynthesisMode,
 };
+
+pub type FqVar = FpVar<Fq>;
 
 pub trait CountConstraints: ConstraintSynthesizer<Fq> + Sized {
     fn num_constraints_and_instance_variables(self) -> (usize, usize) {

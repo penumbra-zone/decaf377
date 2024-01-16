@@ -1,7 +1,7 @@
 use core::convert::TryInto;
 use hashbrown::HashMap;
 
-use ark_ed_on_bls12_377::Fq;
+use crate::Fq;
 use ark_ff::{BigInteger256, BigInteger64, Field, Zero};
 use ark_std::boxed::Box;
 use ark_std::vec::Vec;

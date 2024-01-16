@@ -1,4 +1,4 @@
-use ark_ed_on_bls12_377::Fq;
+use crate::Fq;
 
 pub trait Sign: core::ops::Neg<Output = Self> + Sized {
     fn is_nonnegative(&self) -> bool;

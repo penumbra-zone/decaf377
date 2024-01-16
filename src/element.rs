@@ -2,8 +2,6 @@ use ark_ec::{
     twisted_edwards::{Affine, MontCurveConfig, Projective, TECurveConfig},
     AffineRepr, CurveConfig, CurveGroup, Group, ScalarMul, VariableBaseMSM,
 };
-use ark_ed_on_bls12_377::EdwardsConfig;
-use ark_ff::MontFp;
 use ark_serialize::Valid;
 use ark_std::vec::Vec;
 
@@ -35,19 +33,29 @@ impl CurveConfig for Decaf377EdwardsConfig {
 
     const COFACTOR: &'static [u64] = &[1];
 
-    const COFACTOR_INV: Fr = MontFp!("1");
+    const COFACTOR_INV: Fr = Fr::one();
 }
 
 impl TECurveConfig for Decaf377EdwardsConfig {
     /// COEFF_A = -1
-    const COEFF_A: Fq = <EdwardsConfig as ark_ec::twisted_edwards::TECurveConfig>::COEFF_A;
+    const COEFF_A: Fq = Fq::from_montgomery_limbs_64([
+        10157024534604021774,
+        16668528035959406606,
+        5322190058819395602,
+        387181115924875961,
+    ]);
 
     /// COEFF_D = 3021
-    const COEFF_D: Fq = <EdwardsConfig as ark_ec::twisted_edwards::TECurveConfig>::COEFF_D;
+    const COEFF_D: Fq = Fq::from_montgomery_limbs_64([
+        15008245758212136496,
+        17341409599856531410,
+        648869460136961410,
+        719771289660577536,
+    ]);
 
     const GENERATOR: EdwardsAffine = EdwardsAffine::new_unchecked(GENERATOR_X, GENERATOR_Y);
 
-    type MontCurveConfig = EdwardsConfig;
+    type MontCurveConfig = Decaf377EdwardsConfig;
 
     /// Multiplication by `a` is just negation.
     #[inline(always)]
@@ -61,9 +69,19 @@ impl TECurveConfig for Decaf377EdwardsConfig {
 }
 
 impl MontCurveConfig for Decaf377EdwardsConfig {
-    const COEFF_A: Fq = <EdwardsConfig as ark_ec::twisted_edwards::MontCurveConfig>::COEFF_A;
+    const COEFF_A: Fq = Fq::from_montgomery_limbs_64([
+        13800168384327121454,
+        6841573379969807446,
+        12529593083398462246,
+        853978956621483129,
+    ]);
 
-    const COEFF_B: Fq = <EdwardsConfig as ark_ec::twisted_edwards::MontCurveConfig>::COEFF_B;
+    const COEFF_B: Fq = Fq::from_montgomery_limbs_64([
+        7239382437352637935,
+        14509846070439283655,
+        5083066350480839936,
+        1265663645916442191,
+    ]);
 
     type TECurveConfig = Decaf377EdwardsConfig;
 }
@@ -115,7 +133,7 @@ impl CurveGroup for Element {
     // trait used in the R1CS feature. The `ProjectiveCurve` trait requires
     // an affine representation of `Element` to be defined, and `AffineRepr`
     // to be implemented on that type.
-    type Config = EdwardsConfig;
+    type Config = Decaf377EdwardsConfig;
 
     type BaseField = Fq;
 
@@ -147,7 +165,7 @@ impl Valid for AffineElement {
 }
 
 impl AffineRepr for AffineElement {
-    type Config = EdwardsConfig;
+    type Config = Decaf377EdwardsConfig;
 
     type ScalarField = Fr;
 

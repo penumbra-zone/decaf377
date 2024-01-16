@@ -2,12 +2,11 @@
 use core::borrow::Borrow;
 
 use ark_ec::AffineRepr;
-use ark_ed_on_bls12_377::constraints::FqVar;
 use ark_r1cs_std::{alloc::AllocVar, eq::EqGadget, prelude::*, R1CSVar};
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 use ark_std::vec::Vec;
 
-use crate::r1cs::lazy::LazyElementVar;
+use crate::r1cs::{lazy::LazyElementVar, FqVar};
 use crate::{element::EdwardsAffine, r1cs::inner::ElementVar as InnerElementVar};
 use crate::{AffineElement, Element, Fq};
 

@@ -204,8 +204,8 @@ mod tests {
 
             let expected: Element = Element {
                 inner: EdwardsAffine::new(
-                    expected_xy_coordinates[ind][0],
-                    expected_xy_coordinates[ind][1],
+                    crate::constants::from_ark_fq(expected_xy_coordinates[ind][0]),
+                    crate::constants::from_ark_fq(expected_xy_coordinates[ind][1]),
                 )
                 .into(),
             };

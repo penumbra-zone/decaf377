@@ -29,8 +29,8 @@ pub use field_ext::FieldExt;
 #[cfg(feature = "r1cs")]
 pub mod r1cs;
 
-pub use ark_ed_on_bls12_377::{Fq, Fr};
 pub use bls12_377::Bls12_377;
+pub use fields::{fp::Fp, fq::Fq, fr::Fr};
 
 pub use invsqrt::SqrtRatioZeta;
 use on_curve::OnCurve;

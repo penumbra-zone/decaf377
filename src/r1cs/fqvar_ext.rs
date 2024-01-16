@@ -1,4 +1,3 @@
-use ark_ed_on_bls12_377::constraints::FqVar;
 use ark_ff::One;
 use ark_r1cs_std::eq::EqGadget;
 use ark_r1cs_std::prelude::{AllocVar, Boolean, FieldVar};
@@ -6,7 +5,7 @@ use ark_r1cs_std::select::CondSelectGadget;
 use ark_r1cs_std::{R1CSVar, ToBitsGadget};
 use ark_relations::r1cs::SynthesisError;
 
-use crate::{constants::ZETA, Fq, SqrtRatioZeta};
+use crate::{constants::ZETA, r1cs::FqVar, Fq, SqrtRatioZeta};
 
 pub trait FqVarExtension: Sized {
     fn isqrt(&self) -> Result<(Boolean<Fq>, FqVar), SynthesisError>;

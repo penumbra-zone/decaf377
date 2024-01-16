@@ -106,7 +106,7 @@ def to_monty(x, size, p):
 
 def main(size: int, p: int, what_to_generate: str, mode):
     properties = Properties(p)
-    prop = eval(what_to_generate, {'properties': properties})
+    prop = eval(what_to_generate, locals())
     expected_limb_count = (
         properties.modulus_minus_1().bit_length() + size - 1) // size
     if not isinstance(prop, list):

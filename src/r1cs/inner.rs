@@ -3,7 +3,6 @@ use core::borrow::Borrow;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 
 use ark_ec::{twisted_edwards::TECurveConfig, AffineRepr};
-use ark_ed_on_bls12_377::constraints::FqVar;
 use ark_r1cs_std::{
     alloc::AllocVar, eq::EqGadget, groups::curves::twisted_edwards::AffineVar, prelude::*, R1CSVar,
 };
@@ -13,7 +12,9 @@ use ark_std::vec::Vec;
 
 use crate::element::EdwardsAffine;
 use crate::Decaf377EdwardsConfig;
-use crate::{constants::ZETA, r1cs::fqvar_ext::FqVarExtension, AffineElement, Element, Fq};
+use crate::{
+    constants::ZETA, r1cs::fqvar_ext::FqVarExtension, r1cs::FqVar, AffineElement, Element, Fq,
+};
 
 pub(crate) type Decaf377EdwardsVar = AffineVar<Decaf377EdwardsConfig, FqVar>;
 
