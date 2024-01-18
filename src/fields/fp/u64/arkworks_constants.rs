@@ -18,6 +18,7 @@ pub const MODULUS_MINUS_ONE_DIV_TWO_LIMBS: [u64; 6] = [
     60549156353247349,
 ];
 
+// 377
 pub const MODULUS_BIT_SIZE: u32 = 0x179;
 
 pub const TRACE_LIMBS: [u64; 6] = [

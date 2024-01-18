@@ -570,25 +570,40 @@ impl CanonicalSerializeWithFlags for Fp {
 }
 
 impl ark_std::rand::distributions::Distribution<Fp> for ark_std::rand::distributions::Standard {
+    #[inline]
     fn sample<R: rand::prelude::Rng + ?Sized>(&self, rng: &mut R) -> Fp {
-        loop {
-            let mut repr: [u64; 6] = rng.sample(ark_std::rand::distributions::Standard);
-            let shave_bits = 64 * 6 - (MODULUS_BIT_SIZE as usize);
+        //unimplemented!("boom 1")
+        use ark_std::dbg;
+        let num_attempts = 5;
+        let mut i = 0;
+        let mut repr: [u64; 6];
+        let shave_bits = 64 * 6 - (MODULUS_BIT_SIZE as usize);
+
+        while i < num_attempts {
+            repr = rng.sample(ark_std::rand::distributions::Standard);
+            dbg!(shave_bits);
+            assert!(shave_bits <= 64);
             // Mask away the unused bits at the beginning.
             let mask = if shave_bits == 64 {
                 0
             } else {
                 u64::MAX >> shave_bits
             };
+            dbg!(mask);
+            dbg!(repr);
 
             if let Some(val) = repr.last_mut() {
                 *val &= mask
             }
+            dbg!(repr);
+            dbg!(Fp::from_bigint(BigInt(repr)));
 
             if let Some(small_enough) = Fp::from_bigint(BigInt(repr)) {
                 return small_enough;
             }
+            i += 1;
         }
+        unreachable!("didn't find Fp")
     }
 }
 
