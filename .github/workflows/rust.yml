@@ -21,6 +21,12 @@ jobs:
   test:
     name: Test Suite
     runs-on: ubuntu-latest
+    # We want to run the tests twice, once with the
+    # default backend (u64) and one with the u32_backend,
+    # in both cases with the r1cs feature enabled.
+    strategy:
+      matrix:
+        backend: ["r1cs", "r1cs,u32_backend"]
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -32,7 +38,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --features r1cs
+          args: --features ${{ matrix.backend }}
 
   fmt:
     name: Rustfmt
