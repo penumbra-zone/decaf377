@@ -64,47 +64,78 @@ impl LazyElementVar {
     }
 }
 
+use crate::{Bls12_377, Element, Fq};
+use ark_groth16::{r1cs_to_qap::LibsnarkReduction, Groth16, ProvingKey, VerifyingKey};
+use ark_r1cs_std::prelude::AllocVar;
+use ark_relations::r1cs::ConstraintSynthesizer;
+use ark_snark::SNARK;
+use rand_core::OsRng;
+
+#[derive(Clone)]
+pub struct TestCircuit {
+    // Witness
+    encoding: Fq,
+}
+
+impl ConstraintSynthesizer<Fq> for TestCircuit {
+    fn generate_constraints(
+        self,
+        cs: ark_relations::r1cs::ConstraintSystemRef<Fq>,
+    ) -> ark_relations::r1cs::Result<()> {
+        let encoding_var = FqVar::new_witness(cs, || Ok(self.encoding))?;
+        let lazy_var = LazyElementVar::new_from_encoding(encoding_var);
+        let _element_var = lazy_var.element()?;
+        Ok(())
+    }
+}
+
+impl TestCircuit {
+    pub fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
+        let element = Element::default();
+        let encoding = element.vartime_compress_to_field();
+        let circuit = TestCircuit { encoding };
+        let (pk, vk) =
+            Groth16::<Bls12_377, LibsnarkReduction>::circuit_specific_setup(circuit, &mut OsRng)
+                .expect("can perform circuit specific setup");
+        (pk, vk)
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::{Bls12_377, Element, Fq};
-    use ark_groth16::{r1cs_to_qap::LibsnarkReduction, Groth16, ProvingKey, VerifyingKey};
-    use ark_r1cs_std::prelude::AllocVar;
-    use ark_relations::r1cs::ConstraintSynthesizer;
-    use ark_snark::SNARK;
-    use rand_core::OsRng;
 
     use super::*;
 
-    #[derive(Clone)]
-    struct TestCircuit {
-        // Witness
-        encoding: Fq,
-    }
+    // #[derive(Clone)]
+    // struct TestCircuit {
+    //     // Witness
+    //     encoding: Fq,
+    // }
 
-    impl ConstraintSynthesizer<Fq> for TestCircuit {
-        fn generate_constraints(
-            self,
-            cs: ark_relations::r1cs::ConstraintSystemRef<Fq>,
-        ) -> ark_relations::r1cs::Result<()> {
-            let encoding_var = FqVar::new_witness(cs, || Ok(self.encoding))?;
-            let lazy_var = LazyElementVar::new_from_encoding(encoding_var);
-            let _element_var = lazy_var.element()?;
-            Ok(())
-        }
-    }
+    // impl ConstraintSynthesizer<Fq> for TestCircuit {
+    //     fn generate_constraints(
+    //         self,
+    //         cs: ark_relations::r1cs::ConstraintSystemRef<Fq>,
+    //     ) -> ark_relations::r1cs::Result<()> {
+    //         let encoding_var = FqVar::new_witness(cs, || Ok(self.encoding))?;
+    //         let lazy_var = LazyElementVar::new_from_encoding(encoding_var);
+    //         let _element_var = lazy_var.element()?;
+    //         Ok(())
+    //     }
+    // }
 
-    impl TestCircuit {
-        fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
-            let element = Element::default();
-            let encoding = element.vartime_compress_to_field();
-            let circuit = TestCircuit { encoding };
-            let (pk, vk) = Groth16::<Bls12_377, LibsnarkReduction>::circuit_specific_setup(
-                circuit, &mut OsRng,
-            )
-            .expect("can perform circuit specific setup");
-            (pk, vk)
-        }
-    }
+    // impl TestCircuit {
+    //     fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
+    //         let element = Element::default();
+    //         let encoding = element.vartime_compress_to_field();
+    //         let circuit = TestCircuit { encoding };
+    //         let (pk, vk) = Groth16::<Bls12_377, LibsnarkReduction>::circuit_specific_setup(
+    //             circuit, &mut OsRng,
+    //         )
+    //         .expect("can perform circuit specific setup");
+    //         (pk, vk)
+    //     }
+    // }
 
     #[test]
     fn lazy_element_var_evaluation() {

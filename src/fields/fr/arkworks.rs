@@ -603,6 +603,7 @@ impl ark_std::rand::distributions::Distribution<Fr> for ark_std::rand::distribut
             //dbg!(BigInt(repr) <= BigInt::from_bigint(MODULUS_LIMBS));
 
             if let Some(small_enough) = Fr::from_bigint(BigInt(repr)) {
+                dbg!("found one");
                 return small_enough;
             }
             i += 1;

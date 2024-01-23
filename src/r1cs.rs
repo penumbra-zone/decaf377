@@ -7,6 +7,7 @@ pub mod ops;
 use ark_ff::ToConstraintField;
 use ark_std::vec::Vec;
 pub use element::ElementVar;
+pub use lazy::TestCircuit;
 
 use crate::{Element, Fq};
 use ark_r1cs_std::fields::fp::FpVar;

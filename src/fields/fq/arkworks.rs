@@ -606,6 +606,7 @@ impl ark_std::rand::distributions::Distribution<Fq> for ark_std::rand::distribut
 
             dbg!(Fq::from_bigint(BigInt(repr)));
             if let Some(small_enough) = Fq::from_bigint(BigInt(repr)) {
+                dbg!("found one");
                 return small_enough;
             }
             i += 1;

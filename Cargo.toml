@@ -28,6 +28,7 @@ ark-snark = { version = "0.4", optional=true }
 cfg-if = "1.0"
 zeroize = {version ="1.7", default-features=false}
 hashbrown = "0.14.3"
+rand_core = { version = "0.6.3", features = ["getrandom"] }
 
 # This matches what ark-std (a library for no_std compatibility) does, having
 # a default feature of std - without the ark-std std feature, decaf377 doesn't
@@ -44,7 +45,6 @@ u32_backend = []
 [dev-dependencies]
 proptest = "1"
 criterion = { version = "0.3", features=["html_reports"] }
-rand_core = { version = "0.6.3", features = ["getrandom"] }
 rand_chacha = "0.3"
 
 [[test]]
