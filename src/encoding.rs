@@ -3,7 +3,6 @@
 use core::convert::{TryFrom, TryInto};
 
 use ark_ec::twisted_edwards::TECurveConfig;
-use ark_ff::{Field, One};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize, Read, Write};
 
 use crate::{

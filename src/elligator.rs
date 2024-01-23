@@ -1,6 +1,5 @@
 #![allow(non_snake_case)]
 use ark_ec::twisted_edwards::TECurveConfig;
-use ark_ff::Field;
 
 use crate::element::{Decaf377EdwardsConfig, EdwardsProjective};
 

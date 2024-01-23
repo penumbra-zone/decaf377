@@ -1,4 +1,3 @@
-use ark_ff::One;
 use ark_r1cs_std::eq::EqGadget;
 use ark_r1cs_std::prelude::{AllocVar, Boolean, FieldVar};
 use ark_r1cs_std::select::CondSelectGadget;
