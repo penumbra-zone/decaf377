@@ -156,6 +156,10 @@ impl Field for Fp {
         // Because this is a prime field, we don't need to do anything,
         // the automorphism is trivial.
     }
+
+    fn characteristic() -> &'static [u64] {
+        &MODULUS_LIMBS
+    }
 }
 
 impl FftField for Fp {
