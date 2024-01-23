@@ -112,7 +112,7 @@ impl Field for Fr {
     }
 
     fn neg_in_place(&mut self) -> &mut Self {
-        *self = self.add(self);
+        *self = Self::ZERO.sub(self);
         self
     }
 

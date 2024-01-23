@@ -1,7 +1,7 @@
 use once_cell::sync::Lazy;
 
 use crate::{Fq, Fr};
-use ark_ff::{self, BigInteger256, Field, One};
+use ark_ff::{self, BigInteger256, Field};
 
 use ark_ed_on_bls12_377::{Fq as ArkFq, Fr as ArkFr};
 
