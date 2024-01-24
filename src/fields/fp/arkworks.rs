@@ -7,12 +7,9 @@ use ark_serialize::{
 };
 use ark_std::{rand, str::FromStr, string::ToString, One, Zero};
 use core::convert::TryInto;
-use core::hash::Hash;
 use core::{
-    cmp::Ordering,
     fmt::{Display, Formatter},
     iter,
-    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 
 impl PrimeField for Fp {
@@ -171,266 +168,6 @@ impl FftField for Fp {
     const LARGE_SUBGROUP_ROOT_OF_UNITY: Option<Self> = None;
 }
 
-impl From<u128> for Fp {
-    fn from(other: u128) -> Self {
-        let mut result = BigInt::default();
-        result.0[0] = ((other << 64) >> 64) as u64;
-        result.0[1] = (other >> 64) as u64;
-        Self::from_bigint(result).unwrap()
-    }
-}
-
-impl From<u64> for Fp {
-    fn from(other: u64) -> Self {
-        Self::from_bigint(BigInt::from(other)).unwrap()
-    }
-}
-
-impl From<u32> for Fp {
-    fn from(other: u32) -> Self {
-        Self::from_bigint(BigInt::from(other)).unwrap()
-    }
-}
-
-impl From<u16> for Fp {
-    fn from(other: u16) -> Self {
-        Self::from_bigint(BigInt::from(other)).unwrap()
-    }
-}
-
-impl From<u8> for Fp {
-    fn from(other: u8) -> Self {
-        Self::from_bigint(BigInt::from(other)).unwrap()
-    }
-}
-
-impl From<bool> for Fp {
-    fn from(other: bool) -> Self {
-        Self::from_bigint(BigInt::from(u64::from(other))).unwrap()
-    }
-}
-
-impl Neg for Fp {
-    type Output = Self;
-
-    #[inline]
-    #[must_use]
-    fn neg(self) -> Self {
-        let neg = self.neg();
-        neg
-    }
-}
-
-impl<'a> AddAssign<&'a Self> for Fp {
-    #[inline]
-    fn add_assign(&mut self, other: &Self) {
-        *self = self.add(other);
-    }
-}
-
-#[allow(unused_qualifications)]
-impl core::ops::AddAssign<Self> for Fp {
-    #[inline(always)]
-    fn add_assign(&mut self, other: Self) {
-        *self = self.add(&other);
-    }
-}
-
-#[allow(unused_qualifications)]
-impl<'a> core::ops::AddAssign<&'a mut Self> for Fp {
-    #[inline(always)]
-    fn add_assign(&mut self, other: &'a mut Self) {
-        *self = self.add(other);
-    }
-}
-
-#[allow(unused_qualifications)]
-impl core::ops::Add<Self> for Fp {
-    type Output = Self;
-
-    #[inline]
-    fn add(self, other: Self) -> Self {
-        self.add(&other)
-    }
-}
-
-impl<'a> Add<&'a Fp> for Fp {
-    type Output = Self;
-
-    #[inline]
-    fn add(self, other: &Self) -> Self {
-        self.add(other)
-    }
-}
-
-#[allow(unused_qualifications)]
-impl<'a> core::ops::Add<&'a mut Self> for Fp {
-    type Output = Self;
-
-    #[inline]
-    fn add(self, other: &'a mut Self) -> Self {
-        self.add(other)
-    }
-}
-
-impl<'a> SubAssign<&'a Self> for Fp {
-    #[inline]
-    fn sub_assign(&mut self, other: &Self) {
-        *self = self.sub(other);
-    }
-}
-
-#[allow(unused_qualifications)]
-impl core::ops::SubAssign<Self> for Fp {
-    #[inline(always)]
-    fn sub_assign(&mut self, other: Self) {
-        *self = self.sub(&other);
-    }
-}
-
-#[allow(unused_qualifications)]
-impl<'a> core::ops::SubAssign<&'a mut Self> for Fp {
-    #[inline(always)]
-    fn sub_assign(&mut self, other: &'a mut Self) {
-        *self = self.sub(other);
-    }
-}
-
-#[allow(unused_qualifications)]
-impl core::ops::Sub<Self> for Fp {
-    type Output = Self;
-
-    #[inline]
-    fn sub(self, other: Self) -> Self {
-        self.sub(&other)
-    }
-}
-
-impl<'a> Sub<&'a Fp> for Fp {
-    type Output = Self;
-
-    #[inline]
-    fn sub(self, other: &Self) -> Self {
-        self.sub(other)
-    }
-}
-
-#[allow(unused_qualifications)]
-impl<'a> core::ops::Sub<&'a mut Self> for Fp {
-    type Output = Self;
-
-    #[inline]
-    fn sub(self, other: &'a mut Self) -> Self {
-        self.sub(other)
-    }
-}
-
-impl<'a> MulAssign<&'a Self> for Fp {
-    fn mul_assign(&mut self, other: &Self) {
-        *self = self.mul(other);
-    }
-}
-
-#[allow(unused_qualifications)]
-impl core::ops::MulAssign<Self> for Fp {
-    #[inline(always)]
-    fn mul_assign(&mut self, other: Self) {
-        *self = self.mul(&other);
-    }
-}
-
-#[allow(unused_qualifications)]
-impl<'a> core::ops::MulAssign<&'a mut Self> for Fp {
-    #[inline(always)]
-    fn mul_assign(&mut self, other: &'a mut Self) {
-        *self = self.mul(other);
-    }
-}
-
-#[allow(unused_qualifications)]
-impl core::ops::Mul<Self> for Fp {
-    type Output = Self;
-
-    #[inline(always)]
-    fn mul(self, other: Self) -> Self {
-        self.mul(&other)
-    }
-}
-
-impl<'a> Mul<&'a Fp> for Fp {
-    type Output = Self;
-
-    #[inline]
-    fn mul(self, other: &Self) -> Self {
-        self.mul(other)
-    }
-}
-
-#[allow(unused_qualifications)]
-impl<'a> core::ops::Mul<&'a mut Self> for Fp {
-    type Output = Self;
-
-    #[inline(always)]
-    fn mul(self, other: &'a mut Self) -> Self {
-        self.mul(other)
-    }
-}
-
-impl<'a> DivAssign<&'a Self> for Fp {
-    #[inline(always)]
-    fn div_assign(&mut self, other: &Self) {
-        self.mul_assign(&other.inverse().unwrap());
-    }
-}
-
-#[allow(unused_qualifications)]
-impl core::ops::DivAssign<Self> for Fp {
-    #[inline(always)]
-    fn div_assign(&mut self, other: Self) {
-        self.div_assign(&other)
-    }
-}
-
-#[allow(unused_qualifications)]
-impl<'a> core::ops::DivAssign<&'a mut Self> for Fp {
-    #[inline(always)]
-    fn div_assign(&mut self, other: &'a mut Self) {
-        self.div_assign(&*other)
-    }
-}
-
-#[allow(unused_qualifications)]
-impl core::ops::Div<Self> for Fp {
-    type Output = Self;
-
-    #[inline(always)]
-    fn div(mut self, other: Self) -> Self {
-        self.div_assign(&other);
-        self
-    }
-}
-
-impl<'a> Div<&'a Fp> for Fp {
-    type Output = Self;
-
-    #[inline]
-    fn div(mut self, other: &Self) -> Self {
-        self.mul_assign(&other.inverse().unwrap());
-        self
-    }
-}
-
-#[allow(unused_qualifications)]
-impl<'a> core::ops::Div<&'a mut Self> for Fp {
-    type Output = Self;
-
-    #[inline(always)]
-    fn div(mut self, other: &'a mut Self) -> Self {
-        self.div_assign(&*other);
-        self
-    }
-}
-
 impl Zero for Fp {
     #[inline]
     fn zero() -> Self {
@@ -443,20 +180,6 @@ impl Zero for Fp {
     }
 }
 
-#[allow(unused_qualifications)]
-impl core::iter::Sum<Self> for Fp {
-    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
-        iter.fold(Self::zero(), core::ops::Add::add)
-    }
-}
-
-#[allow(unused_qualifications)]
-impl<'a> core::iter::Sum<&'a Self> for Fp {
-    fn sum<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
-        iter.fold(Self::zero(), core::ops::Add::add)
-    }
-}
-
 impl One for Fp {
     #[inline]
     fn one() -> Self {
@@ -466,20 +189,6 @@ impl One for Fp {
     #[inline]
     fn is_one(&self) -> bool {
         *self == Fp::ONE
-    }
-}
-
-#[allow(unused_qualifications)]
-impl core::iter::Product<Self> for Fp {
-    fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
-        iter.fold(Self::one(), core::ops::Mul::mul)
-    }
-}
-
-#[allow(unused_qualifications)]
-impl<'a> core::iter::Product<&'a Self> for Fp {
-    fn product<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
-        iter.fold(Self::one(), Mul::mul)
     }
 }
 
@@ -596,27 +305,6 @@ impl ark_std::rand::distributions::Distribution<Fp> for ark_std::rand::distribut
     }
 }
 
-impl Display for Fp {
-    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        let string = self.into_bigint().to_string();
-        write!(f, "{}", string.trim_start_matches('0'))
-    }
-}
-
-impl Ord for Fp {
-    #[inline(always)]
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.into_bigint().cmp(&other.into_bigint())
-    }
-}
-
-impl PartialOrd for Fp {
-    #[inline(always)]
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
 impl FromStr for Fp {
     type Err = ();
 
@@ -654,22 +342,10 @@ impl From<BigInt<6>> for Fp {
     }
 }
 
-impl Hash for Fp {
-    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
-        state.write(&self.to_bytes_le())
-    }
-}
-
-impl Default for Fp {
-    fn default() -> Self {
-        Fp::zero()
-    }
-}
-
-impl core::fmt::Debug for Fp {
-    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-        let bytes = self.into_bigint().to_bytes_be();
-        write!(f, "Fp(0x{})", hex::encode(bytes))
+impl Display for Fp {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        let string = self.into_bigint().to_string();
+        write!(f, "{}", string.trim_start_matches('0'))
     }
 }
 

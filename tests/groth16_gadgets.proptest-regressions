@@ -1,0 +1,15 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 0d1749c1d1d2d2f48f58224507b8488724a6d2a4221bb033c05be73e3c4c1aa9 # shrinks to point = decaf377::Element(90eef1c86804abe807f403a01d585ca5006209de9f2af67cc5110214e00d940b)
+cc f5b5717ac6914646ebbd9597ae1735b2009631862b4a36a9b7c2f042df4c4b6a # shrinks to scalar = Fr(0x0414150b46ba2d4ca3301996c4479d0c01f51553af7cfe842a1b6fae86bb2686)
+cc 9eff8f94eebba5f63f45a7e5210081667dc1428c2ee40e5bc64d0aa342f9ff95 # shrinks to field_element = Fq(0x0c3c7e9ddbc9e53555bf44fa562a13592143a58b522d193767a77c2bd0d78db7)
+cc 54a0f66b55d1e810a5ea93e33b34c291574c94acb041a3c4d0ceb7778c3456db # shrinks to scalar_arr = [0, 0, 2, 179, 60, 20, 18, 175, 106, 150, 0, 234, 248, 82, 59, 138, 131, 219, 133, 253, 210, 6, 213, 239, 62, 54, 159, 113, 68, 188, 132, 61]
+cc cfdba4531a10e1fe312cc0d181a6e109e5cdbba7514035b64df13497939c5b5e # shrinks to field_element = Fq(0x1239a3f5e4408aa3333335ca45d4e48c77d0f10dd7970158b57683fffffffffd)
+cc 75fb114d2058a48a2bf6a719de38731fb8ee95dc113bc165c27d050f64d9aa5d # shrinks to point = decaf377::Element(c08502ce2d0d3ba9af2003bc44612f30befc606ff2a01a1cc9cff2ab85a60804)
+cc 44fa28495af83bd5f4a81e56cd44196d82aae58631daed033eef4b0615ccf52c # shrinks to scalar = Fr(0x00d191901856178f721cd978fb028499749dbd0aa97914e177e6fa895282140e)
+cc 95f7e2877390edbae420bb2f47ae30939d201597c9b67c8ac40db4f570688424 # shrinks to scalar = Fr(0x01f2b4865a52871f51a9716ab56d4365af8fc7f4fdc9b2203c75f8013446622b)
+cc a0a9271c37b0816ea8a7645b4f4e2e9e80a721b5c367b6841c92475d83a08cd6 # shrinks to a = decaf377::Element(34309d36c7c7d0bfcaeafd6d9057244cb51cce27ce11d2fec823bbcadd2a290d), b = decaf377::Element(262c24f6875ff501b5d69b66a29f09b131f524213a6b03ebd29fede38f72ea06)
