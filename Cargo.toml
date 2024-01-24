@@ -9,36 +9,40 @@ license = "MIT OR Apache-2.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-hex = {version ="=0.4.2", default-features=false}
-num-bigint = {version= "0.4.4", default-features=false}
-once_cell = {version= "1.8", default-features=false}
-tracing = {version = "0.1", default-features=false}
-tracing-subscriber = {version = "0.3", default-features=false }
-anyhow = {version ="1.0", default-features=false}
-ark-relations = "0.4"
-ark-r1cs-std = { version = "0.4", optional=true, default-features=false }
-ark-std = { version = "0.4", default-features=false }
-ark-ec = { version = "0.4", default-features=false }
-ark-ff =  { version = "0.4", default-features=false }
-ark-serialize = "0.4"
-ark-bls12-377 = "0.4"
-ark-ed-on-bls12-377 = { version = "0.4", features = ["r1cs"] }
-ark-groth16 = { version = "0.4", default-features=false, optional=true }
-ark-snark = { version = "0.4", optional=true }
+# no-alloc, no-std
 cfg-if = "1.0"
-zeroize = {version ="1.7", default-features=false}
+hex = { version ="=0.4.2", default-features = false } 
+once_cell = { version= "1.8", default-features = false }
+tracing-subscriber = { version = "0.3", default-features = false }
+zeroize = { version = "1.7", default-features = false }
+# no-std
+anyhow = { version = "1.0", default-features = false }
+num-bigint = { version= "0.4.4", optional = true, default-features = false }
 hashbrown = "0.14.3"
+tracing = { version = "0.1", default-features = false }
+# std
+ark-relations = { version = "0.4", optional = true }
+ark-r1cs-std = { version = "0.4", optional = true }
+ark-std = { version = "0.4", optional = true }
+ark-ec = { version = "0.4", optional = true }
+ark-ff =  { version = "0.4", optional = true }
+ark-serialize = { version = "0.4", optional = true }
+ark-bls12-377 = { version = "0.4", optional = true }
+ark-ed-on-bls12-377 = { version = "0.4", optional = true }
+ark-groth16 = { version = "0.4", optional = true }
+ark-snark = { version = "0.4", optional = true }
 
 # This matches what ark-std (a library for no_std compatibility) does, having
 # a default feature of std - without the ark-std std feature, decaf377 doesn't
 # compile
 [features]
-default = ["std"]
-std = ["ark-std/std", "tracing/std", "anyhow/std", "tracing-subscriber/std", "zeroize/std", "once_cell/std", "num-bigint/std", "hex/std" ]
+default = ["arkworks"]
+alloc = ["once_cell/alloc", "tracing-subscriber/alloc", "zeroize/alloc"]
+std = ["alloc", "tracing/std", "anyhow/std", "tracing-subscriber/std", "zeroize/std", "once_cell/std", "num-bigint/std", "hex/std"]
 parallel = ["ark-ff/parallel", "ark-ec/parallel", "ark-groth16/parallel", "ark-std/parallel", "ark-r1cs-std/parallel"]
-r1cs = ["ark-r1cs-std", "ark-groth16", "ark-snark"]
 # TODO: eventually, feature-gate all arkworks deps behind this feature.
-arkworks = []
+arkworks = ["std", "ark-std", "ark-ec", "ark-ff", "ark-serialize", "ark-bls12-377", "ark-ed-on-bls12-377"]
+r1cs = ["ark-groth16", "ark-r1cs-std", "ark-relations", "ark-snark"]
 u32_backend = []
 
 [dev-dependencies]
