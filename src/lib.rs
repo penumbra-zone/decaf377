@@ -5,6 +5,7 @@
 use cfg_if::cfg_if;
 
 pub mod fields;
+pub use fields::{fp::Fp, fq::Fq, fr::Fr};
 
 cfg_if! {
     if #[cfg(feature = "arkworks")] {
@@ -33,7 +34,6 @@ cfg_if! {
         pub mod r1cs;
 
         pub use bls12_377::Bls12_377;
-        pub use fields::{fp::Fp, fq::Fq, fr::Fr};
 
         pub use invsqrt::SqrtRatioZeta;
         use on_curve::OnCurve;

@@ -66,3 +66,4 @@ required-features = ["arkworks"]
 [[bench]]
 name = "sqrt"
 harness = false
+required-features = ["arkworks"]
