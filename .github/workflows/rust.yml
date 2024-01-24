@@ -71,12 +71,12 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: check
-          args: --no-default-features --features r1cs
+          args: --no-default-features
       - uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --no-default-features --features r1cs
+          args: --no-default-features
       - uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --no-default-features --features r1cs
+          args: --no-default-features
