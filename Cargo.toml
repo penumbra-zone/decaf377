@@ -52,8 +52,16 @@ rand_core = { version = "0.6.3", features = ["getrandom"] }
 rand_chacha = "0.3"
 
 [[test]]
+name = "encoding"
+required-features = ["arkworks"]
+
+[[test]]
 name = "groth16_gadgets"
 required-features = ["r1cs"]
+
+[[test]]
+name = "operations"
+required-features = ["arkworks"]
 
 [[bench]]
 name = "sqrt"
