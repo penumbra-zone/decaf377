@@ -1,4 +1,4 @@
-use core::ops::{Add, Mul};
+use core::ops::{Add, Mul, Neg};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
 
 use crate::{Fq, Fr};
@@ -199,6 +199,16 @@ impl Mul<Fr> for Element {
     }
 }
 
+impl Neg for Element {
+    type Output = Self;
+
+    fn neg(mut self) -> Self::Output {
+        self.x = -self.x;
+        self.t = -self.t;
+        self
+    }
+}
+
 impl PartialEq for Element {
     fn eq(&self, other: &Self) -> bool {
         // This check is equivalent to checking that the ratio of each affine point matches.
@@ -234,6 +244,19 @@ mod test {
     #[test]
     fn test_g_times_zero() {
         assert_eq!(Element::GENERATOR * Fr::zero(), Element::IDENTITY);
+    }
+
+    #[test]
+    fn test_g_times_minus_one() {
+        assert_eq!(Element::GENERATOR * (-Fr::one()), -Element::GENERATOR);
+    }
+
+    #[test]
+    fn test_g_plus_minus_g() {
+        assert_eq!(
+            Element::GENERATOR + (-Element::GENERATOR),
+            Element::IDENTITY
+        );
     }
 }
 
