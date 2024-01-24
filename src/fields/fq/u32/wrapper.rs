@@ -1,3 +1,5 @@
+use subtle::ConditionallySelectable;
+
 use super::fiat;
 
 const B: usize = 253;
@@ -204,5 +206,15 @@ impl Fq {
         let mut result = fiat::FqMontgomeryDomainFieldElement([0; N]);
         fiat::fq_opp(&mut result, &self.0);
         Fq(result)
+    }
+}
+
+impl ConditionallySelectable for Fq {
+    fn conditional_select(a: &Self, b: &Self, choice: subtle::Choice) -> Self {
+        let mut out = [0u32; 8];
+        for i in 0..8 {
+            out[i] = u32::conditional_select(&a.0 .0[i], &b.0 .0[i], choice);
+        }
+        Self(fiat::FqMontgomeryDomainFieldElement(out))
     }
 }

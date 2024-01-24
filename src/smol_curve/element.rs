@@ -1,6 +1,7 @@
-use core::ops::Add;
+use core::ops::{Add, Mul};
+use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
 
-use crate::Fq;
+use crate::{Fq, Fr};
 
 /// COEFF_A = -1
 const COEFF_A: Fq = Fq::from_montgomery_limbs_64([
@@ -59,6 +60,17 @@ pub struct Element {
     t: Fq,
 }
 
+impl ConditionallySelectable for Element {
+    fn conditional_select(a: &Self, b: &Self, choice: subtle::Choice) -> Self {
+        Self {
+            x: Fq::conditional_select(&a.x, &b.x, choice),
+            y: Fq::conditional_select(&a.y, &b.y, choice),
+            z: Fq::conditional_select(&a.z, &b.z, choice),
+            t: Fq::conditional_select(&a.t, &b.t, choice),
+        }
+    }
+}
+
 impl Element {
     /// The identity element for the group structure.
     pub const IDENTITY: Self = Self {
@@ -114,6 +126,31 @@ impl Element {
             t: t3,
         }
     }
+
+    fn scalar_mul_both<const CT: bool>(self, le_bits: &[u64]) -> Self {
+        let mut acc = Self::IDENTITY;
+        let mut insert = self;
+        for limb in le_bits {
+            for i in 0..64 {
+                let flag = ((limb >> i) & 1) as u8;
+                if CT {
+                    acc = Self::conditional_select(&acc, &(acc + insert), Choice::from(flag))
+                } else if flag == 1 {
+                    acc = acc + insert;
+                }
+                insert = insert.double();
+            }
+        }
+        acc
+    }
+
+    pub fn scalar_mul_vartime(self, le_bits: &[u64]) -> Self {
+        Self::scalar_mul_both::<false>(self, le_bits)
+    }
+
+    pub fn scalar_mul(self, le_bits: &[u64]) -> Self {
+        Self::scalar_mul_both::<true>(self, le_bits)
+    }
 }
 
 impl Add for Element {
@@ -154,6 +191,14 @@ impl Add for Element {
     }
 }
 
+impl Mul<Fr> for Element {
+    type Output = Self;
+
+    fn mul(self, rhs: Fr) -> Self::Output {
+        Self::scalar_mul_vartime(self, &rhs.to_le_limbs())
+    }
+}
+
 impl PartialEq for Element {
     fn eq(&self, other: &Self) -> bool {
         // This check is equivalent to checking that the ratio of each affine point matches.
@@ -179,5 +224,51 @@ mod test {
             Element::GENERATOR + Element::GENERATOR,
             Element::GENERATOR.double()
         );
+    }
+
+    #[test]
+    fn test_g_times_one() {
+        assert_eq!(Element::GENERATOR * Fr::one(), Element::GENERATOR);
+    }
+
+    #[test]
+    fn test_g_times_zero() {
+        assert_eq!(Element::GENERATOR * Fr::zero(), Element::IDENTITY);
+    }
+}
+
+#[cfg(all(test, feature = "arkworks"))]
+mod proptests {
+    use super::*;
+    use ark_ff::{BigInt, PrimeField};
+    use proptest::prelude::*;
+
+    prop_compose! {
+        // Technically this might overflow, but we won't miss any values,
+        // just return 0 if you overflow when consuming.
+        fn arb_fr_limbs()(
+            z0 in 0..u64::MAX,
+            z1 in 0..u64::MAX,
+            z2 in 0..u64::MAX,
+            z3 in 0..336320092672043349u64
+        ) -> [u64; 4] {
+            [z0, z1, z2, z3]
+        }
+    }
+
+    prop_compose! {
+        fn arb_fr()(a in arb_fr_limbs()) -> Fr {
+            // Will be fine because of the bounds in the arb_fr_limbs
+            Fr::from_bigint(BigInt(a)).unwrap_or(Fr::zero())
+        }
+    }
+
+    proptest! {
+        fn test_is_fq_module(a in arb_fr(), b in arb_fr()) {
+            const G: Element = Element::GENERATOR;
+
+            assert_eq!(G * (a + b), G * a + G * b);
+            assert_eq!(G * (a * b), (G * a) * b);
+        }
     }
 }
