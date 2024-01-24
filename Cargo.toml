@@ -13,6 +13,7 @@ license = "MIT OR Apache-2.0"
 cfg-if = "1.0"
 hex = { version ="=0.4.2", default-features = false } 
 once_cell = { version= "1.8", default-features = false }
+subtle = "2.5"
 tracing-subscriber = { version = "0.3", default-features = false }
 zeroize = { version = "1.7", default-features = false }
 # no-std
