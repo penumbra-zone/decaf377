@@ -3,6 +3,7 @@
 
 use cfg_if::cfg_if;
 
+#[cfg(feature = "arkworks")]
 pub mod arkworks;
 pub mod u32;
 pub mod u64;
