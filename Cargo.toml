@@ -11,8 +11,7 @@ license = "MIT OR Apache-2.0"
 [dependencies]
 # no-alloc, no-std
 cfg-if = "1.0"
-hex = { version ="=0.4.2", default-features = false } 
-once_cell = { version= "1.8", default-features = false }
+hex = { version ="=0.4.2", default-features = false }
 subtle = "2.5"
 tracing-subscriber = { version = "0.3", default-features = false }
 zeroize = { version = "1.7", default-features = false }
@@ -32,6 +31,7 @@ ark-bls12-377 = { version = "0.4", optional = true }
 ark-ed-on-bls12-377 = { version = "0.4", optional = true }
 ark-groth16 = { version = "0.4", optional = true }
 ark-snark = { version = "0.4", optional = true }
+once_cell = { version= "1.8", optional = true, default-features = false }
 
 # This matches what ark-std (a library for no_std compatibility) does, having
 # a default feature of std - without the ark-std std feature, decaf377 doesn't
