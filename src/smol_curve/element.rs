@@ -1,7 +1,7 @@
-use core::ops::{Add, Mul, Neg};
-use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
+use core::ops::{Add, Neg};
+use subtle::{Choice, ConditionallySelectable};
 
-use crate::{Fq, Fr};
+use crate::Fq;
 
 /// COEFF_A = -1
 const COEFF_A: Fq = Fq::from_montgomery_limbs_64([
@@ -191,14 +191,6 @@ impl Add for Element {
     }
 }
 
-impl Mul<Fr> for Element {
-    type Output = Self;
-
-    fn mul(self, rhs: Fr) -> Self::Output {
-        Self::scalar_mul_vartime(self, &rhs.to_le_limbs())
-    }
-}
-
 impl Neg for Element {
     type Output = Self;
 
@@ -220,6 +212,8 @@ impl PartialEq for Element {
 #[cfg(test)]
 mod test {
     use super::*;
+
+    use crate::Fr;
 
     #[test]
     fn test_basic_equalities() {
@@ -258,6 +252,12 @@ mod test {
             Element::IDENTITY
         );
     }
+
+    #[test]
+    fn test_g_minus_g() {
+        let generator = Element::GENERATOR;
+        assert_eq!(generator - generator, Element::IDENTITY);
+    }
 }
 
 #[cfg(all(test, feature = "arkworks"))]
@@ -265,6 +265,8 @@ mod proptests {
     use super::*;
     use ark_ff::{BigInt, PrimeField};
     use proptest::prelude::*;
+
+    use crate::Fr;
 
     prop_compose! {
         // Technically this might overflow, but we won't miss any values,
