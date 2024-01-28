@@ -197,11 +197,10 @@ impl CanonicalDeserializeWithFlags for Fp {
         mut reader: R,
     ) -> Result<(Self, F), SerializationError> {
         // Enough for the field element + 8 bits of flags. The last byte may or may not contain flags.
-        let mut bytes = [0u8; (Self::MODULUS_BIT_SIZE as usize + 8 + 7) / 8];
-
+        let mut bytes = [0u8; (Self::MODULUS_BIT_SIZE as usize + 7) / 8];
         let expected_len = (Self::MODULUS_BIT_SIZE as usize + F::BIT_SIZE + 7) / 8;
         reader.read_exact(&mut bytes[..expected_len])?;
-        let flags = F::from_u8(bytes[bytes.len() - 1] & !(!0 >> F::BIT_SIZE))
+        let flags = F::from_u8_remove_flags(&mut bytes[bytes.len() - 1])
             .ok_or(SerializationError::UnexpectedFlags)?;
         // Then, convert the bytes to limbs, to benefit from the canonical check we have for
         // bigint.
