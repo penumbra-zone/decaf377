@@ -52,13 +52,15 @@ impl PrimeField for Fr {
     }
 
     fn from_le_bytes_mod_order(bytes: &[u8]) -> Self {
-        assert!(bytes.len() == 32);
-
-        let mut t = [0u8; 32];
-        t.copy_from_slice(&bytes[..32]);
-        let modulus_field_montgomery = Fr::from_raw_bytes(&t);
-
-        modulus_field_montgomery
+        bytes
+            .chunks(32)
+            .map(|x| {
+                let mut padded = [0u8; 32];
+                padded[..x.len()].copy_from_slice(x);
+                Self::from_raw_bytes(&padded)
+            }) // [X, 2^256 * X, ...]
+            .rev()
+            .fold(Self::zero(), |acc, x| acc * (FIELD_SIZE_POWER_OF_TWO) + x) // let acc =
     }
 }
 
@@ -561,7 +563,7 @@ mod tests {
 
     proptest! {
         #[test]
-        fn test_from_le_bytes_mod_order_vs_naive(bytes in any::<[u8; 32]>()) {
+        fn test_from_le_bytes_mod_order_vs_naive(bytes in any::<[u8; 80]>()) {
             let way1 = Fr::from_le_bytes_mod_order(&bytes);
             let way2 = naive_from_le_bytes_mod_order(&bytes);
             assert_eq!(way1, way2);

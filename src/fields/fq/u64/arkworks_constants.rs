@@ -52,3 +52,10 @@ pub const TWO_ADIC_ROOT_OF_UNITY: Fq = Fq::from_montgomery_limbs([
     268534165941069093,
     1121515446318641358,
 ]);
+
+pub const FIELD_SIZE_POWER_OF_TWO: Fq = Fq::from_montgomery_limbs([
+    2726216793283724667,
+    14712177743343147295,
+    12091039717619697043,
+    81024008013859129,
+]);
