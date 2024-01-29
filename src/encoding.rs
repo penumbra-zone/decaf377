@@ -87,11 +87,6 @@ impl Element {
         Element { inner: -self.inner }
     }
 
-    #[deprecated(note = "please use `vartime_compress_to_field` instead")]
-    pub fn compress_to_field(&self) -> Fq {
-        self.vartime_compress_to_field()
-    }
-
     pub fn vartime_compress_to_field(&self) -> Fq {
         // This isn't a constant, only because traits don't have const methods
         // yet and subtraction is only implemented as part of the Sub trait.
@@ -116,11 +111,6 @@ impl Element {
         let s = (A_MINUS_D * v * u_3 * p.x).abs();
 
         s
-    }
-
-    #[deprecated(note = "please use `vartime_compress` instead")]
-    pub fn compress(&self) -> Encoding {
-        self.vartime_compress()
     }
 
     pub fn vartime_compress(&self) -> Encoding {
