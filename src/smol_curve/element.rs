@@ -1,7 +1,7 @@
 use core::ops::{Add, Neg};
 use subtle::{Choice, ConditionallySelectable};
 
-use crate::Fq;
+use crate::{encoding::Encoding, sign::Sign, Fq};
 
 /// COEFF_A = -1
 const COEFF_A: Fq = Fq::from_montgomery_limbs_64([
@@ -150,6 +150,32 @@ impl Element {
 
     pub fn scalar_mul(self, le_bits: &[u64]) -> Self {
         Self::scalar_mul_both::<true>(self, le_bits)
+    }
+
+    pub fn vartime_compress_to_field(&self) -> Fq {
+        let A_MINUS_D = COEFF_A - COEFF_D;
+
+        // 1.
+        let u_1 = (self.x + self.t) * (self.x - self.t);
+
+        // 2.
+        let (_always_square, v) =
+            Fq::non_arkworks_sqrt_ratio_zeta(&Fq::one(), &(u_1 * A_MINUS_D * self.x.square()));
+
+        // 3.
+        let u_2 = (v * u_1).abs();
+
+        // 4.
+        let u_3 = u_2 * self.z - self.t;
+
+        // 5.
+        (A_MINUS_D * v * u_3 * self.x).abs()
+    }
+
+    pub fn vartime_compress(&self) -> Encoding {
+        let s = self.vartime_compress_to_field();
+        let bytes = s.to_bytes_le();
+        Encoding(bytes)
     }
 }
 
