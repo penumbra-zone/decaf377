@@ -309,8 +309,23 @@ impl ark_std::rand::distributions::Distribution<Fp> for ark_std::rand::distribut
 impl FromStr for Fp {
     type Err = ();
 
-    fn from_str(_s: &str) -> Result<Self, Self::Err> {
-        unimplemented!()
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // CANDO: a more efficient method accumulating into 64 bits first.
+        let mut acc = Self::zero();
+
+        let ten = Self::from(10u8);
+
+        for c in s.chars() {
+            match c.to_digit(10) {
+                Some(c) => {
+                    acc = ten * acc + Self::from(u64::from(c));
+                }
+                None => {
+                    return Err(());
+                }
+            }
+        }
+        Ok(acc)
     }
 }
 
@@ -354,7 +369,7 @@ impl Display for Fp {
 mod tests {
     use super::*;
     extern crate alloc;
-    use alloc::vec::Vec;
+    use alloc::{format, vec::Vec};
     use ark_bls12_377::Fq as ArkFp;
     use proptest::prelude::*;
 
@@ -584,6 +599,14 @@ mod tests {
             let way1 = Fp::from_le_bytes_mod_order(&bytes);
             let way2 = naive_from_le_bytes_mod_order(&bytes);
             assert_eq!(way1, way2);
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn test_from_str(a in arb_fp()) {
+            let x = <Fp as PrimeField>::BigInt::from(a);
+            assert_eq!(Ok(a), Fp::from_str(&format!("{}", x)));
         }
     }
 
