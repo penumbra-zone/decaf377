@@ -5,7 +5,7 @@ use crate::element::{Decaf377EdwardsConfig, EdwardsProjective};
 
 use crate::{
     constants::{ONE, TWO, ZETA},
-    Element, Fq, OnCurve, Sign, SqrtRatioZeta,
+    Element, Fq, OnCurve, Sign,
 };
 
 impl Element {

@@ -9,16 +9,6 @@ use once_cell::sync::Lazy;
 
 use crate::constants::{G, M_MINUS_ONE_DIV_TWO, N, ONE, SQRT_W, ZETA_TO_ONE_MINUS_M_DIV_TWO};
 
-pub trait SqrtRatioZeta: Sized {
-    /// Computes the square root of a ratio of field elements, returning:
-    ///
-    /// - `(true, sqrt(num/den))` if `num` and `den` are both nonzero and `num/den` is square;
-    /// - `(true, 0)` if `num` is zero;
-    /// - `(false, 0)` if `den` is zero;
-    /// - `(false, sqrt(zeta*num/den))` if `num` and `den` are both nonzero and `num/den` is nonsquare;
-    fn sqrt_ratio_zeta(num: &Self, den: &Self) -> (bool, Self);
-}
-
 struct SquareRootTables {
     pub s_lookup: HashMap<Fq, u64>,
     pub nonsquare_lookup: [Fq; 2],
@@ -73,8 +63,14 @@ impl SquareRootTables {
 
 static SQRT_LOOKUP_TABLES: Lazy<SquareRootTables> = Lazy::new(|| SquareRootTables::new());
 
-impl SqrtRatioZeta for Fq {
-    fn sqrt_ratio_zeta(num: &Self, den: &Self) -> (bool, Self) {
+impl Fq {
+    /// Computes the square root of a ratio of field elements, returning:
+    ///
+    /// - `(true, sqrt(num/den))` if `num` and `den` are both nonzero and `num/den` is square;
+    /// - `(true, 0)` if `num` is zero;
+    /// - `(false, 0)` if `den` is zero;
+    /// - `(false, sqrt(zeta*num/den))` if `num` and `den` are both nonzero and `num/den` is nonsquare;
+    pub fn sqrt_ratio_zeta(num: &Self, den: &Self) -> (bool, Self) {
         // This square root method is based on:
         // * [Sarkar2020](https://eprint.iacr.org/2020/1407)
         // * [Zcash Pasta](https://github.com/zcash/pasta_curves)

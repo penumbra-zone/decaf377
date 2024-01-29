@@ -1,4 +1,4 @@
-use subtle::ConditionallySelectable;
+use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
 
 use super::fiat;
 
@@ -196,5 +196,11 @@ impl ConditionallySelectable for Fq {
             out[i] = u64::conditional_select(&a.0 .0[i], &b.0 .0[i], choice);
         }
         Self(fiat::FqMontgomeryDomainFieldElement(out))
+    }
+}
+
+impl ConstantTimeEq for Fq {
+    fn ct_eq(&self, other: &Fq) -> Choice {
+        self.0 .0.ct_eq(&other.0 .0)
     }
 }

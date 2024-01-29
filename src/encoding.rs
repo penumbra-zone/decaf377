@@ -7,7 +7,7 @@ use ark_serialize::{CanonicalDeserialize, CanonicalSerialize, Read, Write};
 
 use crate::{
     constants::TWO, element::Decaf377EdwardsConfig, EdwardsProjective, Element, EncodingError, Fq,
-    OnCurve, Sign, SqrtRatioZeta,
+    OnCurve, Sign,
 };
 
 #[derive(Copy, Clone, Default, Eq, Ord, PartialOrd, PartialEq)]
