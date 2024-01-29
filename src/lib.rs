@@ -36,7 +36,6 @@ cfg_if! {
 
         pub use bls12_377::Bls12_377;
 
-        pub use invsqrt::SqrtRatioZeta;
         use on_curve::OnCurve;
         use sign::Sign;
 

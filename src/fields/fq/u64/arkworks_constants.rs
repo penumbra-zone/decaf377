@@ -30,6 +30,7 @@ pub const TRACE_MINUS_ONE_DIV_TWO_LIMBS: [u64; 4] = [
     4779,
 ];
 
+// c1
 pub const TWO_ADICITY: u32 = 0x2f;
 
 pub const QUADRATIC_NON_RESIDUE_TO_TRACE: Fq = Fq::from_montgomery_limbs([
