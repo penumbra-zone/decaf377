@@ -318,8 +318,24 @@ impl Display for Fr {
 impl FromStr for Fr {
     type Err = ();
 
-    fn from_str(_s: &str) -> Result<Self, Self::Err> {
-        unimplemented!()
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        ark_std::dbg!(&s);
+        // CANDO: a more efficient method accumulating into 64 bits first.
+        let mut acc = Self::zero();
+
+        let ten = Self::from(10u8);
+
+        for c in s.chars() {
+            match c.to_digit(10) {
+                Some(c) => {
+                    acc = ten * acc + Self::from(u64::from(c));
+                }
+                None => {
+                    return Err(());
+                }
+            }
+        }
+        Ok(acc)
     }
 }
 
@@ -356,7 +372,7 @@ impl From<BigInt<4>> for Fr {
 mod tests {
     use super::*;
     extern crate alloc;
-    use alloc::vec::Vec;
+    use alloc::{format, vec::Vec};
     use proptest::prelude::*;
 
     prop_compose! {
@@ -567,6 +583,14 @@ mod tests {
             let way1 = Fr::from_le_bytes_mod_order(&bytes);
             let way2 = naive_from_le_bytes_mod_order(&bytes);
             assert_eq!(way1, way2);
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn test_from_str(a in arb_fr()) {
+            let x = <Fr as PrimeField>::BigInt::from(a);
+            assert_eq!(Ok(a), Fr::from_str(&format!("{}", x)));
         }
     }
 

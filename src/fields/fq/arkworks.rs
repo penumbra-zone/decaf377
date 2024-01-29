@@ -316,8 +316,23 @@ impl Display for Fq {
 impl FromStr for Fq {
     type Err = ();
 
-    fn from_str(_s: &str) -> Result<Self, Self::Err> {
-        unimplemented!()
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // CANDO: a more efficient method accumulating into 64 bits first.
+        let mut acc = Self::zero();
+
+        let ten = Self::from(10u8);
+
+        for c in s.chars() {
+            match c.to_digit(10) {
+                Some(c) => {
+                    acc = ten * acc + Self::from(u64::from(c));
+                }
+                None => {
+                    return Err(());
+                }
+            }
+        }
+        Ok(acc)
     }
 }
 
@@ -354,7 +369,7 @@ impl From<BigInt<4>> for Fq {
 mod tests {
     use super::*;
     extern crate alloc;
-    use alloc::vec::Vec;
+    use alloc::{format, vec::Vec};
     use ark_bls12_377::Fr as ArkFq;
     use proptest::prelude::*;
 
@@ -582,6 +597,14 @@ mod tests {
             let way1 = Fq::from_le_bytes_mod_order(&bytes);
             let way2 = naive_from_le_bytes_mod_order(&bytes);
             assert_eq!(way1, way2);
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn test_from_str(a in arb_fq()) {
+            let x = <Fq as PrimeField>::BigInt::from(a);
+            assert_eq!(Ok(a), Fq::from_str(&format!("{}", x)));
         }
     }
 
