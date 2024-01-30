@@ -129,12 +129,7 @@ impl Element {
         let y3 = g * h;
         let t3 = e * h;
         let z3 = f * g;
-        Self {
-            x: x3,
-            y: y3,
-            z: z3,
-            t: t3,
-        }
+        Self::new(x3, y3, z3, t3)
     }
 
     fn scalar_mul_both<const CT: bool>(self, le_bits: &[u64]) -> Self {
@@ -320,12 +315,7 @@ impl Add for Element {
         let y3 = g * h;
         let t3 = e * h;
         let z3 = f * g;
-        Self {
-            x: x3,
-            y: y3,
-            z: z3,
-            t: t3,
-        }
+        Self::new(x3, y3, z3, t3)
     }
 }
 
