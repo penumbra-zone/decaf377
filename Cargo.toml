@@ -43,7 +43,7 @@ std = ["alloc", "tracing/std", "anyhow/std", "tracing-subscriber/std", "zeroize/
 parallel = ["ark-ff/parallel", "ark-ec/parallel", "ark-groth16/parallel", "ark-std/parallel", "ark-r1cs-std/parallel"]
 # TODO: eventually, feature-gate all arkworks deps behind this feature.
 arkworks = ["std", "ark-std", "ark-ec", "ark-ff", "ark-serialize", "ark-bls12-377", "ark-ed-on-bls12-377"]
-r1cs = ["ark-groth16", "ark-r1cs-std", "ark-relations", "ark-snark"]
+r1cs = ["arkworks", "ark-groth16", "ark-r1cs-std", "ark-relations", "ark-snark"]
 u32_backend = []
 
 [dev-dependencies]
