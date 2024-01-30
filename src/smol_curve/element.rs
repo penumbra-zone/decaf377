@@ -1,9 +1,7 @@
 use core::ops::{Add, Neg};
 use subtle::{Choice, ConditionallySelectable};
 
-use crate::{
-    on_curve::OnCurve, sign::Sign, smol_curve::constants::*, smol_curve::encoding::Encoding, Fq,
-};
+use crate::{sign::Sign, smol_curve::constants::*, smol_curve::encoding::Encoding, Fq};
 
 /// Error type for decompression
 pub enum EncodingError {
@@ -85,6 +83,21 @@ impl Element {
             1305086759679105397,
         ]),
     };
+
+    /// Construct a new element from the projective coordinates, checking on curve.
+    pub fn new_checked(x: Fq, y: Fq, z: Fq, t: Fq) -> Option<Self> {
+        let XX = x.square();
+        let YY = y.square();
+        let ZZ = z.square();
+        let TT = t.square();
+
+        let on_curve = (YY + COEFF_A * XX) == (ZZ + COEFF_D * TT);
+        if on_curve {
+            Some(Self { x, y, z, t })
+        } else {
+            None
+        }
+    }
 
     pub fn double(self) -> Self {
         // https://eprint.iacr.org/2008/522 Section 3.3
@@ -202,13 +215,11 @@ impl Encoding {
         let z = Fq::one();
         let t = x * y;
 
-        let element = Element { x, y, z, t };
-        debug_assert!(
-            element.is_on_curve(),
-            "resulting point must be on the curve",
-        );
-
-        Ok(Element { x, y, z, t })
+        if cfg!(debug_assertions) {
+            Ok(Element::new_checked(x, y, z, t).expect("decompression should be on curve"))
+        } else {
+            Ok(Element { x, y, z, t })
+        }
     }
 }
 
@@ -265,20 +276,6 @@ impl PartialEq for Element {
         // This check is equivalent to checking that the ratio of each affine point matches.
         // ((x1 / z1) / (y1 / z1)) == ((x2 / z2) / (y2 / z2)) <=> x1 * y2 == x2 * y1
         self.x * other.y == other.x * self.y
-    }
-}
-
-impl OnCurve for Element {
-    fn is_on_curve(&self) -> bool {
-        let XX = self.x.square();
-        let YY = self.y.square();
-        let ZZ = self.z.square();
-        let TT = self.t.square();
-
-        let on_curve = (YY + COEFF_A * XX) == (ZZ + COEFF_D * TT);
-
-        // TODO: Add other checks
-        on_curve
     }
 }
 
@@ -367,6 +364,18 @@ mod proptests {
 
             assert_eq!(G * (a + b), G * a + G * b);
             assert_eq!(G * (a * b), (G * a) * b);
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn group_encoding_round_trip_if_successful(bytes: [u8; 32]) {
+            let bytes = Encoding(bytes);
+
+            if let Ok(element) = bytes.vartime_decompress() {
+                let bytes2 = element.vartime_compress();
+                assert_eq!(bytes, bytes2);
+            }
         }
     }
 }
