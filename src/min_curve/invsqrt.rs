@@ -2,7 +2,7 @@ use subtle::{ConditionallySelectable, ConstantTimeEq};
 
 use crate::{fields::fq::arkworks_constants::*, Fq};
 
-use crate::smol_curve::constants::ZETA;
+use crate::min_curve::constants::ZETA;
 
 impl Fq {
     /// For square elements, calculate their square root, otherwise return an undefined element.
