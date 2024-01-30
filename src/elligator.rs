@@ -69,19 +69,9 @@ impl Element {
         &R_1 + &R_2
     }
 
-    #[deprecated(note = "please use `hash_to_curve` instead")]
-    pub fn map_to_group_uniform(r_1: &Fq, r_2: &Fq) -> Element {
-        Element::hash_to_curve(r_1, r_2)
-    }
-
     /// Maps a field element to a decaf377 `Element` suitable for CDH challenges.
     pub fn encode_to_curve(r: &Fq) -> Element {
         Element::elligator_map(r)
-    }
-
-    #[deprecated(note = "please use `encode_to_curve` instead")]
-    pub fn map_to_group_cdh(r: &Fq) -> Element {
-        Element::encode_to_curve(r)
     }
 }
 
