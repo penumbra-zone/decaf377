@@ -186,10 +186,57 @@ impl Element {
 
 impl Encoding {
     pub fn vartime_decompress(&self) -> Result<Element, EncodingError> {
-        // Check bytes correspond to valid field element (less than field modulus)
-
         // Top three bits of last byte must be zero
-        todo!()
+        if self.0[31] >> 5 != 0u8 {
+            return Err(EncodingError::InvalidEncoding);
+        }
+
+        // 1/2. Reject unless s is canonically encoded and nonnegative.
+        // Check bytes correspond to valid field element (i.e. less than field modulus)
+        let s = Fq::from_bytes_check_order(&self.0).ok_or(EncodingError::InvalidEncoding)?;
+        if s.is_negative() {
+            return Err(EncodingError::InvalidEncoding);
+        }
+
+        // 3. u_1 <- 1 - s^2
+        let ss = s.square();
+        let u_1 = Fq::one() - ss;
+
+        // 4. u_2 <- u_1^2 - 4d s^2
+        let u_2 = u_1.square() - (Fq::from(4u32) * COEFF_D) * ss;
+
+        // 5. sqrt
+        let (was_square, mut v) = Fq::sqrt_ratio_zeta(&Fq::one(), &(u_2 * u_1.square()));
+        if !was_square {
+            return Err(EncodingError::InvalidEncoding);
+        }
+
+        // 6. sign check
+        let two_s_u_1 = (Fq::one() + Fq::one()) * s * u_1;
+        let check = two_s_u_1 * v;
+        if check.is_negative() {
+            v = -v;
+        }
+
+        // 7. coordinates
+        let x = two_s_u_1 * v.square() * u_2;
+        let y = (Fq::one() + ss) * v * u_1;
+        let z = Fq::one();
+        let t = x * y;
+
+        // TODO: Is on curve check
+        // debug_assert!(
+        //     Element {
+        //         x,
+        //         y,
+        //         z,
+        //         t
+        //     }
+        //     .is_on_curve(),
+        //     "resulting point must be on the curve",
+        // );
+
+        Ok(Element { x, y, z, t })
     }
 }
 
