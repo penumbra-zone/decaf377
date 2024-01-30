@@ -1,7 +1,7 @@
 use core::ops::{Add, Neg};
 use subtle::{Choice, ConditionallySelectable};
 
-use crate::{encoding::Encoding, sign::Sign, Fq};
+use crate::{sign::Sign, smol_curve::encoding::Encoding, Fq};
 
 /// COEFF_A = -1
 const COEFF_A: Fq = Fq::from_montgomery_limbs_64([
@@ -26,6 +26,11 @@ const COEFF_K: Fq = Fq::from_montgomery_limbs_64([
     12776203677742963460,
     94262208632981673,
 ]);
+
+/// Error type for decompression
+pub enum EncodingError {
+    InvalidEncoding,
+}
 
 /// A point on an Edwards curve.
 ///
@@ -176,6 +181,15 @@ impl Element {
         let s = self.vartime_compress_to_field();
         let bytes = s.to_bytes_le();
         Encoding(bytes)
+    }
+}
+
+impl Encoding {
+    pub fn vartime_decompress(&self) -> Result<Element, EncodingError> {
+        // Check bytes correspond to valid field element (less than field modulus)
+
+        // Top three bits of last byte must be zero
+        todo!()
     }
 }
 

@@ -35,7 +35,7 @@ impl Fq {
         // Step 6: for i in (c1, c1 - 1, ..., 2):
         for i in (2..=TWO_ADICITY).rev() {
             // Step 7: for j in (1, 2, ..., i - 2):
-            for j in 1..=i - 2 {
+            for _j in 1..=i - 2 {
                 // Step 8: b = b * b
                 b = b * b;
             }

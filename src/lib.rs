@@ -9,7 +9,6 @@ pub mod smol_curve;
 pub use fields::{fp::Fp, fq::Fq, fr::Fr};
 
 mod sign;
-use sign::Sign;
 
 cfg_if! {
     if #[cfg(feature = "arkworks")] {
