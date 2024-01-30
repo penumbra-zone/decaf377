@@ -1,31 +1,9 @@
 use core::ops::{Add, Neg};
 use subtle::{Choice, ConditionallySelectable};
 
-use crate::{sign::Sign, smol_curve::encoding::Encoding, Fq};
-
-/// COEFF_A = -1
-const COEFF_A: Fq = Fq::from_montgomery_limbs_64([
-    10157024534604021774,
-    16668528035959406606,
-    5322190058819395602,
-    387181115924875961,
-]);
-
-/// COEFF_D = 3021
-const COEFF_D: Fq = Fq::from_montgomery_limbs_64([
-    15008245758212136496,
-    17341409599856531410,
-    648869460136961410,
-    719771289660577536,
-]);
-
-/// -2 COEFF_D / COEFF_A = 6042
-const COEFF_K: Fq = Fq::from_montgomery_limbs_64([
-    10844245690243005535,
-    9774967673803681700,
-    12776203677742963460,
-    94262208632981673,
-]);
+use crate::{
+    on_curve::OnCurve, sign::Sign, smol_curve::constants::*, smol_curve::encoding::Encoding, Fq,
+};
 
 /// Error type for decompression
 pub enum EncodingError {
@@ -224,17 +202,11 @@ impl Encoding {
         let z = Fq::one();
         let t = x * y;
 
-        // TODO: Is on curve check
-        // debug_assert!(
-        //     Element {
-        //         x,
-        //         y,
-        //         z,
-        //         t
-        //     }
-        //     .is_on_curve(),
-        //     "resulting point must be on the curve",
-        // );
+        let element = Element { x, y, z, t };
+        debug_assert!(
+            element.is_on_curve(),
+            "resulting point must be on the curve",
+        );
 
         Ok(Element { x, y, z, t })
     }
@@ -293,6 +265,20 @@ impl PartialEq for Element {
         // This check is equivalent to checking that the ratio of each affine point matches.
         // ((x1 / z1) / (y1 / z1)) == ((x2 / z2) / (y2 / z2)) <=> x1 * y2 == x2 * y1
         self.x * other.y == other.x * self.y
+    }
+}
+
+impl OnCurve for Element {
+    fn is_on_curve(&self) -> bool {
+        let XX = self.x.square();
+        let YY = self.y.square();
+        let ZZ = self.z.square();
+        let TT = self.t.square();
+
+        let on_curve = (YY + COEFF_A * XX) == (ZZ + COEFF_D * TT);
+
+        // TODO: Add other checks
+        on_curve
     }
 }
 

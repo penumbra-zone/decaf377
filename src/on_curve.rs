@@ -42,10 +42,3 @@ impl<P: TECurveConfig> OnCurve for Projective<P> {
         on_curve && on_segre_embedding && z_non_zero && point_order_2r
     }
 }
-
-#[cfg(not(feature = "arkworks"))]
-impl OnCurve for Element {
-    fn is_on_curve(&self) -> bool {
-        todo!()
-    }
-}
