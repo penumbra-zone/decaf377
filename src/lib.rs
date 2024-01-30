@@ -10,6 +10,9 @@ pub use fields::{fp::Fp, fq::Fq, fr::Fr};
 
 mod sign;
 
+mod on_curve;
+use on_curve::OnCurve;
+
 cfg_if! {
     if #[cfg(feature = "arkworks")] {
         pub mod bls12_377;
@@ -20,7 +23,6 @@ cfg_if! {
         mod error;
         mod field_ext;
         mod invsqrt;
-        mod on_curve;
         mod ops;
         pub mod rand;
         pub mod serialize;
@@ -37,7 +39,6 @@ cfg_if! {
 
         pub use bls12_377::Bls12_377;
 
-        use on_curve::OnCurve;
 
         /// Return the conventional generator for `decaf377`.
         pub fn basepoint() -> Element {
