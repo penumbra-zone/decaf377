@@ -197,7 +197,8 @@ impl Encoding {
         let u_2 = u_1.square() - (Fq::from(4u32) * COEFF_D) * ss;
 
         // 5. sqrt
-        let (was_square, mut v) = Fq::sqrt_ratio_zeta(&Fq::one(), &(u_2 * u_1.square()));
+        let (was_square, mut v) =
+            Fq::non_arkworks_sqrt_ratio_zeta(&Fq::one(), &(u_2 * u_1.square()));
         if !was_square {
             return Err(EncodingError::InvalidEncoding);
         }
