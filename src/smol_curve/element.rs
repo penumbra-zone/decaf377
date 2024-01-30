@@ -171,7 +171,7 @@ impl Encoding {
 
         // 1/2. Reject unless s is canonically encoded and nonnegative.
         // Check bytes correspond to valid field element (i.e. less than field modulus)
-        let s = Fq::from_bytes_check_order(&self.0).ok_or(EncodingError::InvalidEncoding)?;
+        let s = Fq::from_bytes_checked(&self.0).ok_or(EncodingError::InvalidEncoding)?;
         if s.is_negative() {
             return Err(EncodingError::InvalidEncoding);
         }
