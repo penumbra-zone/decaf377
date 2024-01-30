@@ -1,16 +1,22 @@
-use ark_ec::{
-    models::{twisted_edwards::Projective, twisted_edwards::TECurveConfig},
-    Group,
-};
-use ark_ff::{BigInteger, Field, PrimeField, Zero};
-use ark_serialize::CanonicalSerialize;
+use cfg_if::cfg_if;
 
-use crate::constants;
+cfg_if! {
+    if #[cfg(feature = "arkworks")] {
+    use ark_ec::{
+        models::{twisted_edwards::Projective, twisted_edwards::TECurveConfig},
+        Group,
+    };
+    use ark_ff::{BigInteger, Field, PrimeField, Zero};
+    use ark_serialize::CanonicalSerialize;
+    use crate::constants;
+    }
+}
 
 pub trait OnCurve {
     fn is_on_curve(&self) -> bool;
 }
 
+#[cfg(feature = "arkworks")]
 impl<P: TECurveConfig> OnCurve for Projective<P> {
     #[allow(non_snake_case)]
     fn is_on_curve(&self) -> bool {
@@ -34,5 +40,12 @@ impl<P: TECurveConfig> OnCurve for Projective<P> {
         };
 
         on_curve && on_segre_embedding && z_non_zero && point_order_2r
+    }
+}
+
+#[cfg(not(feature = "arkworks"))]
+impl OnCurve for Element {
+    fn is_on_curve(&self) -> bool {
+        todo!()
     }
 }
