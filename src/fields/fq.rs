@@ -25,7 +25,6 @@ cfg_if! {
     }
 }
 
-<<<<<<< HEAD
 impl Fq {
     /// Convert bytes into an Fq element, returning None if these bytes are not already reduced.
     ///
@@ -49,12 +48,5 @@ mod test {
     fn test_from_bytes_checked() {
         assert_eq!(Fq::from_bytes_checked(&[0; 32]), Some(Fq::zero()));
         assert_eq!(Fq::from_bytes_checked(&[0xFF; 32]), None);
-=======
-// TODO: Add method for checking the bytes are not larger than the field modulus,
-// return None if not, and return Some(Fq) if they are.
-impl Fq {
-    pub fn from_bytes_check_order(bytes: &[u8; 32]) -> Option<Fq> {
-        todo!()
->>>>>>> 1dd9977 (decompression)
     }
 }
