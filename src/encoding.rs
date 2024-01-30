@@ -6,8 +6,8 @@ use ark_ec::twisted_edwards::TECurveConfig;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize, Read, Write};
 
 use crate::{
-    constants::TWO, element::Decaf377EdwardsConfig, EdwardsProjective, Element, EncodingError, Fq,
-    OnCurve, Sign,
+    constants::TWO, element::Decaf377EdwardsConfig, sign::Sign, EdwardsProjective, Element,
+    EncodingError, Fq, OnCurve,
 };
 
 #[derive(Copy, Clone, Default, Eq, Ord, PartialOrd, PartialEq)]
