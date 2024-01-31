@@ -5,7 +5,6 @@ mod edwards;
 mod element;
 mod elligator;
 mod encoding;
-mod error;
 mod invsqrt;
 mod ops;
 pub mod rand;
@@ -15,7 +14,6 @@ pub use constants::ZETA;
 pub(crate) use edwards::{Decaf377EdwardsConfig, EdwardsProjective};
 pub use element::{AffineElement, Element};
 pub use encoding::Encoding;
-pub use error::EncodingError;
 
 mod on_curve;
 

@@ -4,16 +4,18 @@
 //!
 use cfg_if::cfg_if;
 
-pub mod ark_curve;
 pub mod fields;
-pub mod min_curve;
 pub use fields::{fp::Fp, fq::Fq, fr::Fr};
 mod field_ext;
 pub use field_ext::FieldExt;
 mod sign;
 
+mod error;
+pub use error::EncodingError;
+
 cfg_if! {
     if #[cfg(feature = "arkworks")] {
+        mod ark_curve;
 
         pub use ark_curve::Element;
         pub use ark_curve::Encoding;
@@ -21,9 +23,11 @@ cfg_if! {
         pub use ark_curve::basepoint;
 
         pub use ark_curve::bls12_377::Bls12_377;
-
-        // TODO: Re-export r1cs stuff?
+    } else if #[cfg(feature = "r1cs")] {
+        pub use ark_curve::r1cs;
     } else {
+        mod min_curve;
+
         pub use min_curve::Element;
         pub use min_curve::Encoding;
     }

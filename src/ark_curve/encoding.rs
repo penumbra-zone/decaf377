@@ -7,10 +7,9 @@ use ark_serialize::{CanonicalDeserialize, CanonicalSerialize, Read, Write};
 
 use crate::ark_curve::{
     constants::TWO, edwards::Decaf377EdwardsConfig, on_curve::OnCurve, EdwardsProjective, Element,
-    EncodingError,
 };
 use crate::sign::Sign;
-use crate::Fq;
+use crate::{EncodingError, Fq};
 
 #[derive(Copy, Clone, Default, Eq, Ord, PartialOrd, PartialEq)]
 pub struct Encoding(pub [u8; 32]);
