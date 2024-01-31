@@ -4,6 +4,8 @@ use proptest::prelude::*;
 
 use decaf377::{basepoint, Element, Encoding, FieldExt, Fr};
 
+// TODO: either get rid of FieldExt trait or implement for non-arkworks
+
 /*
 #[test]
 fn print_fp_for_fiat_codegen() {
