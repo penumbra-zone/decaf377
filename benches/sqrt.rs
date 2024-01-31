@@ -17,9 +17,7 @@ fn sqrt_original(u: &Fq, v: &Fq) -> (bool, Fq) {
     if let Some(sqrt_uv) = uv.sqrt() {
         (true, sqrt_uv)
     } else {
-        let sqrt_zeta_uv = (*ZETA * uv)
-            .sqrt()
-            .expect("must be square if u/v nonsquare");
+        let sqrt_zeta_uv = (ZETA * uv).sqrt().expect("must be square if u/v nonsquare");
         (false, sqrt_zeta_uv)
     }
 }

@@ -17,11 +17,12 @@ fn from_ark_fr(x: ArkFr) -> Fr {
 }
 
 // Zeta is called QNR in the sage specification.
-pub static ZETA: Lazy<Fq> = Lazy::new(|| {
-    from_ark_fq(ark_ff::MontFp!(
-        "2841681278031794617739547238867782961338435681360110683443920362658525667816"
-    ))
-});
+pub const ZETA: Fq = Fq::from_montgomery_limbs_64([
+    5947794125541564500,
+    11292571455564096885,
+    11814268415718120036,
+    155746270000486182,
+]);
 
 // Constants used for square root computation //
 
@@ -51,7 +52,7 @@ pub static ZETA_TO_ONE_MINUS_M_DIV_TWO: Lazy<Fq> = Lazy::new(|| {
 
 // G = ZETA^M
 // = 4732611889701835744065511820927274956354524915951001256593514693060564426294
-pub static G: Lazy<Fq> = Lazy::new(|| (*ZETA).pow(*M));
+pub static G: Lazy<Fq> = Lazy::new(|| ZETA.pow(*M));
 
 // Choice of W in the square root algorithm.
 pub static SQRT_W: u32 = 8;

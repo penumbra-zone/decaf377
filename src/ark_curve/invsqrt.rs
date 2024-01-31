@@ -196,7 +196,7 @@ mod tests {
                     assert_eq!(u, v * zeta_uv);
                 } else {
                     // check zeta_uv = zeta * u / v
-                    assert_eq!(*ZETA * u, v * zeta_uv);
+                    assert_eq!(ZETA * u, v * zeta_uv);
                 }
             }
         }

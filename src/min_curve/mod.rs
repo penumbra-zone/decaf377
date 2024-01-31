@@ -6,3 +6,4 @@ mod ops;
 
 pub use element::Element;
 pub use encoding::Encoding;
+pub use constants::ZETA;
