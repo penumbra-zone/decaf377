@@ -6,3 +6,4 @@
 # everyone who runs the test benefits from these saved cases.
 cc 82945fc5ee2715e3e8cd35890759aefcdd76b3381f6379e26ba009933f55abd3 # shrinks to bytes = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5]
 cc 264ed2b3f5cb8d69cb8ac150a1f1150a65b7a064170a52f4bba9a4d450f6369d # shrinks to bytes = [12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+cc ba572d5b5a4a03b1ab05649faff2f4251da79a38c91ee13d3fb9b54d9b0c6b32 # shrinks to bytes = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 172, 18]

@@ -24,3 +24,29 @@ cfg_if! {
         }
     }
 }
+
+impl Fr {
+    /// Convert bytes into an Fr element, returning None if these bytes are not already reduced.
+    ///
+    /// This means that values that cannot be produced by encoding a field element will return
+    /// None, enforcing canonical serialization.
+    pub fn from_bytes_checked(bytes: &[u8; 32]) -> Option<Self> {
+        let reduced = Self::from_raw_bytes(bytes);
+        if reduced.to_bytes_le() == *bytes {
+            Some(reduced)
+        } else {
+            None
+        }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_from_bytes_checked() {
+        assert_eq!(Fr::from_bytes_checked(&[0; 32]), Some(Fr::zero()));
+        assert_eq!(Fr::from_bytes_checked(&[0xFF; 32]), None);
+    }
+}

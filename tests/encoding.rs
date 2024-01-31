@@ -2,9 +2,7 @@ use core::convert::TryFrom;
 
 use proptest::prelude::*;
 
-use decaf377::{basepoint, Element, Encoding, FieldExt, Fr};
-
-// TODO: either get rid of FieldExt trait or implement for non-arkworks
+use decaf377::{basepoint, Element, Encoding, FieldExt, Fq, Fr};
 
 /*
 #[test]
@@ -100,6 +98,14 @@ proptest! {
 
         if let Ok(element) = bytes.vartime_decompress() {
             let bytes2 = element.vartime_compress();
+            assert_eq!(bytes, bytes2);
+        }
+    }
+
+    #[test]
+    fn fq_encoding_round_trip_if_successful(bytes: [u8; 32]) {
+        if let Ok(x) = Fq::from_bytes(bytes) {
+            let bytes2 = x.to_bytes();
             assert_eq!(bytes, bytes2);
         }
     }
