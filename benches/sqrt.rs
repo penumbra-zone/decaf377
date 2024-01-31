@@ -1,7 +1,7 @@
 use ark_ff::{Field, PrimeField, Zero};
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use decaf377::Fq;
-use decaf377::{SqrtRatioZeta, ZETA};
+use decaf377::ZETA;
 use rand_chacha::ChaChaRng;
 use rand_core::{RngCore, SeedableRng};
 

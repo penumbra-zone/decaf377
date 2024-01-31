@@ -8,15 +8,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - uses: Swatinem/rust-cache@v1
-      - uses: actions-rs/cargo@v1
-        with:
-          command: check
+      - name: Install rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Load rust cache
+        uses: astriaorg/buildjet-rust-cache@v2.5.1
+      - name: Run cargo check, failing on warnings
+        run: cargo check --profile ci --all-targets
+        # It'd be nice to fail on warnings, but we're not ready for that.
+        # env:
+        #   RUSTFLAGS: "-D warnings"
 
   test:
     name: Test Suite
@@ -36,7 +36,7 @@ jobs:
       - name: Load rust cache
         uses: astriaorg/buildjet-rust-cache@v2.5.1
       - name: Run tests with nextest
-        run: cargo nextest run --features ${{ matrix.backend }}
+        run: cargo nextest run --cargo-profile ci --profile ci --features ${{ matrix.backend }}
         env:
           CARGO_TERM_COLOR: always
 
