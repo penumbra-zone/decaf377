@@ -23,7 +23,8 @@ cfg_if! {
         pub use ark_curve::basepoint;
 
         pub use ark_curve::bls12_377::Bls12_377;
-    } else if #[cfg(feature = "r1cs")] {
+
+        #[cfg(feature = "r1cs")]
         pub use ark_curve::r1cs;
     } else {
         mod min_curve;
