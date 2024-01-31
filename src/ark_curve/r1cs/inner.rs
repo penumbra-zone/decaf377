@@ -10,11 +10,11 @@ use ark_relations::ns;
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 use ark_std::vec::Vec;
 
-use crate::element::EdwardsAffine;
-use crate::Decaf377EdwardsConfig;
-use crate::{
-    constants::ZETA, r1cs::fqvar_ext::FqVarExtension, r1cs::FqVar, AffineElement, Element, Fq,
+use crate::ark_curve::{
+    constants::ZETA, edwards::EdwardsAffine, r1cs::fqvar_ext::FqVarExtension, r1cs::FqVar,
+    AffineElement, Decaf377EdwardsConfig, Element,
 };
+use crate::Fq;
 
 pub(crate) type Decaf377EdwardsVar = AffineVar<Decaf377EdwardsConfig, FqVar>;
 

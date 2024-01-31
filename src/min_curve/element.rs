@@ -391,7 +391,8 @@ mod test {
 #[cfg(all(test, feature = "arkworks"))]
 mod proptests {
     use super::*;
-    use ark_ff::{BigInt, PrimeField};
+    use ark_ed_on_bls12_377::Fq as ArkFq;
+    use ark_ff::{BigInt, BigInteger256, PrimeField};
     use proptest::prelude::*;
 
     use crate::Fr;
@@ -435,6 +436,10 @@ mod proptests {
                 assert_eq!(bytes, bytes2);
             }
         }
+    }
+
+    pub(crate) fn from_ark_fq(x: ArkFq) -> Fq {
+        BigInteger256::from(x).into()
     }
 
     #[test]
@@ -549,8 +554,8 @@ mod proptests {
                 Fq::deserialize_compressed(&input[..]).expect("encoding of test vector is valid");
 
             let expected: Element = crate::min_curve::element::Element::from_affine(
-                crate::constants::from_ark_fq(expected_xy_coordinates[ind][0]),
-                crate::constants::from_ark_fq(expected_xy_coordinates[ind][1]),
+                from_ark_fq(expected_xy_coordinates[ind][0]),
+                from_ark_fq(expected_xy_coordinates[ind][1]),
             );
 
             let actual = Element::elligator_map(&input_element);
