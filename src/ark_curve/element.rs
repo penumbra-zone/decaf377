@@ -10,7 +10,7 @@ use crate::{
 pub mod affine;
 pub mod projective;
 
-pub use affine::AffineElement;
+pub use affine::AffinePoint;
 pub use projective::Element;
 
 impl Valid for Element {
@@ -20,7 +20,7 @@ impl Valid for Element {
 }
 
 impl ScalarMul for Element {
-    type MulBase = AffineElement;
+    type MulBase = AffinePoint;
 
     const NEGATION_IS_CHEAP: bool = true;
 
@@ -29,7 +29,7 @@ impl ScalarMul for Element {
         let result = EdwardsProjective::batch_convert_to_mul_base(&bases_inner[..]);
         result
             .into_iter()
-            .map(|g| AffineElement { inner: g })
+            .map(|g| AffinePoint { inner: g })
             .collect::<Vec<_>>()
     }
 }
@@ -64,19 +64,19 @@ impl CurveGroup for Element {
 
     type BaseField = Fq;
 
-    type Affine = AffineElement;
+    type Affine = AffinePoint;
 
     // This type is supposed to represent an element of the entire elliptic
     // curve group, not just the prime-order subgroup. Since this is decaf,
     // this is just an `Element` again.
-    type FullGroup = AffineElement;
+    type FullGroup = AffinePoint;
 
-    fn normalize_batch(v: &[Self]) -> Vec<AffineElement> {
+    fn normalize_batch(v: &[Self]) -> Vec<AffinePoint> {
         let v_inner = v.iter().map(|g| g.inner).collect::<Vec<_>>();
         let result = EdwardsProjective::normalize_batch(&v_inner[..]);
         result
             .into_iter()
-            .map(|g| AffineElement { inner: g })
+            .map(|g| AffinePoint { inner: g })
             .collect::<Vec<_>>()
     }
 
@@ -85,13 +85,13 @@ impl CurveGroup for Element {
     }
 }
 
-impl Valid for AffineElement {
+impl Valid for AffinePoint {
     fn check(&self) -> Result<(), ark_serialize::SerializationError> {
         Ok(())
     }
 }
 
-impl AffineRepr for AffineElement {
+impl AffineRepr for AffinePoint {
     type Config = Decaf377EdwardsConfig;
 
     type ScalarField = Fr;
@@ -105,7 +105,7 @@ impl AffineRepr for AffineElement {
     }
 
     fn zero() -> Self {
-        AffineElement {
+        AffinePoint {
             inner: EdwardsAffine::zero(),
         }
     }
@@ -115,7 +115,7 @@ impl AffineRepr for AffineElement {
     }
 
     fn from_random_bytes(bytes: &[u8]) -> Option<Self> {
-        EdwardsAffine::from_random_bytes(bytes).map(|inner| AffineElement { inner })
+        EdwardsAffine::from_random_bytes(bytes).map(|inner| AffinePoint { inner })
     }
 
     fn mul_bigint(&self, other: impl AsRef<[u64]>) -> Self::Group {
@@ -134,7 +134,7 @@ impl AffineRepr for AffineElement {
     }
 }
 
-impl From<Element> for AffineElement {
+impl From<Element> for AffinePoint {
     fn from(point: Element) -> Self {
         Self {
             inner: point.inner.into(),
@@ -142,15 +142,15 @@ impl From<Element> for AffineElement {
     }
 }
 
-impl From<AffineElement> for Element {
-    fn from(point: AffineElement) -> Self {
+impl From<AffinePoint> for Element {
+    fn from(point: AffinePoint) -> Self {
         Self {
             inner: point.inner.into(),
         }
     }
 }
 
-impl From<&Element> for AffineElement {
+impl From<&Element> for AffinePoint {
     fn from(point: &Element) -> Self {
         Self {
             inner: point.inner.into(),
@@ -158,8 +158,8 @@ impl From<&Element> for AffineElement {
     }
 }
 
-impl From<&AffineElement> for Element {
-    fn from(point: &AffineElement) -> Self {
+impl From<&AffinePoint> for Element {
+    fn from(point: &AffinePoint) -> Self {
         Self {
             inner: point.inner.into(),
         }

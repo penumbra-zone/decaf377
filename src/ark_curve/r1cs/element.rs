@@ -8,7 +8,7 @@ use ark_std::vec::Vec;
 
 use crate::ark_curve::r1cs::{lazy::LazyElementVar, FqVar};
 use crate::ark_curve::{edwards::EdwardsAffine, r1cs::inner::ElementVar as InnerElementVar};
-use crate::ark_curve::{AffineElement, Element};
+use crate::ark_curve::{AffinePoint, Element};
 use crate::Fq;
 
 use super::inner::Decaf377EdwardsVar;
@@ -149,8 +149,8 @@ impl AllocVar<Element, Fq> for ElementVar {
     }
 }
 
-impl AllocVar<AffineElement, Fq> for ElementVar {
-    fn new_variable<T: Borrow<AffineElement>>(
+impl AllocVar<AffinePoint, Fq> for ElementVar {
+    fn new_variable<T: Borrow<AffinePoint>>(
         cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
         f: impl FnOnce() -> Result<T, SynthesisError>,
         mode: AllocationMode,

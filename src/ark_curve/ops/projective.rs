@@ -1,6 +1,6 @@
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
-use crate::{ark_curve::element::projective::Element, ark_curve::AffineElement, Fr};
+use crate::{ark_curve::element::projective::Element, ark_curve::AffinePoint, Fr};
 
 impl<'a, 'b> Add<&'b Element> for &'a Element {
     type Output = Element;
@@ -186,36 +186,36 @@ impl Mul<Element> for Fr {
     }
 }
 
-impl<'a> Add<&'a AffineElement> for Element {
+impl<'a> Add<&'a AffinePoint> for Element {
     type Output = Element;
 
-    fn add(self, other: &'a AffineElement) -> Element {
+    fn add(self, other: &'a AffinePoint) -> Element {
         let element_other: Element = other.into();
         &self + element_other
     }
 }
 
-impl Add<AffineElement> for Element {
+impl Add<AffinePoint> for Element {
     type Output = Element;
 
-    fn add(self, other: AffineElement) -> Element {
+    fn add(self, other: AffinePoint) -> Element {
         &self + &other.into()
     }
 }
 
-impl Add<AffineElement> for AffineElement {
+impl Add<AffinePoint> for AffinePoint {
     // Required to be `Element` to satisfy type bounds on
     // `AffineRepr::Group`.
     type Output = Element;
 
-    fn add(self, other: AffineElement) -> Element {
+    fn add(self, other: AffinePoint) -> Element {
         let other_element: Element = other.into();
         let self_element: Element = other.into();
         self_element + other_element
     }
 }
 
-impl Add<Element> for AffineElement {
+impl Add<Element> for AffinePoint {
     type Output = Element;
 
     fn add(self, other: Element) -> Element {
@@ -223,7 +223,7 @@ impl Add<Element> for AffineElement {
     }
 }
 
-impl<'a> Add<&'a Element> for AffineElement {
+impl<'a> Add<&'a Element> for AffinePoint {
     type Output = Element;
 
     fn add(self, other: &'a Element) -> Element {
@@ -231,46 +231,46 @@ impl<'a> Add<&'a Element> for AffineElement {
     }
 }
 
-impl<'a> AddAssign<&'a AffineElement> for Element {
-    fn add_assign(&mut self, other: &'a AffineElement) {
+impl<'a> AddAssign<&'a AffinePoint> for Element {
+    fn add_assign(&mut self, other: &'a AffinePoint) {
         let other_element: Element = other.into();
         *self += other_element;
     }
 }
 
-impl AddAssign<AffineElement> for Element {
-    fn add_assign(&mut self, other: AffineElement) {
+impl AddAssign<AffinePoint> for Element {
+    fn add_assign(&mut self, other: AffinePoint) {
         *self += &other;
     }
 }
 
-impl<'a> SubAssign<&'a AffineElement> for Element {
-    fn sub_assign(&mut self, other: &'a AffineElement) {
+impl<'a> SubAssign<&'a AffinePoint> for Element {
+    fn sub_assign(&mut self, other: &'a AffinePoint) {
         let other_element: Element = other.into();
         *self -= other_element;
     }
 }
 
-impl SubAssign<AffineElement> for Element {
-    fn sub_assign(&mut self, other: AffineElement) {
+impl SubAssign<AffinePoint> for Element {
+    fn sub_assign(&mut self, other: AffinePoint) {
         let other_element: Element = other.into();
         *self -= other_element;
     }
 }
 
-impl<'a> Sub<&'a AffineElement> for Element {
+impl<'a> Sub<&'a AffinePoint> for Element {
     type Output = Element;
 
-    fn sub(self, other: &'a AffineElement) -> Element {
+    fn sub(self, other: &'a AffinePoint) -> Element {
         let other_element: Element = other.into();
         &self - other_element
     }
 }
 
-impl Sub<AffineElement> for Element {
+impl Sub<AffinePoint> for Element {
     type Output = Element;
 
-    fn sub(self, other: AffineElement) -> Element {
+    fn sub(self, other: AffinePoint) -> Element {
         &self - &other.into()
     }
 }

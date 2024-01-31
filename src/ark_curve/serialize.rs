@@ -3,9 +3,9 @@ use core::convert::TryInto;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_std::io::{Read, Write};
 
-use crate::ark_curve::{AffineElement, Element, Encoding};
+use crate::ark_curve::{AffinePoint, Element, Encoding};
 
-impl CanonicalDeserialize for AffineElement {
+impl CanonicalDeserialize for AffinePoint {
     fn deserialize_with_mode<R: Read>(
         reader: R,
         compress: ark_serialize::Compress,
@@ -27,7 +27,7 @@ impl CanonicalDeserialize for AffineElement {
     }
 }
 
-impl CanonicalSerialize for AffineElement {
+impl CanonicalSerialize for AffinePoint {
     fn serialized_size(&self, compress: ark_serialize::Compress) -> usize {
         match compress {
             ark_serialize::Compress::Yes => 32,

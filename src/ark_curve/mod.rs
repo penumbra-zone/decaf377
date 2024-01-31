@@ -12,7 +12,7 @@ pub mod serialize;
 
 pub use constants::ZETA;
 pub(crate) use edwards::{Decaf377EdwardsConfig, EdwardsProjective};
-pub use element::{AffineElement, Element};
+pub use element::{AffinePoint, Element};
 pub use encoding::Encoding;
 
 mod on_curve;
