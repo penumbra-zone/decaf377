@@ -68,3 +68,9 @@ required-features = ["arkworks"]
 name = "sqrt"
 harness = false
 required-features = ["arkworks"]
+
+# Create profile for running checks in CI that are mostly "release" mode,
+# but also checking the `debug_assert `lines.
+[profile.ci]
+inherits = "release"
+debug-assertions = true

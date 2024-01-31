@@ -1,0 +1,4 @@
+[profile.ci]
+# Using recommended settings from https://nexte.st/book/configuration.html#profiles
+failure-output = "immediate-final"
+fail-fast = false
