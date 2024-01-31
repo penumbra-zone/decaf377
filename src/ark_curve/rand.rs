@@ -5,7 +5,7 @@ use ark_std::rand::{
     Rng,
 };
 
-use crate::{element::EdwardsProjective, AffineElement, Element, Encoding};
+use crate::ark_curve::{edwards::EdwardsProjective, AffineElement, Element, Encoding};
 
 impl Distribution<Element> for Standard {
     #[inline]

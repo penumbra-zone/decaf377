@@ -1,6 +1,6 @@
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 
-use crate::{EncodingError, Fq, Fr};
+use crate::{ark_curve::EncodingError, Fq, Fr};
 
 /// An extension trait for easy conversion of [`Fr`] and [`Fq`] elements to and from bytes.
 pub trait FieldExt: Sized {

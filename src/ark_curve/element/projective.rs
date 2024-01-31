@@ -6,7 +6,7 @@ use ark_std::fmt::{Display, Formatter, Result as FmtResult};
 
 use zeroize::Zeroize;
 
-use crate::{EdwardsProjective, Fq, Fr};
+use crate::{ark_curve::EdwardsProjective, Fq, Fr};
 
 #[derive(Copy, Clone)]
 pub struct Element {

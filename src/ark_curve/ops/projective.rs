@@ -1,6 +1,6 @@
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
-use crate::{element::projective::Element, AffineElement, Fr};
+use crate::{ark_curve::element::projective::Element, ark_curve::AffineElement, Fr};
 
 impl<'a, 'b> Add<&'b Element> for &'a Element {
     type Output = Element;

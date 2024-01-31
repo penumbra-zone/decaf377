@@ -1,6 +1,6 @@
 use core::hash::Hash;
 
-use crate::element::EdwardsAffine;
+use crate::ark_curve::element::EdwardsAffine;
 use ark_std::fmt::{Display, Formatter, Result as FmtResult};
 use ark_std::Zero;
 

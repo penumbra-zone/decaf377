@@ -3,7 +3,7 @@ use core::convert::TryInto;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_std::io::{Read, Write};
 
-use crate::{AffineElement, Element, Encoding};
+use crate::ark_curve::{AffineElement, Element, Encoding};
 
 impl CanonicalDeserialize for AffineElement {
     fn deserialize_with_mode<R: Read>(
