@@ -6,7 +6,6 @@ mod element;
 mod elligator;
 mod encoding;
 mod error;
-mod field_ext;
 mod invsqrt;
 mod ops;
 pub mod rand;
@@ -17,7 +16,6 @@ pub(crate) use edwards::{Decaf377EdwardsConfig, EdwardsProjective};
 pub use element::{AffineElement, Element};
 pub use encoding::Encoding;
 pub use error::EncodingError;
-pub use field_ext::FieldExt;
 
 mod on_curve;
 

@@ -9,10 +9,10 @@ use ark_r1cs_std::{
 };
 use ark_relations::r1cs::{ConstraintSynthesizer, ToConstraintField};
 use ark_snark::SNARK;
+// TODO: Fix import paths so r1cs is in the crate root
 use decaf377::{
-    basepoint,
-    r1cs::{CountConstraints, ElementVar, FqVar},
-    Bls12_377, Element, Fq, Fr,
+    ark_curve::r1cs::{CountConstraints, ElementVar, FqVar},
+    basepoint, Bls12_377, Element, Fq, Fr,
 };
 use rand_core::OsRng;
 

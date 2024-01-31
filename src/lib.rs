@@ -8,7 +8,8 @@ pub mod ark_curve;
 pub mod fields;
 pub mod min_curve;
 pub use fields::{fp::Fp, fq::Fq, fr::Fr};
-
+mod field_ext;
+pub use field_ext::FieldExt;
 mod sign;
 
 cfg_if! {
