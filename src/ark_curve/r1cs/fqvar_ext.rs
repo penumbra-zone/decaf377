@@ -61,7 +61,7 @@ impl FqVarExtension for FqVar {
         y_squared_var.conditional_enforce_equal(&FqVar::zero(), &in_case_3)?;
 
         // Case 4: `(false, sqrt(zeta*num/den))` if `num` and `den` are both nonzero and `num/den` is nonsquare;
-        let zeta_var = FqVar::new_constant(cs, *ZETA)?;
+        let zeta_var = FqVar::new_constant(cs, ZETA)?;
         let zeta_times_one_over_den_var = zeta_var * den_var_inv;
         let in_case_4 = was_not_square_var.and(&den_var_is_zero.not())?;
         // Certify the return value y is sqrt(zeta * 1/den)
