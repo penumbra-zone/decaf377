@@ -9,65 +9,65 @@ use zeroize::Zeroize;
 use crate::Element;
 
 #[derive(Copy, Clone)]
-pub struct AffineElement {
+pub struct AffinePoint {
     pub(crate) inner: EdwardsAffine,
 }
 
-impl Hash for AffineElement {
+impl Hash for AffinePoint {
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         self.inner.hash(state);
     }
 }
 
-impl Default for AffineElement {
+impl Default for AffinePoint {
     fn default() -> Self {
         Element::default().into()
     }
 }
 
-impl core::iter::Sum<AffineElement> for Element {
-    fn sum<I: Iterator<Item = AffineElement>>(iter: I) -> Self {
+impl core::iter::Sum<AffinePoint> for Element {
+    fn sum<I: Iterator<Item = AffinePoint>>(iter: I) -> Self {
         iter.fold(Self::zero(), core::ops::Add::add)
     }
 }
 
-impl<'a> core::iter::Sum<&'a AffineElement> for Element {
-    fn sum<I: Iterator<Item = &'a AffineElement>>(iter: I) -> Self {
+impl<'a> core::iter::Sum<&'a AffinePoint> for Element {
+    fn sum<I: Iterator<Item = &'a AffinePoint>>(iter: I) -> Self {
         iter.fold(Self::zero(), core::ops::Add::add)
     }
 }
 
-impl PartialEq for AffineElement {
-    fn eq(&self, other: &AffineElement) -> bool {
+impl PartialEq for AffinePoint {
+    fn eq(&self, other: &AffinePoint) -> bool {
         // Section 4.5 of Decaf paper
         self.inner.x * other.inner.y == self.inner.y * other.inner.x
     }
 }
 
-impl Eq for AffineElement {}
+impl Eq for AffinePoint {}
 
-impl core::fmt::Debug for AffineElement {
+impl core::fmt::Debug for AffinePoint {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let element: Element = self.into();
         f.write_fmt(format_args!(
-            "decaf377::AffineElement({})",
+            "decaf377::AffinePoint({})",
             hex::encode(&element.vartime_compress().0[..])
         ))
     }
 }
 
-impl Display for AffineElement {
+impl Display for AffinePoint {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         let element: Element = self.into();
         write!(
             f,
-            "decaf377::AffineElement({})",
+            "decaf377::AffinePoint({})",
             hex::encode(&element.vartime_compress().0[..])
         )
     }
 }
 
-impl Zeroize for AffineElement {
+impl Zeroize for AffinePoint {
     fn zeroize(&mut self) {
         self.inner.zeroize()
     }

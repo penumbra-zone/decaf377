@@ -5,7 +5,7 @@ use ark_std::rand::{
     Rng,
 };
 
-use crate::ark_curve::{edwards::EdwardsProjective, AffineElement, Element, Encoding};
+use crate::ark_curve::{edwards::EdwardsProjective, AffinePoint, Element, Encoding};
 
 impl Distribution<Element> for Standard {
     #[inline]
@@ -26,8 +26,8 @@ impl Distribution<Element> for Standard {
     }
 }
 
-impl Distribution<AffineElement> for Standard {
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> AffineElement {
+impl Distribution<AffinePoint> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> AffinePoint {
         let point: Element = self.sample(rng);
         point.into()
     }

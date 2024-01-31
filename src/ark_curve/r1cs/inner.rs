@@ -12,7 +12,7 @@ use ark_std::vec::Vec;
 
 use crate::ark_curve::{
     constants::ZETA, edwards::EdwardsAffine, r1cs::fqvar_ext::FqVarExtension, r1cs::FqVar,
-    AffineElement, Decaf377EdwardsConfig, Element,
+    AffinePoint, Decaf377EdwardsConfig, Element,
 };
 use crate::Fq;
 
@@ -287,8 +287,8 @@ impl AllocVar<Element, Fq> for ElementVar {
     }
 }
 
-impl AllocVar<AffineElement, Fq> for ElementVar {
-    fn new_variable<T: Borrow<AffineElement>>(
+impl AllocVar<AffinePoint, Fq> for ElementVar {
+    fn new_variable<T: Borrow<AffinePoint>>(
         cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
         f: impl FnOnce() -> Result<T, SynthesisError>,
         mode: AllocationMode,

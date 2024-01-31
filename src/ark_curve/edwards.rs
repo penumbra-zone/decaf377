@@ -12,7 +12,7 @@ pub struct Decaf377EdwardsConfig;
 // These types should not be exported. They are similar to `EdwardsAffine` and
 // `EdwardsProjective` from the `ark_ed_on_bls12_377` crate, except using our own
 // `Decaf377Config` that has the cofactor set to 1. Consumers of this
-// library should use the `AffineElement` and `Element` (projective)
+// library should use the `AffinePoint` and `Element` (projective)
 // types.
 pub type EdwardsAffine = Affine<Decaf377EdwardsConfig>;
 pub type EdwardsProjective = Projective<Decaf377EdwardsConfig>;
