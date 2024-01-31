@@ -1,5 +1,4 @@
-// TODO: put a non-alloc friendly EncodingError in the root of the crate
-use crate::{ark_curve::EncodingError, Fq, Fr};
+use crate::{EncodingError, Fq, Fr};
 
 /// An extension trait for easy conversion of [`Fr`] and [`Fq`] elements to and from bytes.
 pub trait FieldExt: Sized {

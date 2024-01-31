@@ -1,12 +1,8 @@
 use core::ops::{Add, Neg};
 use subtle::{Choice, ConditionallySelectable};
 
+use crate::EncodingError;
 use crate::{min_curve::constants::*, min_curve::encoding::Encoding, sign::Sign, Fq};
-
-/// Error type for decompression
-pub enum EncodingError {
-    InvalidEncoding,
-}
 
 /// A point on an Edwards curve.
 ///
