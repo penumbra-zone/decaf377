@@ -4,7 +4,8 @@ use ark_r1cs_std::select::CondSelectGadget;
 use ark_r1cs_std::{R1CSVar, ToBitsGadget};
 use ark_relations::r1cs::SynthesisError;
 
-use crate::{constants::ZETA, r1cs::FqVar, Fq};
+use crate::ark_curve::{constants::ZETA, r1cs::FqVar};
+use crate::Fq;
 
 pub trait FqVarExtension: Sized {
     fn isqrt(&self) -> Result<(Boolean<Fq>, FqVar), SynthesisError>;

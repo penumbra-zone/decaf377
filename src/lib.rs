@@ -17,11 +17,11 @@ cfg_if! {
         pub use ark_curve::Element;
         pub use ark_curve::Encoding;
 
-        // r1cs feature?
-        //pub mod bls12_377;
-        //pub use bls12_377::Bls12_377;
-
         pub use ark_curve::basepoint;
+
+        pub use ark_curve::bls12_377::Bls12_377;
+
+        // TODO: Re-export r1cs stuff?
     } else {
         pub use min_curve::Element;
         pub use min_curve::Encoding;

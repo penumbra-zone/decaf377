@@ -3,7 +3,7 @@ use core::cell::RefCell;
 use ark_relations::r1cs::SynthesisError;
 
 use super::inner::ElementVar;
-use crate::r1cs::FqVar;
+use crate::ark_curve::r1cs::FqVar;
 
 #[derive(Clone, Debug)]
 pub enum Inner {
