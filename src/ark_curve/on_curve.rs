@@ -1,16 +1,11 @@
-use cfg_if::cfg_if;
+use ark_ec::{
+    models::{twisted_edwards::Projective, twisted_edwards::TECurveConfig},
+    Group,
+};
+use ark_ff::{BigInteger, Field, PrimeField, Zero};
+use ark_serialize::CanonicalSerialize;
 
-cfg_if! {
-    if #[cfg(feature = "arkworks")] {
-    use ark_ec::{
-        models::{twisted_edwards::Projective, twisted_edwards::TECurveConfig},
-        Group,
-    };
-    use ark_ff::{BigInteger, Field, PrimeField, Zero};
-    use ark_serialize::CanonicalSerialize;
-    use crate::constants;
-    }
-}
+use crate::ark_curve::constants;
 
 pub trait OnCurve {
     fn is_on_curve(&self) -> bool;

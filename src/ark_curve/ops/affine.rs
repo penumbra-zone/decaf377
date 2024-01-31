@@ -2,7 +2,9 @@ use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 use ark_ec::twisted_edwards::Projective;
 
-use crate::{element::AffineElement, Decaf377EdwardsConfig, Element, Fr};
+use crate::{
+    ark_curve::element::AffineElement, ark_curve::Decaf377EdwardsConfig, ark_curve::Element, Fr,
+};
 
 impl<'a, 'b> Add<&'b AffineElement> for &'a AffineElement {
     type Output = AffineElement;

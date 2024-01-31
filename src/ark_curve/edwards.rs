@@ -1,4 +1,10 @@
-use crate::Fq;
+use ark_ec::{
+    twisted_edwards::{Affine, MontCurveConfig, Projective, TECurveConfig},
+    CurveConfig,
+};
+
+use crate::ark_curve::constants::{GENERATOR_X, GENERATOR_Y};
+use crate::{Fq, Fr};
 
 #[derive(Clone, Default, PartialEq, Eq)]
 pub struct Decaf377EdwardsConfig;

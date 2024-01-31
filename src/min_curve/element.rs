@@ -548,7 +548,7 @@ mod proptests {
             let input_element =
                 Fq::deserialize_compressed(&input[..]).expect("encoding of test vector is valid");
 
-            let expected: Element = crate::smol_curve::element::Element::from_affine(
+            let expected: Element = crate::min_curve::element::Element::from_affine(
                 crate::constants::from_ark_fq(expected_xy_coordinates[ind][0]),
                 crate::constants::from_ark_fq(expected_xy_coordinates[ind][1]),
             );

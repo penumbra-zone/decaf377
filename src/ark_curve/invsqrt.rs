@@ -7,7 +7,9 @@ use ark_std::boxed::Box;
 use ark_std::vec::Vec;
 use once_cell::sync::Lazy;
 
-use crate::constants::{G, M_MINUS_ONE_DIV_TWO, N, ONE, SQRT_W, ZETA_TO_ONE_MINUS_M_DIV_TWO};
+use crate::ark_curve::constants::{
+    G, M_MINUS_ONE_DIV_TWO, N, ONE, SQRT_W, ZETA_TO_ONE_MINUS_M_DIV_TWO,
+};
 
 struct SquareRootTables {
     pub s_lookup: HashMap<Fq, u64>,
@@ -167,7 +169,7 @@ impl Fq {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::constants::ZETA;
+    use crate::ark_curve::constants::ZETA;
 
     use ark_ff::PrimeField;
     use proptest::prelude::*;

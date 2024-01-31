@@ -1,12 +1,13 @@
 #![allow(non_snake_case)]
 use ark_ec::twisted_edwards::TECurveConfig;
 
-use crate::element::{Decaf377EdwardsConfig, EdwardsProjective};
+use crate::ark_curve::edwards::{Decaf377EdwardsConfig, EdwardsProjective};
 
 use crate::{
-    constants::{ONE, TWO, ZETA},
+    ark_curve::constants::{ONE, TWO, ZETA},
+    ark_curve::on_curve::OnCurve,
     sign::Sign,
-    Element, Fq, OnCurve,
+    Element, Fq,
 };
 
 impl Element {
@@ -77,7 +78,7 @@ impl Element {
 
 #[cfg(test)]
 mod tests {
-    use crate::element::EdwardsAffine;
+    use crate::ark_curve::edwards::EdwardsAffine;
 
     use super::*;
 
@@ -194,8 +195,8 @@ mod tests {
 
             let expected: Element = Element {
                 inner: EdwardsAffine::new(
-                    crate::constants::from_ark_fq(expected_xy_coordinates[ind][0]),
-                    crate::constants::from_ark_fq(expected_xy_coordinates[ind][1]),
+                    crate::ark_curve::constants::from_ark_fq(expected_xy_coordinates[ind][0]),
+                    crate::ark_curve::constants::from_ark_fq(expected_xy_coordinates[ind][1]),
                 )
                 .into(),
             };
