@@ -17,7 +17,7 @@ impl Element {
         let A = Decaf377EdwardsConfig::COEFF_A;
         let D = Decaf377EdwardsConfig::COEFF_D;
 
-        let r = *ZETA * r_0.square();
+        let r = ZETA * r_0.square();
 
         let den = (D * r - (D - A)) * ((D - A) * r - D);
         let num = (r + *ONE) * (A - *TWO * D);

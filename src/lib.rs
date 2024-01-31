@@ -17,8 +17,7 @@ cfg_if! {
     if #[cfg(feature = "arkworks")] {
         mod ark_curve;
 
-        pub use ark_curve::Element;
-        pub use ark_curve::Encoding;
+        pub use ark_curve::{Element, Encoding, ZETA};
 
         pub use ark_curve::basepoint;
 
@@ -26,10 +25,11 @@ cfg_if! {
 
         #[cfg(feature = "r1cs")]
         pub use ark_curve::r1cs;
+
+
     } else {
         mod min_curve;
 
-        pub use min_curve::Element;
-        pub use min_curve::Encoding;
+        pub use min_curve::{Element, Encoding, ZETA};
     }
 }
