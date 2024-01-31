@@ -114,7 +114,7 @@ impl ElementVar {
 
         let A_VAR = FqVar::new_constant(cs.clone(), Decaf377EdwardsConfig::COEFF_A)?;
         let D_VAR = FqVar::new_constant(cs.clone(), Decaf377EdwardsConfig::COEFF_D)?;
-        let ZETA_VAR = FqVar::new_constant(cs, *ZETA)?;
+        let ZETA_VAR = FqVar::new_constant(cs, ZETA)?;
 
         let r_var = ZETA_VAR * r_0_var.square()?;
 
