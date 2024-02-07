@@ -48,13 +48,13 @@ impl Encoding {
 
         // 3. u_1 <- 1 - s^2
         let ss = s.square();
-        let u_1 = Fq::one() - ss;
+        let u_1 = Fq::ONE - ss;
 
         // 4. u_2 <- u_1^2 - 4d s^2
         let u_2 = u_1.square() - D4 * ss;
 
         // 5. sqrt
-        let (was_square, mut v) = Fq::sqrt_ratio_zeta(&Fq::one(), &(u_2 * u_1.square()));
+        let (was_square, mut v) = Fq::sqrt_ratio_zeta(&Fq::ONE, &(u_2 * u_1.square()));
         if !was_square {
             return Err(EncodingError::InvalidEncoding);
         }
@@ -68,8 +68,8 @@ impl Encoding {
 
         // 7. coordinates
         let x = two_s_u_1 * v.square() * u_2;
-        let y = (Fq::one() + ss) * v * u_1;
-        let z = Fq::one();
+        let y = (Fq::ONE + ss) * v * u_1;
+        let z = Fq::ONE;
         let t = x * y;
 
         debug_assert!(
@@ -100,7 +100,7 @@ impl Element {
         // 2. division by 0 occurs on the identity point, but since
         // sqrt_ratio_zeta outputs v=0 it computes the right encoding anyway
         let (_always_square, v) =
-            Fq::sqrt_ratio_zeta(&Fq::one(), &(u_1 * A_MINUS_D * p.x.square()));
+            Fq::sqrt_ratio_zeta(&Fq::ONE, &(u_1 * A_MINUS_D * p.x.square()));
 
         // 3.
         let u_2 = (v * u_1).abs();

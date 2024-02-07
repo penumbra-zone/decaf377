@@ -1,13 +1,13 @@
 use crate::Fq;
 
-pub const ZETA: Fq = Fq::from_montgomery_limbs_64([
+pub const ZETA: Fq = Fq::from_montgomery_limbs([
     5947794125541564500,
     11292571455564096885,
     11814268415718120036,
     155746270000486182,
 ]);
 
-pub const ZETA_TO_TRACE: Fq = Fq::from_montgomery_limbs_64([
+pub const ZETA_TO_TRACE: Fq = Fq::from_montgomery_limbs([
     6282505393754313363,
     14378628227555923904,
     9804873068900332207,
@@ -15,7 +15,7 @@ pub const ZETA_TO_TRACE: Fq = Fq::from_montgomery_limbs_64([
 ]);
 
 /// COEFF_A = -1
-pub const COEFF_A: Fq = Fq::from_montgomery_limbs_64([
+pub const COEFF_A: Fq = Fq::from_montgomery_limbs([
     10157024534604021774,
     16668528035959406606,
     5322190058819395602,
@@ -23,7 +23,7 @@ pub const COEFF_A: Fq = Fq::from_montgomery_limbs_64([
 ]);
 
 /// COEFF_D = 3021
-pub const COEFF_D: Fq = Fq::from_montgomery_limbs_64([
+pub const COEFF_D: Fq = Fq::from_montgomery_limbs([
     15008245758212136496,
     17341409599856531410,
     648869460136961410,
@@ -31,7 +31,7 @@ pub const COEFF_D: Fq = Fq::from_montgomery_limbs_64([
 ]);
 
 /// -2 COEFF_D / COEFF_A = 6042
-pub const COEFF_K: Fq = Fq::from_montgomery_limbs_64([
+pub const COEFF_K: Fq = Fq::from_montgomery_limbs([
     10844245690243005535,
     9774967673803681700,
     12776203677742963460,

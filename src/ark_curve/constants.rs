@@ -5,8 +5,8 @@ use ark_ff::{self, BigInteger256, Field};
 
 use ark_ed_on_bls12_377::{Fq as ArkFq, Fr as ArkFr};
 
-pub static ONE: Lazy<Fq> = Lazy::new(|| Fq::one());
-pub static TWO: Lazy<Fq> = Lazy::new(|| Fq::one() + Fq::one());
+pub static ONE: Lazy<Fq> = Lazy::new(|| Fq::ONE);
+pub static TWO: Lazy<Fq> = Lazy::new(|| Fq::ONE + Fq::ONE);
 
 pub(crate) fn from_ark_fq(x: ArkFq) -> Fq {
     BigInteger256::from(x).into()
@@ -17,7 +17,7 @@ fn from_ark_fr(x: ArkFr) -> Fr {
 }
 
 // Zeta is called QNR in the sage specification.
-pub const ZETA: Fq = Fq::from_montgomery_limbs_64([
+pub const ZETA: Fq = Fq::from_montgomery_limbs([
     5947794125541564500,
     11292571455564096885,
     11814268415718120036,
@@ -76,13 +76,13 @@ pub static B_T: Lazy<Fq> = Lazy::new(|| {
 pub static B_Z: Lazy<Fq> = Lazy::new(|| from_ark_fq(ark_ff::MontFp!("1")));
 
 // Canonical basepoint affine coordinates
-pub const GENERATOR_X: Fq = Fq::from_montgomery_limbs_64([
+pub const GENERATOR_X: Fq = Fq::from_montgomery_limbs([
     5825153684096051627,
     16988948339439369204,
     186539475124256708,
     1230075515893193738,
 ]);
-pub const GENERATOR_Y: Fq = Fq::from_montgomery_limbs_64([
+pub const GENERATOR_Y: Fq = Fq::from_montgomery_limbs([
     9786171649960077610,
     13527783345193426398,
     10983305067350511165,

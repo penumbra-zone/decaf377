@@ -3,6 +3,8 @@
 
 use cfg_if::cfg_if;
 
+use crate::EncodingError;
+
 #[cfg(feature = "arkworks")]
 pub mod arkworks;
 mod ops;
@@ -111,5 +113,29 @@ impl Fp {
             .fold(Self::ZERO, |acc, x| {
                 acc * (Self::FIELD_SIZE_POWER_OF_TWO) + x
             }) // let acc =
+    }
+    ///
+    /// Convert bytes into an Fp element, returning None if these bytes are not already reduced.
+    ///
+    /// This means that values that cannot be produced by encoding a field element will return
+    /// None, enforcing canonical serialization.
+    pub fn from_bytes_checked(bytes: &[u8; N_8]) -> Result<Self, EncodingError> {
+        let reduced = Self::from_raw_bytes(bytes);
+        if reduced.to_bytes_le() == *bytes {
+            Ok(reduced)
+        } else {
+            Err(EncodingError::InvalidEncoding)
+        }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_from_bytes_checked() {
+        assert_eq!(Fp::from_bytes_checked(&[0; N_8]), Ok(Fp::ZERO));
+        assert!(Fp::from_bytes_checked(&[0xFF; N_8]).is_err());
     }
 }

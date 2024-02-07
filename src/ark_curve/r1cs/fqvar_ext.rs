@@ -28,12 +28,12 @@ impl FqVarExtension for FqVar {
     /// - Case 4: `(false, sqrt(zeta*num/den))` if `num` and `den` are both nonzero and `num/den` is nonsquare;
     fn isqrt(&self) -> Result<(Boolean<Fq>, FqVar), SynthesisError> {
         // During mode `SynthesisMode::Setup`, value() will not provide a field element.
-        let den = self.value().unwrap_or(Fq::one());
+        let den = self.value().unwrap_or(Fq::ONE);
 
         // Out of circuit sqrt computation:
         // Note: `num = 1`
         // `y = sqrt(num/den)`
-        let (was_square, y) = Fq::sqrt_ratio_zeta(&Fq::one(), &den);
+        let (was_square, y) = Fq::sqrt_ratio_zeta(&Fq::ONE, &den);
 
         let cs = self.cs();
         let was_square_var = Boolean::new_witness(cs.clone(), || Ok(was_square))?;
