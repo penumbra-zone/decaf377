@@ -1,4 +1,4 @@
-use ark_ff::{PrimeField, UniformRand};
+use ark_ff::UniformRand;
 use ark_groth16::{r1cs_to_qap::LibsnarkReduction, Groth16, Proof, ProvingKey, VerifyingKey};
 use proptest::prelude::*;
 

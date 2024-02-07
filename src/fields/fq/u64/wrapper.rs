@@ -12,10 +12,17 @@ pub struct Fq(pub fiat::FqMontgomeryDomainFieldElement);
 
 impl PartialEq for Fq {
     fn eq(&self, other: &Self) -> bool {
-        let sub = self.sub(other);
-        let mut check_word = 0;
-        fiat::fq_nonzero(&mut check_word, &sub.0 .0);
-        check_word == 0
+        match (self.is_sentinel(), other.is_sentinel()) {
+            (true, true) => true,
+            (true, false) => false,
+            (false, true) => false,
+            (false, false) => {
+                let sub = self.sub(other);
+                let mut check_word = 0;
+                fiat::fq_nonzero(&mut check_word, &sub.0 .0);
+                check_word == 0
+            }
+        }
     }
 }
 
@@ -46,12 +53,16 @@ impl Fq {
     }
 
     pub fn to_le_limbs(&self) -> [u64; N_64] {
+        debug_assert!(!self.is_sentinel());
+
         let mut x_non_montgomery = fiat::FqNonMontgomeryDomainFieldElement([0; N]);
         fiat::fq_from_montgomery(&mut x_non_montgomery, &self.0);
         x_non_montgomery.0
     }
 
     pub fn to_bytes_le(&self) -> [u8; N_8] {
+        debug_assert!(!self.is_sentinel());
+
         let mut bytes = [0u8; N_8];
         let mut x_non_montgomery = fiat::FqNonMontgomeryDomainFieldElement([0; N]);
         fiat::fq_from_montgomery(&mut x_non_montgomery, &self.0);
@@ -76,13 +87,26 @@ impl Fq {
         958099254763297437,
     ]));
 
+    /// A sentinel value which exists only to not be equal to any other field element.
+    ///
+    /// Operations involving this element are undefined.
+    pub const SENTINEL: Self = Self::from_montgomery_limbs([u64::MAX; N_64]);
+
+    fn is_sentinel(&self) -> bool {
+        self.0 .0 == Self::SENTINEL.0 .0
+    }
+
     pub fn square(&self) -> Fq {
+        debug_assert!(!self.is_sentinel());
+
         let mut result = fiat::FqMontgomeryDomainFieldElement([0; N]);
         fiat::fq_square(&mut result, &self.0);
         Self(result)
     }
 
     pub fn inverse(&self) -> Option<Fq> {
+        debug_assert!(!self.is_sentinel());
+
         if self == &Fq::ZERO {
             return None;
         }
@@ -161,24 +185,32 @@ impl Fq {
     }
 
     pub fn add(self, other: &Fq) -> Fq {
+        debug_assert!(!self.is_sentinel() && !other.is_sentinel());
+
         let mut result = fiat::FqMontgomeryDomainFieldElement([0; N]);
         fiat::fq_add(&mut result, &self.0, &other.0);
         Fq(result)
     }
 
     pub fn sub(self, other: &Fq) -> Fq {
+        debug_assert!(!self.is_sentinel() && !other.is_sentinel());
+
         let mut result = fiat::FqMontgomeryDomainFieldElement([0; N]);
         fiat::fq_sub(&mut result, &self.0, &other.0);
         Fq(result)
     }
 
     pub fn mul(self, other: &Fq) -> Fq {
+        debug_assert!(!self.is_sentinel() && !other.is_sentinel());
+
         let mut result = fiat::FqMontgomeryDomainFieldElement([0; N]);
         fiat::fq_mul(&mut result, &self.0, &other.0);
         Fq(result)
     }
 
     pub fn neg(self) -> Fq {
+        debug_assert!(!self.is_sentinel());
+
         let mut result = fiat::FqMontgomeryDomainFieldElement([0; N]);
         fiat::fq_opp(&mut result, &self.0);
         Fq(result)
