@@ -52,17 +52,7 @@ impl PrimeField for Fp {
     }
 
     fn from_le_bytes_mod_order(bytes: &[u8]) -> Self {
-        bytes
-            .chunks(48)
-            .map(|x| {
-                let mut padded = [0u8; 48];
-                padded[..x.len()].copy_from_slice(x);
-                Self::from_raw_bytes(&padded)
-            }) // [X, 2^(384) * X, ...]
-            .rev()
-            .fold(Self::zero(), |acc, x| {
-                acc * (Self::FIELD_SIZE_POWER_OF_TWO) + x
-            }) // let acc =
+        Self::from_le_bytes_mod_order(bytes)
     }
 }
 

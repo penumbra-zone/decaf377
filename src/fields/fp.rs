@@ -114,6 +114,7 @@ impl Fp {
                 acc * (Self::FIELD_SIZE_POWER_OF_TWO) + x
             }) // let acc =
     }
+
     ///
     /// Convert bytes into an Fp element, returning None if these bytes are not already reduced.
     ///

@@ -1,9 +1,9 @@
-use super::fiat;
+use super::{
+    super::{B, N_32, N_64, N_8},
+    fiat,
+};
 
-const B: usize = 251;
-const N_64: usize = (B + 63) / 64;
-const N_8: usize = (B + 7) / 8;
-const N: usize = (B + 31) / 32;
+const N: usize = N_32;
 
 #[derive(Copy, Clone)]
 pub struct Fr(pub fiat::FrMontgomeryDomainFieldElement);
@@ -41,7 +41,7 @@ impl Fr {
         Self(x)
     }
 
-    pub fn from_raw_bytes(bytes: &[u8; N_8]) -> Fr {
+    pub(crate) fn from_raw_bytes(bytes: &[u8; N_8]) -> Fr {
         let mut x_non_montgomery = fiat::FrNonMontgomeryDomainFieldElement([0; N]);
         let mut x = fiat::FrMontgomeryDomainFieldElement([0; N]);
 
@@ -70,20 +70,28 @@ impl Fr {
         bytes
     }
 
-    pub const fn from_montgomery_limbs(limbs: [u32; N]) -> Fr {
+    pub const fn from_montgomery_limbs_backend(limbs: [u32; N]) -> Fr {
         Self(fiat::FrMontgomeryDomainFieldElement(limbs))
     }
 
-    pub const fn zero() -> Fr {
-        Self(fiat::FrMontgomeryDomainFieldElement([0; N]))
+    pub const fn from_montgomery_limbs(limbs: [u64; N_64]) -> Fr {
+        Self::from_montgomery_limbs_backend([
+            limbs[0] as u32,
+            (limbs[0] >> 32) as u32,
+            limbs[1] as u32,
+            (limbs[1] >> 32) as u32,
+            limbs[2] as u32,
+            (limbs[2] >> 32) as u32,
+            limbs[3] as u32,
+            (limbs[3] >> 32) as u32,
+        ])
     }
 
-    pub const fn one() -> Self {
-        Self(fiat::FrMontgomeryDomainFieldElement([
-            3498574902, 3872500570, 2604314180, 2497411308, 588265454, 3867012838, 3735373809,
-            66463618,
-        ]))
-    }
+    pub const ZERO: Fr = Self(fiat::FrMontgomeryDomainFieldElement([0; N]));
+
+    pub const ONE: Fr = Self(fiat::FrMontgomeryDomainFieldElement([
+        3498574902, 3872500570, 2604314180, 2497411308, 588265454, 3867012838, 3735373809, 66463618,
+    ]));
 
     pub fn square(&self) -> Fr {
         let mut result = fiat::FrMontgomeryDomainFieldElement([0; N]);
@@ -91,8 +99,8 @@ impl Fr {
         Self(result)
     }
 
-    pub fn inverse(&self) -> Option<Fr> {
-        if self == &Fr::zero() {
+    pub fn inverse(&self) -> Option<Self> {
+        if self == &Self::ZERO {
             return None;
         }
 
@@ -105,7 +113,7 @@ impl Fr {
         fiat::fr_msat(&mut f);
         let mut g: [u32; N + 1] = [0u32; N + 1];
         let mut v: [u32; N] = [0u32; N];
-        let mut r: [u32; N] = Fr::one().0 .0;
+        let mut r: [u32; N] = Self::ONE.0 .0;
         let mut i = 0;
         let mut j = 0;
 

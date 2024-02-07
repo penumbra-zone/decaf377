@@ -1,8 +1,8 @@
-use super::fiat;
+use super::{
+    super::{B, N_64, N_8},
+    fiat,
+};
 
-const B: usize = 251;
-const N_64: usize = (B + 63) / 64;
-const N_8: usize = (B + 7) / 8;
 const N: usize = N_64;
 
 #[derive(Copy, Clone)]
@@ -33,7 +33,7 @@ impl Fr {
         Self(x)
     }
 
-    pub fn from_raw_bytes(bytes: &[u8; N_8]) -> Fr {
+    pub(crate) fn from_raw_bytes(bytes: &[u8; N_8]) -> Fr {
         let mut x_non_montgomery = fiat::FrNonMontgomeryDomainFieldElement([0; N]);
         let mut x = fiat::FrMontgomeryDomainFieldElement([0; N]);
 
@@ -61,18 +61,14 @@ impl Fr {
         Self(fiat::FrMontgomeryDomainFieldElement(limbs))
     }
 
-    pub const fn zero() -> Fr {
-        Self(fiat::FrMontgomeryDomainFieldElement([0; N]))
-    }
+    pub const ZERO: Self = Self(fiat::FrMontgomeryDomainFieldElement([0; N]));
 
-    pub const fn one() -> Self {
-        Self(fiat::FrMontgomeryDomainFieldElement([
-            16632263305389933622,
-            10726299895124897348,
-            16608693673010411502,
-            285459069419210737,
-        ]))
-    }
+    pub const ONE: Self = Self(fiat::FrMontgomeryDomainFieldElement([
+        16632263305389933622,
+        10726299895124897348,
+        16608693673010411502,
+        285459069419210737,
+    ]));
 
     pub fn square(&self) -> Fr {
         let mut result = fiat::FrMontgomeryDomainFieldElement([0; N]);
@@ -81,7 +77,7 @@ impl Fr {
     }
 
     pub fn inverse(&self) -> Option<Fr> {
-        if self == &Fr::zero() {
+        if self == &Self::ZERO {
             return None;
         }
 
@@ -94,7 +90,7 @@ impl Fr {
         fiat::fr_msat(&mut f);
         let mut g: [u64; N + 1] = [0u64; N + 1];
         let mut v: [u64; N] = [0u64; N];
-        let mut r: [u64; N] = Fr::one().0 .0;
+        let mut r: [u64; N] = Self::ONE.0 .0;
         let mut i = 0;
         let mut j = 0;
 

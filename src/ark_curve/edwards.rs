@@ -23,7 +23,7 @@ impl CurveConfig for Decaf377EdwardsConfig {
 
     const COFACTOR: &'static [u64] = &[1];
 
-    const COFACTOR_INV: Fr = Fr::one();
+    const COFACTOR_INV: Fr = Fr::ONE;
 }
 
 impl TECurveConfig for Decaf377EdwardsConfig {
