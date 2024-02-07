@@ -26,7 +26,7 @@ impl zeroize::Zeroize for Fp {
 }
 
 impl Fp {
-    pub fn from_le_limbs(limbs: [u64; N_64]) -> Fp {
+    pub(crate) fn from_le_limbs(limbs: [u64; N_64]) -> Fp {
         let limbs = {
             let mut out = [0u32; N];
             for i in 0..N_64 {
@@ -51,7 +51,7 @@ impl Fp {
         Self(x)
     }
 
-    pub fn to_le_limbs(&self) -> [u64; N_64] {
+    pub(crate) fn to_le_limbs(&self) -> [u64; N_64] {
         let mut x_non_montgomery = fiat::FpNonMontgomeryDomainFieldElement([0; N]);
         fiat::fp_from_montgomery(&mut x_non_montgomery, &self.0);
         let limbs = x_non_montgomery.0;
@@ -74,7 +74,7 @@ impl Fp {
         Self(fiat::FpMontgomeryDomainFieldElement(limbs))
     }
 
-    pub const fn from_montgomery_limbs(limbs: [u64; N_64]) -> Fp {
+    pub(crate) const fn from_montgomery_limbs(limbs: [u64; N_64]) -> Fp {
         Self(fiat::FpMontgomeryDomainFieldElement([
             limbs[0] as u32,
             (limbs[0] >> 32) as u32,
