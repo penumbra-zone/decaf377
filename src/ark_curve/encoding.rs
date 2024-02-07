@@ -99,8 +99,7 @@ impl Element {
 
         // 2. division by 0 occurs on the identity point, but since
         // sqrt_ratio_zeta outputs v=0 it computes the right encoding anyway
-        let (_always_square, v) =
-            Fq::sqrt_ratio_zeta(&Fq::ONE, &(u_1 * A_MINUS_D * p.x.square()));
+        let (_always_square, v) = Fq::sqrt_ratio_zeta(&Fq::ONE, &(u_1 * A_MINUS_D * p.x.square()));
 
         // 3.
         let u_2 = (v * u_1).abs();
