@@ -35,7 +35,7 @@ impl zeroize::Zeroize for Fq {
 }
 
 impl Fq {
-    pub fn from_le_limbs(limbs: [u64; N_64]) -> Fq {
+    pub(crate) fn from_le_limbs(limbs: [u64; N_64]) -> Fq {
         let limbs = {
             let mut out = [0u32; N];
             for i in 0..N_64 {
@@ -60,7 +60,7 @@ impl Fq {
         Self(x)
     }
 
-    pub fn to_le_limbs(&self) -> [u64; N_64] {
+    pub(crate) fn to_le_limbs(&self) -> [u64; N_64] {
         debug_assert!(!self.is_sentinel());
 
         let mut x_non_montgomery = fiat::FqNonMontgomeryDomainFieldElement([0; N]);
@@ -83,7 +83,7 @@ impl Fq {
         bytes
     }
 
-    pub const fn from_montgomery_limbs_backend(limbs: [u32; N]) -> Fq {
+    const fn from_montgomery_limbs_backend(limbs: [u32; N]) -> Fq {
         Self(fiat::FqMontgomeryDomainFieldElement(limbs))
     }
 

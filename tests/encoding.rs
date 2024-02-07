@@ -2,7 +2,7 @@ use core::convert::TryFrom;
 
 use proptest::prelude::*;
 
-use decaf377::{basepoint, Element, Encoding, FieldExt, Fq, Fr};
+use decaf377::{basepoint, Element, Encoding, Fq, Fr};
 
 /*
 #[test]
@@ -104,7 +104,7 @@ proptest! {
 
     #[test]
     fn fq_encoding_round_trip_if_successful(bytes: [u8; 32]) {
-        if let Ok(x) = Fq::from_bytes(bytes) {
+        if let Ok(x) = Fq::from_bytes_checked(&bytes) {
             let bytes2 = x.to_bytes();
             assert_eq!(bytes, bytes2);
         }
@@ -112,7 +112,7 @@ proptest! {
 
     #[test]
     fn scalar_encoding_round_trip_if_successful(bytes: [u8; 32]) {
-        if let Ok(x) = Fr::from_bytes(bytes) {
+        if let Ok(x) = Fr::from_bytes_checked(&bytes) {
             let bytes2 = x.to_bytes();
             assert_eq!(bytes, bytes2);
         }
