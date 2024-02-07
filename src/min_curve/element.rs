@@ -206,8 +206,8 @@ impl Element {
         isri *= twiddle;
 
         let mut s = isri * num;
-        let t = -(sgn) * isri * s * (r - Fq::ONE) * (A - (Fq::ONE + Fq::ONE) * D).square()
-            - Fq::ONE;
+        let t =
+            -(sgn) * isri * s * (r - Fq::ONE) * (A - (Fq::ONE + Fq::ONE) * D).square() - Fq::ONE;
 
         if s.is_negative() == iss {
             s = -s
@@ -259,8 +259,7 @@ impl Encoding {
         let u_2 = u_1.square() - (Fq::from(4u32) * COEFF_D) * ss;
 
         // 5. sqrt
-        let (was_square, mut v) =
-            Fq::non_arkworks_sqrt_ratio_zeta(&Fq::ONE, &(u_2 * u_1.square()));
+        let (was_square, mut v) = Fq::non_arkworks_sqrt_ratio_zeta(&Fq::ONE, &(u_2 * u_1.square()));
         if !was_square {
             return Err(EncodingError::InvalidEncoding);
         }
