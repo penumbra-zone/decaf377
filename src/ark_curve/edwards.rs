@@ -28,7 +28,7 @@ impl CurveConfig for Decaf377EdwardsConfig {
 
 impl TECurveConfig for Decaf377EdwardsConfig {
     /// COEFF_A = -1
-    const COEFF_A: Fq = Fq::from_montgomery_limbs_64([
+    const COEFF_A: Fq = Fq::from_montgomery_limbs([
         10157024534604021774,
         16668528035959406606,
         5322190058819395602,
@@ -36,7 +36,7 @@ impl TECurveConfig for Decaf377EdwardsConfig {
     ]);
 
     /// COEFF_D = 3021
-    const COEFF_D: Fq = Fq::from_montgomery_limbs_64([
+    const COEFF_D: Fq = Fq::from_montgomery_limbs([
         15008245758212136496,
         17341409599856531410,
         648869460136961410,
@@ -59,14 +59,14 @@ impl TECurveConfig for Decaf377EdwardsConfig {
 }
 
 impl MontCurveConfig for Decaf377EdwardsConfig {
-    const COEFF_A: Fq = Fq::from_montgomery_limbs_64([
+    const COEFF_A: Fq = Fq::from_montgomery_limbs([
         13800168384327121454,
         6841573379969807446,
         12529593083398462246,
         853978956621483129,
     ]);
 
-    const COEFF_B: Fq = Fq::from_montgomery_limbs_64([
+    const COEFF_B: Fq = Fq::from_montgomery_limbs([
         7239382437352637935,
         14509846070439283655,
         5083066350480839936,

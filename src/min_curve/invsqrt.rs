@@ -1,6 +1,6 @@
 use subtle::{ConditionallySelectable, ConstantTimeEq};
 
-use crate::{fields::fq::arkworks_constants::*, Fq};
+use crate::Fq;
 
 use crate::min_curve::constants::ZETA;
 
@@ -18,7 +18,7 @@ impl Fq {
         // c5 = QUADRATIC_NON_RESIDUE_TO_TRACE
 
         // Step 1: z = x^c3
-        let mut z = self.pow_le_limbs(&TRACE_MINUS_ONE_DIV_TWO_LIMBS);
+        let mut z = self.pow_le_limbs(&Fq::TRACE_MINUS_ONE_DIV_TWO_LIMBS);
 
         // Step 2: t = z * z * x
         let mut t = z * z * self;
@@ -30,10 +30,10 @@ impl Fq {
         let mut b = t;
 
         // Step 5: c = c5
-        let mut c = QUADRATIC_NON_RESIDUE_TO_TRACE;
+        let mut c = Fq::QUADRATIC_NON_RESIDUE_TO_TRACE;
 
         // Step 6: for i in (c1, c1 - 1, ..., 2):
-        for i in (2..=TWO_ADICITY).rev() {
+        for i in (2..=Fq::TWO_ADICITY).rev() {
             // Step 7: for j in (1, 2, ..., i - 2):
             for _j in 1..=i - 2 {
                 // Step 8: b = b * b
@@ -41,13 +41,13 @@ impl Fq {
             }
 
             // Step 9: z = CMOV(z, z * c, b != 1)
-            z = Fq::conditional_select(&z, &(z * c), !b.ct_eq(&Self::one()));
+            z = Fq::conditional_select(&z, &(z * c), !b.ct_eq(&Self::ONE));
 
             // Step 10: c = c * c
             c = c * c;
 
             // Step 11: t = CMOV(t, t * c, b != 1)
-            t = Fq::conditional_select(&t, &(t * c), !b.ct_eq(&Self::one()));
+            t = Fq::conditional_select(&t, &(t * c), !b.ct_eq(&Self::ONE));
 
             // Step 12: b = t
             b = t;
@@ -58,7 +58,7 @@ impl Fq {
     }
 
     fn pow_le_limbs(&self, limbs: &[u64]) -> Self {
-        let mut acc = Self::one();
+        let mut acc = Self::ONE;
         let mut insert = *self;
         for limb in limbs {
             for i in 0..64 {
@@ -78,16 +78,16 @@ impl Fq {
     /// - `(false, 0)` if `den` is zero;
     /// - `(false, sqrt(zeta*num/den))` if `num` and `den` are both nonzero and `num/den` is nonsquare;
     pub fn non_arkworks_sqrt_ratio_zeta(num: &Self, den: &Self) -> (bool, Self) {
-        if num == &Fq::zero() {
+        if num == &Fq::ZERO {
             return (true, *num);
         }
-        if den == &Fq::zero() {
+        if den == &Fq::ZERO {
             return (false, *den);
         }
         let x = *num / *den;
         // Because num was not zero, this will only be 1 or -1
-        let symbol = x.pow_le_limbs(&MODULUS_MINUS_ONE_DIV_TWO_LIMBS);
-        if symbol == Self::one() {
+        let symbol = x.pow_le_limbs(&Fq::MODULUS_MINUS_ONE_DIV_TWO_LIMBS);
+        if symbol == Self::ONE {
             (true, x.our_sqrt())
         } else {
             (false, (ZETA * x).our_sqrt())
@@ -112,9 +112,9 @@ mod tests {
         #![proptest_config(ProptestConfig::with_cases(10000))]
         #[test]
         fn sqrt_ratio_zeta(u in fq_strategy(), v in fq_strategy()) {
-            if u == Fq::zero() {
+            if u == Fq::ZERO {
                 assert_eq!(Fq::non_arkworks_sqrt_ratio_zeta(&u, &v), (true, u));
-            } else if v == Fq::zero() {
+            } else if v == Fq::ZERO {
                 assert_eq!(Fq::non_arkworks_sqrt_ratio_zeta(&u, &v), (false, v));
             } else {
                 let (was_square, sqrt_zeta_uv) = Fq::non_arkworks_sqrt_ratio_zeta(&u, &v);
@@ -134,14 +134,14 @@ mod tests {
     fn sqrt_ratio_edge_cases() {
         // u = 0
         assert_eq!(
-            Fq::non_arkworks_sqrt_ratio_zeta(&Fq::zero(), &Fq::one()),
-            (true, Fq::zero())
+            Fq::non_arkworks_sqrt_ratio_zeta(&Fq::ZERO, &Fq::ONE),
+            (true, Fq::ZERO)
         );
 
         // v = 0
         assert_eq!(
-            Fq::non_arkworks_sqrt_ratio_zeta(&Fq::one(), &Fq::zero()),
-            (false, Fq::zero())
+            Fq::non_arkworks_sqrt_ratio_zeta(&Fq::ONE, &Fq::ZERO),
+            (false, Fq::ZERO)
         );
     }
 

@@ -257,7 +257,7 @@ impl CurveConfig for OurG1Config {
 
     const COFACTOR: &'static [u64] = &[0x0, 0x170b5d4430000000];
 
-    const COFACTOR_INV: Self::ScalarField = Fq::from_montgomery_limbs_64([
+    const COFACTOR_INV: Self::ScalarField = Fq::from_montgomery_limbs([
         2013239619100046060,
         4201184776506987597,
         2526766393982337036,
@@ -309,7 +309,7 @@ impl CurveConfig for OurG2Config {
         0x26ba558ae9562a,
     ];
 
-    const COFACTOR_INV: Self::ScalarField = Fq::from_montgomery_limbs_64([
+    const COFACTOR_INV: Self::ScalarField = Fq::from_montgomery_limbs([
         15499857013495546999,
         4613531467548868169,
         14546778081091178013,

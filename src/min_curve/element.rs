@@ -21,8 +21,8 @@ pub struct AffinePoint {
 impl AffinePoint {
     /// The identity element for the group structure.
     pub const IDENTITY: Self = Self {
-        x: Fq::zero(),
-        y: Fq::one(),
+        x: Fq::ZERO,
+        y: Fq::ONE,
     };
 }
 
@@ -51,28 +51,28 @@ impl ConditionallySelectable for Element {
 impl Element {
     /// The identity element for the group structure.
     pub const IDENTITY: Self = Self {
-        x: Fq::zero(),
-        y: Fq::one(),
-        z: Fq::one(),
-        t: Fq::zero(),
+        x: Fq::ZERO,
+        y: Fq::ONE,
+        z: Fq::ONE,
+        t: Fq::ZERO,
     };
 
     /// The generator element for the group structure.
     pub const GENERATOR: Self = Self {
-        x: Fq::from_montgomery_limbs_64([
+        x: Fq::from_montgomery_limbs([
             5825153684096051627,
             16988948339439369204,
             186539475124256708,
             1230075515893193738,
         ]),
-        y: Fq::from_montgomery_limbs_64([
+        y: Fq::from_montgomery_limbs([
             9786171649960077610,
             13527783345193426398,
             10983305067350511165,
             1251302644532346138,
         ]),
-        z: Fq::one(),
-        t: Fq::from_montgomery_limbs_64([
+        z: Fq::ONE,
+        t: Fq::from_montgomery_limbs([
             7466800842436274004,
             14314110021432015475,
             14108125795146788134,
@@ -96,7 +96,7 @@ impl Element {
     }
 
     fn from_affine(x: Fq, y: Fq) -> Self {
-        let z = Fq::one();
+        let z = Fq::ONE;
         let t = x * y;
         Self::new(x, y, z, t)
     }
@@ -161,7 +161,7 @@ impl Element {
 
         // 2.
         let (_always_square, v) =
-            Fq::non_arkworks_sqrt_ratio_zeta(&Fq::one(), &(u_1 * A_MINUS_D * self.x.square()));
+            Fq::non_arkworks_sqrt_ratio_zeta(&Fq::ONE, &(u_1 * A_MINUS_D * self.x.square()));
 
         // 3.
         let u_2 = (v * u_1).abs();
@@ -188,35 +188,35 @@ impl Element {
         let r = ZETA * r_0.square();
 
         let den = (D * r - (D - A)) * ((D - A) * r - D);
-        let num = (r + Fq::one()) * (A - (Fq::one() + Fq::one()) * D);
+        let num = (r + Fq::ONE) * (A - (Fq::ONE + Fq::ONE) * D);
 
         let x = num * den;
-        let (iss, mut isri) = Fq::non_arkworks_sqrt_ratio_zeta(&Fq::one(), &x);
+        let (iss, mut isri) = Fq::non_arkworks_sqrt_ratio_zeta(&Fq::ONE, &x);
 
         let sgn;
         let twiddle;
         if iss {
-            sgn = Fq::one();
-            twiddle = Fq::one();
+            sgn = Fq::ONE;
+            twiddle = Fq::ONE;
         } else {
-            sgn = -(Fq::one());
+            sgn = -(Fq::ONE);
             twiddle = *r_0;
         }
 
         isri *= twiddle;
 
         let mut s = isri * num;
-        let t = -(sgn) * isri * s * (r - Fq::one()) * (A - (Fq::one() + Fq::one()) * D).square()
-            - Fq::one();
+        let t = -(sgn) * isri * s * (r - Fq::ONE) * (A - (Fq::ONE + Fq::ONE) * D).square()
+            - Fq::ONE;
 
         if s.is_negative() == iss {
             s = -s
         }
 
         // Convert point to extended projective (X : Y : Z : T)
-        let E = (Fq::one() + Fq::one()) * s;
-        let F = Fq::one() + A * s.square();
-        let G = Fq::one() - A * s.square();
+        let E = (Fq::ONE + Fq::ONE) * s;
+        let F = Fq::ONE + A * s.square();
+        let G = Fq::ONE - A * s.square();
         let H = t;
 
         Self::new(E * H, F * G, F * H, E * G)
@@ -246,27 +246,27 @@ impl Encoding {
 
         // 1/2. Reject unless s is canonically encoded and nonnegative.
         // Check bytes correspond to valid field element (i.e. less than field modulus)
-        let s = Fq::from_bytes_checked(&self.0).ok_or(EncodingError::InvalidEncoding)?;
+        let s = Fq::from_bytes_checked(&self.0)?;
         if s.is_negative() {
             return Err(EncodingError::InvalidEncoding);
         }
 
         // 3. u_1 <- 1 - s^2
         let ss = s.square();
-        let u_1 = Fq::one() - ss;
+        let u_1 = Fq::ONE - ss;
 
         // 4. u_2 <- u_1^2 - 4d s^2
         let u_2 = u_1.square() - (Fq::from(4u32) * COEFF_D) * ss;
 
         // 5. sqrt
         let (was_square, mut v) =
-            Fq::non_arkworks_sqrt_ratio_zeta(&Fq::one(), &(u_2 * u_1.square()));
+            Fq::non_arkworks_sqrt_ratio_zeta(&Fq::ONE, &(u_2 * u_1.square()));
         if !was_square {
             return Err(EncodingError::InvalidEncoding);
         }
 
         // 6. sign check
-        let two_s_u_1 = (Fq::one() + Fq::one()) * s * u_1;
+        let two_s_u_1 = (Fq::ONE + Fq::ONE) * s * u_1;
         let check = two_s_u_1 * v;
         if check.is_negative() {
             v = -v;
@@ -274,8 +274,8 @@ impl Encoding {
 
         // 7. coordinates
         let x = two_s_u_1 * v.square() * u_2;
-        let y = (Fq::one() + ss) * v * u_1;
-        let z = Fq::one();
+        let y = (Fq::ONE + ss) * v * u_1;
+        let z = Fq::ONE;
         let t = x * y;
 
         Ok(Element::new(x, y, z, t))

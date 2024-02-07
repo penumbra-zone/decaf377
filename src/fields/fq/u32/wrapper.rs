@@ -1,11 +1,11 @@
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
 
-use super::fiat;
+use super::{
+    super::{B, N_32, N_64, N_8},
+    fiat,
+};
 
-const B: usize = 253;
-const N_64: usize = (B + 63) / 64;
-const N_8: usize = (B + 7) / 8;
-const N: usize = (B + 31) / 32;
+const N: usize = N_32;
 
 #[derive(Copy, Clone)]
 pub struct Fq(pub fiat::FqMontgomeryDomainFieldElement);
@@ -43,7 +43,7 @@ impl Fq {
         Self(x)
     }
 
-    pub fn from_raw_bytes(bytes: &[u8; N_8]) -> Fq {
+    pub(crate) fn from_raw_bytes(bytes: &[u8; N_8]) -> Fq {
         let mut x_non_montgomery = fiat::FqNonMontgomeryDomainFieldElement([0; N]);
         let mut x = fiat::FqMontgomeryDomainFieldElement([0; N]);
 
@@ -72,11 +72,11 @@ impl Fq {
         bytes
     }
 
-    pub const fn from_montgomery_limbs(limbs: [u32; N]) -> Fq {
+    pub const fn from_montgomery_limbs_backend(limbs: [u32; N]) -> Fq {
         Self(fiat::FqMontgomeryDomainFieldElement(limbs))
     }
 
-    pub const fn from_montgomery_limbs_64(limbs: [u64; N_64]) -> Fq {
+    pub const fn from_montgomery_limbs(limbs: [u64; N_64]) -> Fq {
         Self(fiat::FqMontgomeryDomainFieldElement([
             limbs[0] as u32,
             (limbs[0] >> 32) as u32,
@@ -89,16 +89,11 @@ impl Fq {
         ]))
     }
 
-    pub const fn zero() -> Fq {
-        Self(fiat::FqMontgomeryDomainFieldElement([0; N]))
-    }
+    pub const ZERO: Self = Self(fiat::FqMontgomeryDomainFieldElement([0; N]));
 
-    pub const fn one() -> Self {
-        Self(fiat::FqMontgomeryDomainFieldElement([
-            4294967283, 2099019775, 1879048178, 1918366991, 1361842158, 383260021, 733715101,
-            223074866,
-        ]))
-    }
+    pub const ONE: Self = Self(fiat::FqMontgomeryDomainFieldElement([
+        4294967283, 2099019775, 1879048178, 1918366991, 1361842158, 383260021, 733715101, 223074866,
+    ]));
 
     pub fn square(&self) -> Fq {
         let mut result = fiat::FqMontgomeryDomainFieldElement([0; N]);
@@ -106,8 +101,8 @@ impl Fq {
         Self(result)
     }
 
-    pub fn inverse(&self) -> Option<Fq> {
-        if self == &Fq::zero() {
+    pub fn inverse(&self) -> Option<Self> {
+        if self == &Self::ZERO {
             return None;
         }
 
@@ -120,7 +115,7 @@ impl Fq {
         fiat::fq_msat(&mut f);
         let mut g: [u32; N + 1] = [0u32; N + 1];
         let mut v: [u32; N] = [0u32; N];
-        let mut r: [u32; N] = Fq::one().0 .0;
+        let mut r: [u32; N] = Self::ONE.0 .0;
         let mut i = 0;
         let mut j = 0;
 

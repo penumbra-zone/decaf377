@@ -1,4 +1,4 @@
-use super::{arkworks_constants::*, Fq};
+use super::Fq;
 use ark_ff::{BigInt, Field, PrimeField, SqrtPrecomputation};
 use ark_ff::{BigInteger, FftField};
 use ark_serialize::{
@@ -18,20 +18,20 @@ impl PrimeField for Fq {
     type BigInt = BigInt<4>;
 
     /// The BLS12-377 base field modulus `p` = 0x12ab655e9a2ca55660b44d1e5c37b00159aa76fed00000010a11800000000001
-    const MODULUS: Self::BigInt = ark_ff::BigInt(MODULUS_LIMBS);
+    const MODULUS: Self::BigInt = ark_ff::BigInt(Self::MODULUS_LIMBS);
 
     /// The value `(p - 1)/ 2`.
-    const MODULUS_MINUS_ONE_DIV_TWO: Self::BigInt = BigInt(MODULUS_MINUS_ONE_DIV_TWO_LIMBS);
+    const MODULUS_MINUS_ONE_DIV_TWO: Self::BigInt = BigInt(Self::MODULUS_MINUS_ONE_DIV_TWO_LIMBS);
 
     /// The size of the modulus in bits.
-    const MODULUS_BIT_SIZE: u32 = MODULUS_BIT_SIZE;
+    const MODULUS_BIT_SIZE: u32 = Self::MODULUS_BIT_SIZE;
 
     /// The trace of the field is defined as the smallest integer `t` such that by
     /// `2^s * t = p - 1`, and `t` is coprime to 2.
-    const TRACE: Self::BigInt = BigInt(TRACE_LIMBS);
+    const TRACE: Self::BigInt = BigInt(Self::TRACE_LIMBS);
 
     /// The value `(t - 1)/ 2`.
-    const TRACE_MINUS_ONE_DIV_TWO: Self::BigInt = BigInt(TRACE_MINUS_ONE_DIV_TWO_LIMBS);
+    const TRACE_MINUS_ONE_DIV_TWO: Self::BigInt = BigInt(Self::TRACE_MINUS_ONE_DIV_TWO_LIMBS);
 
     fn from_bigint(repr: Self::BigInt) -> Option<Self> {
         if repr >= Fq::MODULUS {
@@ -61,7 +61,9 @@ impl PrimeField for Fq {
                 Self::from_raw_bytes(&padded)
             }) // [X, 2^256 * X, ...]
             .rev()
-            .fold(Self::zero(), |acc, x| acc * (FIELD_SIZE_POWER_OF_TWO) + x) // let acc =
+            .fold(Self::zero(), |acc, x| {
+                acc * (Self::FIELD_SIZE_POWER_OF_TWO) + x
+            }) // let acc =
     }
 }
 
@@ -71,15 +73,15 @@ impl Field for Fq {
 
     const SQRT_PRECOMP: Option<SqrtPrecomputation<Self>> =
         Some(SqrtPrecomputation::TonelliShanks {
-            two_adicity: TWO_ADICITY,
-            quadratic_nonresidue_to_trace: QUADRATIC_NON_RESIDUE_TO_TRACE,
-            trace_of_modulus_minus_one_div_two: &TRACE_MINUS_ONE_DIV_TWO_LIMBS,
+            two_adicity: Self::TWO_ADICITY,
+            quadratic_nonresidue_to_trace: Self::QUADRATIC_NON_RESIDUE_TO_TRACE,
+            trace_of_modulus_minus_one_div_two: &Self::TRACE_MINUS_ONE_DIV_TWO_LIMBS,
         });
 
-    const ZERO: Self = Self::zero();
+    const ZERO: Self = Self::ZERO;
 
     // Montomgery representation of one
-    const ONE: Self = Self::one();
+    const ONE: Self = Self::ONE;
 
     fn extension_degree() -> u64 {
         1
@@ -158,14 +160,14 @@ impl Field for Fq {
     }
 
     fn characteristic() -> &'static [u64] {
-        &MODULUS_LIMBS
+        &Self::MODULUS_LIMBS
     }
 }
 
 impl FftField for Fq {
-    const GENERATOR: Self = MULTIPLICATIVE_GENERATOR;
-    const TWO_ADICITY: u32 = TWO_ADICITY;
-    const TWO_ADIC_ROOT_OF_UNITY: Self = TWO_ADIC_ROOT_OF_UNITY;
+    const GENERATOR: Self = Self::MULTIPLICATIVE_GENERATOR;
+    const TWO_ADICITY: u32 = Self::TWO_ADICITY;
+    const TWO_ADIC_ROOT_OF_UNITY: Self = Self::TWO_ADIC_ROOT_OF_UNITY;
     const SMALL_SUBGROUP_BASE: Option<u32> = None;
     const SMALL_SUBGROUP_BASE_ADICITY: Option<u32> = None;
     const LARGE_SUBGROUP_ROOT_OF_UNITY: Option<Self> = None;
@@ -288,7 +290,7 @@ impl ark_std::rand::distributions::Distribution<Fq> for ark_std::rand::distribut
     fn sample<R: rand::prelude::Rng + ?Sized>(&self, rng: &mut R) -> Fq {
         loop {
             let mut repr: [u64; 4] = rng.sample(ark_std::rand::distributions::Standard);
-            let shave_bits = 64 * 4 - (MODULUS_BIT_SIZE as usize);
+            let shave_bits = 64 * 4 - (Fq::MODULUS_BIT_SIZE as usize);
             // Mask away the unused bits at the beginning.
             let mask = if shave_bits == 64 {
                 0

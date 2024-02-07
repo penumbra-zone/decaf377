@@ -1,10 +1,10 @@
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
 
-use super::fiat;
+use super::{
+    super::{B, N_64, N_8},
+    fiat,
+};
 
-const B: usize = 253;
-const N_64: usize = (B + 63) / 64;
-const N_8: usize = (B + 7) / 8;
 const N: usize = N_64;
 
 #[derive(Copy, Clone)]
@@ -35,7 +35,7 @@ impl Fq {
         Self(x)
     }
 
-    pub fn from_raw_bytes(bytes: &[u8; N_8]) -> Fq {
+    pub(crate) fn from_raw_bytes(bytes: &[u8; N_8]) -> Fq {
         let mut x_non_montgomery = fiat::FqNonMontgomeryDomainFieldElement([0; N]);
         let mut x = fiat::FqMontgomeryDomainFieldElement([0; N]);
 
@@ -59,26 +59,22 @@ impl Fq {
         bytes
     }
 
+    pub const fn from_montgomery_limbs_backend(limbs: [u64; N]) -> Fq {
+        Self(fiat::FqMontgomeryDomainFieldElement(limbs))
+    }
+
     pub const fn from_montgomery_limbs(limbs: [u64; N]) -> Fq {
         Self(fiat::FqMontgomeryDomainFieldElement(limbs))
     }
 
-    pub const fn from_montgomery_limbs_64(limbs: [u64; N]) -> Fq {
-        Self(fiat::FqMontgomeryDomainFieldElement(limbs))
-    }
+    pub const ZERO: Self = Self(fiat::FqMontgomeryDomainFieldElement([0; N]));
 
-    pub const fn zero() -> Fq {
-        Self(fiat::FqMontgomeryDomainFieldElement([0; N]))
-    }
-
-    pub const fn one() -> Self {
-        Self(fiat::FqMontgomeryDomainFieldElement([
-            9015221291577245683,
-            8239323489949974514,
-            1646089257421115374,
-            958099254763297437,
-        ]))
-    }
+    pub const ONE: Self = Self(fiat::FqMontgomeryDomainFieldElement([
+        9015221291577245683,
+        8239323489949974514,
+        1646089257421115374,
+        958099254763297437,
+    ]));
 
     pub fn square(&self) -> Fq {
         let mut result = fiat::FqMontgomeryDomainFieldElement([0; N]);
@@ -87,7 +83,7 @@ impl Fq {
     }
 
     pub fn inverse(&self) -> Option<Fq> {
-        if self == &Fq::zero() {
+        if self == &Fq::ZERO {
             return None;
         }
 
@@ -100,7 +96,7 @@ impl Fq {
         fiat::fq_msat(&mut f);
         let mut g: [u64; N + 1] = [0u64; N + 1];
         let mut v: [u64; N] = [0u64; N];
-        let mut r: [u64; N] = Fq::one().0 .0;
+        let mut r: [u64; N] = Fq::ONE.0 .0;
         let mut i = 0;
         let mut j = 0;
 
