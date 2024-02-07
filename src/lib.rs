@@ -6,8 +6,6 @@ use cfg_if::cfg_if;
 
 pub mod fields;
 pub use fields::{fp::Fp, fq::Fq, fr::Fr};
-mod field_ext;
-pub use field_ext::FieldExt;
 mod sign;
 
 mod error;

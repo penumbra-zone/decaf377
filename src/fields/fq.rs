@@ -112,6 +112,10 @@ impl Fq {
             Err(EncodingError::InvalidEncoding)
         }
     }
+
+    pub fn to_bytes(&self) -> [u8; N_8] {
+        self.to_bytes_le()
+    }
 }
 
 #[cfg(test)]
