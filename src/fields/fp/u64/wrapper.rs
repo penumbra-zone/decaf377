@@ -57,10 +57,6 @@ impl Fp {
         bytes
     }
 
-    const fn from_montgomery_limbs_backend(limbs: [u64; N]) -> Fp {
-        Self(fiat::FpMontgomeryDomainFieldElement(limbs))
-    }
-
     pub const fn from_montgomery_limbs(limbs: [u64; N]) -> Fp {
         Self(fiat::FpMontgomeryDomainFieldElement(limbs))
     }
