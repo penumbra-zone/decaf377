@@ -171,7 +171,6 @@ mod tests {
     use super::*;
     use crate::ark_curve::constants::ZETA;
 
-    use ark_ff::PrimeField;
     use proptest::prelude::*;
 
     fn fq_strategy() -> BoxedStrategy<Fq> {

@@ -356,17 +356,17 @@ mod test {
 
     #[test]
     fn test_g_times_one() {
-        assert_eq!(Element::GENERATOR * Fr::one(), Element::GENERATOR);
+        assert_eq!(Element::GENERATOR * Fr::ONE, Element::GENERATOR);
     }
 
     #[test]
     fn test_g_times_zero() {
-        assert_eq!(Element::GENERATOR * Fr::zero(), Element::IDENTITY);
+        assert_eq!(Element::GENERATOR * Fr::ZERO, Element::IDENTITY);
     }
 
     #[test]
     fn test_g_times_minus_one() {
-        assert_eq!(Element::GENERATOR * (-Fr::one()), -Element::GENERATOR);
+        assert_eq!(Element::GENERATOR * (-Fr::ONE), -Element::GENERATOR);
     }
 
     #[test]
@@ -409,7 +409,7 @@ mod proptests {
     prop_compose! {
         fn arb_fr()(a in arb_fr_limbs()) -> Fr {
             // Will be fine because of the bounds in the arb_fr_limbs
-            Fr::from_bigint(BigInt(a)).unwrap_or(Fr::zero())
+            Fr::from_bigint(BigInt(a)).unwrap_or(Fr::ZERO)
         }
     }
 

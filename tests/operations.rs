@@ -1,6 +1,5 @@
 #![allow(non_snake_case)]
 
-use ark_ff::PrimeField;
 use decaf377::{Element, Fq, Fr};
 use proptest::prelude::*;
 

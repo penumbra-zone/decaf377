@@ -86,6 +86,20 @@ impl Fq {
         81024008013859129,
     ]);
 
+    pub fn from_le_bytes_mod_order(bytes: &[u8]) -> Self {
+        bytes
+            .chunks(N_8)
+            .map(|x| {
+                let mut padded = [0u8; N_8];
+                padded[..x.len()].copy_from_slice(x);
+                Self::from_raw_bytes(&padded)
+            }) // [X, 2^(256) * X, ...]
+            .rev()
+            .fold(Self::ZERO, |acc, x| {
+                acc * (Self::FIELD_SIZE_POWER_OF_TWO) + x
+            }) // let acc =
+    }
+
     /// Convert bytes into an Fq element, returning None if these bytes are not already reduced.
     ///
     /// This means that values that cannot be produced by encoding a field element will return

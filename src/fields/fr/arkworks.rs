@@ -1,4 +1,4 @@
-use super::{arkworks_constants::*, Fr};
+use super::Fr;
 use ark_ff::{BigInt, Field, PrimeField, SqrtPrecomputation};
 use ark_ff::{BigInteger, FftField};
 use ark_serialize::{
@@ -17,20 +17,20 @@ impl PrimeField for Fr {
     type BigInt = BigInt<4>;
 
     /// The BLS12-377 base field modulus `p` = 0x4aad957a68b2955982d1347970dec005293a3afc43c8afeb95aee9ac33fd9ff
-    const MODULUS: Self::BigInt = ark_ff::BigInt(MODULUS_LIMBS);
+    const MODULUS: Self::BigInt = ark_ff::BigInt(Self::MODULUS_LIMBS);
 
     /// The value `(p - 1)/ 2`.
-    const MODULUS_MINUS_ONE_DIV_TWO: Self::BigInt = BigInt(MODULUS_MINUS_ONE_DIV_TWO_LIMBS);
+    const MODULUS_MINUS_ONE_DIV_TWO: Self::BigInt = BigInt(Self::MODULUS_MINUS_ONE_DIV_TWO_LIMBS);
 
     /// The size of the modulus in bits.
-    const MODULUS_BIT_SIZE: u32 = MODULUS_BIT_SIZE;
+    const MODULUS_BIT_SIZE: u32 = Self::MODULUS_BIT_SIZE;
 
     /// The trace of the field is defined as the smallest integer `t` such that by
     /// `2^s * t = p - 1`, and `t` is coprime to 2.
-    const TRACE: Self::BigInt = BigInt(TRACE_LIMBS);
+    const TRACE: Self::BigInt = BigInt(Self::TRACE_LIMBS);
 
     /// The value `(t - 1)/ 2`.
-    const TRACE_MINUS_ONE_DIV_TWO: Self::BigInt = BigInt(TRACE_MINUS_ONE_DIV_TWO_LIMBS);
+    const TRACE_MINUS_ONE_DIV_TWO: Self::BigInt = BigInt(Self::TRACE_MINUS_ONE_DIV_TWO_LIMBS);
 
     fn from_bigint(repr: Self::BigInt) -> Option<Self> {
         if repr >= Fr::MODULUS {
@@ -52,15 +52,7 @@ impl PrimeField for Fr {
     }
 
     fn from_le_bytes_mod_order(bytes: &[u8]) -> Self {
-        bytes
-            .chunks(32)
-            .map(|x| {
-                let mut padded = [0u8; 32];
-                padded[..x.len()].copy_from_slice(x);
-                Self::from_raw_bytes(&padded)
-            }) // [X, 2^256 * X, ...]
-            .rev()
-            .fold(Self::zero(), |acc, x| acc * (FIELD_SIZE_POWER_OF_TWO) + x) // let acc =
+        Self::from_le_bytes_mod_order(bytes)
     }
 }
 
@@ -77,10 +69,10 @@ impl Field for Fr {
         ],
     });
 
-    const ZERO: Self = Self::zero();
+    const ZERO: Self = Self::ZERO;
 
     // Montomgery representation of one
-    const ONE: Self = Self::one();
+    const ONE: Self = Self::ONE;
 
     fn extension_degree() -> u64 {
         1
@@ -159,14 +151,14 @@ impl Field for Fr {
     }
 
     fn characteristic() -> &'static [u64] {
-        &MODULUS_LIMBS
+        &Self::MODULUS_LIMBS
     }
 }
 
 impl FftField for Fr {
-    const GENERATOR: Self = MULTIPLICATIVE_GENERATOR;
-    const TWO_ADICITY: u32 = TWO_ADICITY;
-    const TWO_ADIC_ROOT_OF_UNITY: Self = TWO_ADIC_ROOT_OF_UNITY;
+    const GENERATOR: Self = Self::MULTIPLICATIVE_GENERATOR;
+    const TWO_ADICITY: u32 = Self::TWO_ADICITY;
+    const TWO_ADIC_ROOT_OF_UNITY: Self = Self::TWO_ADIC_ROOT_OF_UNITY;
     const SMALL_SUBGROUP_BASE: Option<u32> = None;
     const SMALL_SUBGROUP_BASE_ADICITY: Option<u32> = None;
     const LARGE_SUBGROUP_ROOT_OF_UNITY: Option<Self> = None;
@@ -289,7 +281,7 @@ impl ark_std::rand::distributions::Distribution<Fr> for ark_std::rand::distribut
     fn sample<R: rand::prelude::Rng + ?Sized>(&self, rng: &mut R) -> Fr {
         loop {
             let mut repr: [u64; 4] = rng.sample(ark_std::rand::distributions::Standard);
-            let shave_bits = 64 * 4 - (MODULUS_BIT_SIZE as usize);
+            let shave_bits = 64 * 4 - (Fr::MODULUS_BIT_SIZE as usize);
             // Mask away the unused bits at the beginning.
             let mask = if shave_bits == 64 {
                 0
