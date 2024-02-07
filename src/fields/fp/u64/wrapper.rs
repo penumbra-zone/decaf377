@@ -1,8 +1,8 @@
-use super::fiat;
+use super::{
+    super::{B, N_64, N_8},
+    fiat,
+};
 
-const B: usize = 377;
-const N_64: usize = (B + 63) / 64;
-const N_8: usize = (B + 7) / 8;
 const N: usize = N_64;
 
 #[derive(Copy, Clone)]
@@ -33,7 +33,7 @@ impl Fp {
         Self(x)
     }
 
-    pub fn from_raw_bytes(bytes: &[u8; N_8]) -> Fp {
+    pub(crate) fn from_raw_bytes(bytes: &[u8; N_8]) -> Fp {
         let mut x_non_montgomery = fiat::FpNonMontgomeryDomainFieldElement([0; N]);
         let mut x = fiat::FpMontgomeryDomainFieldElement([0; N]);
 
@@ -57,50 +57,42 @@ impl Fp {
         bytes
     }
 
+    const fn from_montgomery_limbs_backend(limbs: [u64; N]) -> Fp {
+        Self(fiat::FpMontgomeryDomainFieldElement(limbs))
+    }
+
     pub const fn from_montgomery_limbs(limbs: [u64; N]) -> Fp {
         Self(fiat::FpMontgomeryDomainFieldElement(limbs))
     }
 
-    pub const fn from_montgomery_limbs_64(limbs: [u64; N]) -> Fp {
-        Self(fiat::FpMontgomeryDomainFieldElement(limbs))
-    }
+    pub const ZERO: Self = Self(fiat::FpMontgomeryDomainFieldElement([0; N]));
 
-    pub const fn zero() -> Fp {
-        Self(fiat::FpMontgomeryDomainFieldElement([0; N]))
-    }
+    pub const ONE: Self = Self(fiat::FpMontgomeryDomainFieldElement([
+        202099033278250856,
+        5854854902718660529,
+        11492539364873682930,
+        8885205928937022213,
+        5545221690922665192,
+        39800542322357402,
+    ]));
 
-    pub const fn one() -> Self {
-        Self(fiat::FpMontgomeryDomainFieldElement([
-            202099033278250856,
-            5854854902718660529,
-            11492539364873682930,
-            8885205928937022213,
-            5545221690922665192,
-            39800542322357402,
-        ]))
-    }
+    pub const MINUS_ONE: Self = Self(fiat::FpMontgomeryDomainFieldElement([
+        9384023879812382873,
+        14252412606051516495,
+        9184438906438551565,
+        11444845376683159689,
+        8738795276227363922,
+        81297770384137296,
+    ]));
 
-    pub const fn minus_one() -> Self {
-        Self(fiat::FpMontgomeryDomainFieldElement([
-            9384023879812382873,
-            14252412606051516495,
-            9184438906438551565,
-            11444845376683159689,
-            8738795276227363922,
-            81297770384137296,
-        ]))
-    }
-
-    pub const fn quadratic_non_residue() -> Fp {
-        Self(fiat::FpMontgomeryDomainFieldElement([
-            18161750659790013178,
-            10940260503947051403,
-            2338003791965605956,
-            14680817040264804354,
-            841925479686732267,
-            43193913801202386,
-        ]))
-    }
+    pub const QUADRATIC_NON_RESIDUE: Self = Self(fiat::FpMontgomeryDomainFieldElement([
+        18161750659790013178,
+        10940260503947051403,
+        2338003791965605956,
+        14680817040264804354,
+        841925479686732267,
+        43193913801202386,
+    ]));
 
     pub fn square(&self) -> Fp {
         let mut result = fiat::FpMontgomeryDomainFieldElement([0; N]);
@@ -108,8 +100,8 @@ impl Fp {
         Self(result)
     }
 
-    pub fn inverse(&self) -> Option<Fp> {
-        if self == &Fp::zero() {
+    pub fn inverse(&self) -> Option<Self> {
+        if self == &Self::ZERO {
             return None;
         }
 
@@ -122,7 +114,7 @@ impl Fp {
         fiat::fp_msat(&mut f);
         let mut g: [u64; N + 1] = [0u64; N + 1];
         let mut v: [u64; N] = [0u64; N];
-        let mut r: [u64; N] = Fp::one().0 .0;
+        let mut r: [u64; N] = Self::ONE.0 .0;
         let mut i = 0;
         let mut j = 0;
 
