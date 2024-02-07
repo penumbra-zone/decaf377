@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EncodingError {
     InvalidEncoding,
     InvalidSliceLength,

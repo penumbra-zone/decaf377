@@ -3,6 +3,8 @@
 
 use cfg_if::cfg_if;
 
+use crate::EncodingError;
+
 #[cfg(feature = "arkworks")]
 pub mod arkworks;
 mod ops;
@@ -30,12 +32,12 @@ impl Fr {
     ///
     /// This means that values that cannot be produced by encoding a field element will return
     /// None, enforcing canonical serialization.
-    pub fn from_bytes_checked(bytes: &[u8; 32]) -> Option<Self> {
+    pub fn from_bytes_checked(bytes: &[u8; 32]) -> Result<Self, EncodingError> {
         let reduced = Self::from_raw_bytes(bytes);
         if reduced.to_bytes_le() == *bytes {
-            Some(reduced)
+            Ok(reduced)
         } else {
-            None
+            Err(EncodingError::InvalidEncoding)
         }
     }
 }
@@ -46,7 +48,7 @@ mod test {
 
     #[test]
     fn test_from_bytes_checked() {
-        assert_eq!(Fr::from_bytes_checked(&[0; 32]), Some(Fr::zero()));
-        assert_eq!(Fr::from_bytes_checked(&[0xFF; 32]), None);
+        assert_eq!(Fr::from_bytes_checked(&[0; 32]), Ok(Fr::zero()));
+        assert!(Fr::from_bytes_checked(&[0xFF; 32]).is_err());
     }
 }

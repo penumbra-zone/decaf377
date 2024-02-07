@@ -250,25 +250,25 @@ impl<'a> Div<&'a mut Self> for Fp {
 
 impl Sum<Self> for Fp {
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
-        iter.fold(Self::zero(), Add::add)
+        iter.fold(Self::ZERO, Add::add)
     }
 }
 
 impl<'a> Sum<&'a Self> for Fp {
     fn sum<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
-        iter.fold(Self::zero(), Add::add)
+        iter.fold(Self::ZERO, Add::add)
     }
 }
 
 impl Product<Self> for Fp {
     fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
-        iter.fold(Self::one(), Mul::mul)
+        iter.fold(Self::ONE, Mul::mul)
     }
 }
 
 impl<'a> Product<&'a Self> for Fp {
     fn product<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
-        iter.fold(Self::one(), Mul::mul)
+        iter.fold(Self::ONE, Mul::mul)
     }
 }
 
@@ -298,7 +298,7 @@ impl Hash for Fp {
 
 impl Default for Fp {
     fn default() -> Self {
-        Fp::zero()
+        Self::ZERO
     }
 }
 

@@ -1,4 +1,4 @@
-use super::{arkworks_constants::*, Fp};
+use super::Fp;
 use ark_ff::{BigInt, Field, PrimeField, SqrtPrecomputation};
 use ark_ff::{BigInteger, FftField};
 use ark_serialize::{
@@ -17,20 +17,20 @@ impl PrimeField for Fp {
     type BigInt = BigInt<6>;
 
     /// The BLS12-377 base field modulus `p` = 0x1ae3a4617c510eac63b05c06ca1493b1a22d9f300f5138f1ef3622fba094800170b5d44300000008508c0000000000
-    const MODULUS: Self::BigInt = ark_ff::BigInt(MODULUS_LIMBS);
+    const MODULUS: Self::BigInt = ark_ff::BigInt(Self::MODULUS_LIMBS);
 
     /// The value `(p - 1)/ 2`.
-    const MODULUS_MINUS_ONE_DIV_TWO: Self::BigInt = BigInt(MODULUS_MINUS_ONE_DIV_TWO_LIMBS);
+    const MODULUS_MINUS_ONE_DIV_TWO: Self::BigInt = BigInt(Self::MODULUS_MINUS_ONE_DIV_TWO_LIMBS);
 
     /// The size of the modulus in bits.
-    const MODULUS_BIT_SIZE: u32 = MODULUS_BIT_SIZE;
+    const MODULUS_BIT_SIZE: u32 = Self::MODULUS_BIT_SIZE;
 
     /// The trace of the field is defined as the smallest integer `t` such that by
     /// `2^s * t = p - 1`, and `t` is coprime to 2.
-    const TRACE: Self::BigInt = BigInt(TRACE_LIMBS);
+    const TRACE: Self::BigInt = BigInt(Self::TRACE_LIMBS);
 
     /// The value `(t - 1)/ 2`.
-    const TRACE_MINUS_ONE_DIV_TWO: Self::BigInt = BigInt(TRACE_MINUS_ONE_DIV_TWO_LIMBS);
+    const TRACE_MINUS_ONE_DIV_TWO: Self::BigInt = BigInt(Self::TRACE_MINUS_ONE_DIV_TWO_LIMBS);
 
     fn from_bigint(repr: Self::BigInt) -> Option<Self> {
         if repr >= Fp::MODULUS {
@@ -60,7 +60,9 @@ impl PrimeField for Fp {
                 Self::from_raw_bytes(&padded)
             }) // [X, 2^(384) * X, ...]
             .rev()
-            .fold(Self::zero(), |acc, x| acc * (FIELD_SIZE_POWER_OF_TWO) + x) // let acc =
+            .fold(Self::zero(), |acc, x| {
+                acc * (Self::FIELD_SIZE_POWER_OF_TWO) + x
+            }) // let acc =
     }
 }
 
@@ -70,15 +72,15 @@ impl Field for Fp {
 
     const SQRT_PRECOMP: Option<SqrtPrecomputation<Self>> =
         Some(SqrtPrecomputation::TonelliShanks {
-            two_adicity: TWO_ADICITY,
-            quadratic_nonresidue_to_trace: QUADRATIC_NON_RESIDUE_TO_TRACE,
-            trace_of_modulus_minus_one_div_two: &TRACE_MINUS_ONE_DIV_TWO_LIMBS,
+            two_adicity: Self::TWO_ADICITY,
+            quadratic_nonresidue_to_trace: Self::QUADRATIC_NON_RESIDUE_TO_TRACE,
+            trace_of_modulus_minus_one_div_two: &Self::TRACE_MINUS_ONE_DIV_TWO_LIMBS,
         });
 
-    const ZERO: Self = Self::zero();
+    const ZERO: Self = Self::ZERO;
 
     // Montomgery representation of one
-    const ONE: Self = Self::one();
+    const ONE: Self = Self::ONE;
 
     fn extension_degree() -> u64 {
         1
@@ -157,14 +159,14 @@ impl Field for Fp {
     }
 
     fn characteristic() -> &'static [u64] {
-        &MODULUS_LIMBS
+        &Self::MODULUS_LIMBS
     }
 }
 
 impl FftField for Fp {
-    const GENERATOR: Self = MULTIPLICATIVE_GENERATOR;
-    const TWO_ADICITY: u32 = TWO_ADICITY;
-    const TWO_ADIC_ROOT_OF_UNITY: Self = TWO_ADIC_ROOT_OF_UNITY;
+    const GENERATOR: Self = Self::MULTIPLICATIVE_GENERATOR;
+    const TWO_ADICITY: u32 = Self::TWO_ADICITY;
+    const TWO_ADIC_ROOT_OF_UNITY: Self = Self::TWO_ADIC_ROOT_OF_UNITY;
     const SMALL_SUBGROUP_BASE: Option<u32> = None;
     const SMALL_SUBGROUP_BASE_ADICITY: Option<u32> = None;
     const LARGE_SUBGROUP_ROOT_OF_UNITY: Option<Self> = None;
@@ -287,7 +289,7 @@ impl ark_std::rand::distributions::Distribution<Fp> for ark_std::rand::distribut
     fn sample<R: rand::prelude::Rng + ?Sized>(&self, rng: &mut R) -> Fp {
         loop {
             let mut repr: [u64; 6] = rng.sample(ark_std::rand::distributions::Standard);
-            let shave_bits = 64 * 6 - (MODULUS_BIT_SIZE as usize);
+            let shave_bits = 64 * 6 - (Fp::MODULUS_BIT_SIZE as usize);
             // Mask away the unused bits at the beginning.
             let mask = if shave_bits == 64 {
                 0
@@ -391,13 +393,13 @@ mod tests {
     prop_compose! {
         fn arb_fp()(a in arb_fp_limbs()) -> Fp {
             // Will be fine because of the bounds in the arb_fp_limbs
-            Fp::from_bigint(BigInt(a)).unwrap_or(Fp::zero())
+            Fp::from_bigint(BigInt(a)).unwrap_or(Fp::ZERO)
         }
     }
 
     prop_compose! {
         fn arb_nonzero_fp()(a in arb_fp()) -> Fp {
-            if a == Fp::zero() { Fp::one() } else { a }
+            if a == Fp::ZERO { Fp::ONE } else { a }
         }
     }
 
@@ -418,7 +420,7 @@ mod tests {
     proptest! {
         #[test]
         fn test_add_zero_identity(a in arb_fp()) {
-            let zero = Fp::zero();
+            let zero = Fp::ZERO;
 
             assert_eq!(a + zero, a);
             assert_eq!(zero + a, a);
@@ -428,7 +430,7 @@ mod tests {
     proptest! {
         #[test]
         fn test_subtract_self_is_zero(a in arb_fp()) {
-            let zero = Fp::zero();
+            let zero = Fp::ZERO;
 
             assert_eq!(a - a, zero);
         }

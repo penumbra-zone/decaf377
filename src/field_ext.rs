@@ -14,7 +14,7 @@ impl FieldExt for Fr {
     }
 
     fn from_bytes(bytes: [u8; 32]) -> Result<Self, EncodingError> {
-        Fr::from_bytes_checked(&bytes).ok_or(EncodingError::InvalidEncoding)
+        Fr::from_bytes_checked(&bytes)
     }
 }
 
@@ -26,6 +26,6 @@ impl FieldExt for Fq {
     }
 
     fn from_bytes(bytes: [u8; 32]) -> Result<Self, EncodingError> {
-        Fq::from_bytes_checked(&bytes).ok_or(EncodingError::InvalidEncoding)
+        Fq::from_bytes_checked(&bytes)
     }
 }
