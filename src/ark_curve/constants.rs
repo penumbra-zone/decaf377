@@ -58,22 +58,25 @@ pub static G: Lazy<Fq> = Lazy::new(|| ZETA.pow(*M));
 pub static SQRT_W: u32 = 8;
 
 // Canonical basepoint projective coordinates
-pub static B_X: Lazy<Fq> = Lazy::new(|| {
-    from_ark_fq(ark_ff::MontFp!(
-        "4959445789346820725352484487855828915252512307947624787834978378872129235627"
-    ))
-});
-pub static B_Y: Lazy<Fq> = Lazy::new(|| {
-    from_ark_fq(ark_ff::MontFp!(
-        "6060471950081851567114691557659790004756535011754163002297540472747064943288"
-    ))
-});
-pub static B_T: Lazy<Fq> = Lazy::new(|| {
-    from_ark_fq(ark_ff::MontFp!(
-        "7709528722369014828560854854815397945854484030754980890329689855465844419067"
-    ))
-});
-pub static B_Z: Lazy<Fq> = Lazy::new(|| from_ark_fq(ark_ff::MontFp!("1")));
+pub const B_X: Fq = Fq::from_montgomery_limbs([
+    5825153684096051627,
+    16988948339439369204,
+    186539475124256708,
+    1230075515893193738,
+]);
+pub const B_Y: Fq = Fq::from_montgomery_limbs([
+    9786171649960077610,
+    13527783345193426398,
+    10983305067350511165,
+    1251302644532346138,
+]);
+pub const B_T: Fq = Fq::from_montgomery_limbs([
+    7466800842436274004,
+    14314110021432015475,
+    14108125795146788134,
+    1305086759679105397,
+]);
+pub const B_Z: Fq = Fq::ONE;
 
 // Canonical basepoint affine coordinates
 pub const GENERATOR_X: Fq = Fq::from_montgomery_limbs([
