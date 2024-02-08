@@ -8,9 +8,18 @@ use zeroize::Zeroize;
 
 use crate::{ark_curve::EdwardsProjective, Fq, Fr};
 
+use super::super::constants::{B_T, B_X, B_Y, B_Z};
+
 #[derive(Copy, Clone)]
 pub struct Element {
     pub(crate) inner: EdwardsProjective,
+}
+
+impl Element {
+    /// Return the conventional generator for `decaf377`.
+    pub const GENERATOR: Self = Self {
+        inner: EdwardsProjective::new_unchecked(B_X, B_Y, B_T, B_Z),
+    };
 }
 
 impl Hash for Element {

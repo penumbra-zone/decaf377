@@ -10,7 +10,6 @@ use ark_r1cs_std::{
 use ark_relations::r1cs::{ConstraintSynthesizer, ToConstraintField};
 use ark_snark::SNARK;
 use decaf377::{
-    basepoint,
     r1cs::{CountConstraints, ElementVar, FqVar},
     Bls12_377, Element, Fq, Fr,
 };
@@ -43,7 +42,7 @@ impl ConstraintSynthesizer<Fq> for DiscreteLogCircuit {
         // 2. Add public input variable
         let compressed_public = self.public.vartime_compress_to_field();
         let public_var: ElementVar = AllocVar::new_input(cs.clone(), || Ok(compressed_public))?;
-        let basepoint_var = ElementVar::new_constant(cs, basepoint())?;
+        let basepoint_var = ElementVar::new_constant(cs, Element::GENERATOR)?;
         // 3. Add constraint that scalar * Basepoint = public
         let test_public = basepoint_var.scalar_mul_le(witness_vars.to_bits_le()?.iter())?;
         public_var.enforce_equal(&test_public)?;
@@ -76,7 +75,7 @@ fn groth16_dl_proof_happy_path(scalar_arr in scalar_strategy_random()) {
         let mut rng = OsRng;
 
         let scalar = scalar_arr;
-        let public = Fr::from_le_bytes_mod_order(&scalar_arr[..]) * basepoint();
+        let public = Fr::from_le_bytes_mod_order(&scalar_arr[..]) * Element::GENERATOR;
 
         // Prover POV
         let circuit = DiscreteLogCircuit { scalar, public };
@@ -102,9 +101,9 @@ proptest! {
         let mut rng = OsRng;
 
         let scalar = scalar_arr;
-        let public = Fr::from_le_bytes_mod_order(&scalar_arr[..]) * basepoint();
+        let public = Fr::from_le_bytes_mod_order(&scalar_arr[..]) * Element::GENERATOR;
 
-        let wrong_public = Fr::from(666u64) * basepoint();
+        let wrong_public = Fr::from(666u64) * Element::GENERATOR;
 
         // Prover POV
         let circuit = DiscreteLogCircuit { scalar, public };
@@ -152,8 +151,8 @@ impl ConstraintSynthesizer<Fq> for CompressionCircuit {
 
 impl CompressionCircuit {
     fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
-        //let point = Fr::from(100) * decaf377::basepoint();
-        let point = Fr::from(2u64) * decaf377::basepoint();
+        //let point = Fr::from(100) * Element::GENERATOR;
+        let point = Fr::from(2u64) * Element::GENERATOR;
         //let point = Element::default();
         let field_element = point.vartime_compress_to_field();
         let circuit = CompressionCircuit {
@@ -181,7 +180,7 @@ proptest! {
         let mut rng = OsRng;
 
         // Prover POV
-        let point = scalar * decaf377::basepoint();
+        let point = scalar * Element::GENERATOR;
         let field_element = point.vartime_compress_to_field();
         let circuit = CompressionCircuit {
             point,
@@ -211,7 +210,7 @@ proptest! {
         let mut rng = OsRng;
 
         // Prover POV
-        let point = scalar * decaf377::basepoint();
+        let point = scalar * Element::GENERATOR;
         let field_element = point.vartime_compress_to_field();
         let circuit = CompressionCircuit {
             point,
@@ -263,7 +262,7 @@ impl ConstraintSynthesizer<Fq> for DecompressionCircuit {
 
 impl DecompressionCircuit {
     fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
-        let point = Fr::from(100u64) * decaf377::basepoint();
+        let point = Fr::from(100u64) * Element::GENERATOR;
         let field_element = point.vartime_compress_to_field();
         let circuit = DecompressionCircuit {
             point,
@@ -284,7 +283,7 @@ proptest! {
             let mut rng = OsRng;
 
             // Prover POV
-            let point = scalar * decaf377::basepoint();
+            let point = scalar * Element::GENERATOR;
     let field_element = point.vartime_compress_to_field();
     let circuit = DecompressionCircuit {
         point,
@@ -314,7 +313,7 @@ proptest! {
             let mut rng = OsRng;
 
             // Prover POV
-            let point = scalar * decaf377::basepoint();
+            let point = scalar * Element::GENERATOR;
     let field_element = point.vartime_compress_to_field();
     let circuit = DecompressionCircuit {
         point,
@@ -326,7 +325,7 @@ proptest! {
 
     // Verifier POV
     let processed_pvk = Groth16::<Bls12_377, LibsnarkReduction>::process_vk(&vk).expect("can process verifying key");
-    let public_inputs = (Fr::from(600u64) * decaf377::basepoint()).to_field_elements().unwrap();
+    let public_inputs = (Fr::from(600u64) * Element::GENERATOR).to_field_elements().unwrap();
     let proof_result =
         Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(&processed_pvk, &public_inputs, &proof).unwrap();
 
@@ -430,7 +429,7 @@ fn groth16_elligator_proof_unhappy_path(field_element in fq_strategy()) {
         .expect("can generate proof");
 
     // Verifier POV
-    let wrong_point = Fr::rand(&mut rng) * decaf377::basepoint();
+    let wrong_point = Fr::rand(&mut rng) * Element::GENERATOR;
     let processed_pvk = Groth16::<Bls12_377, LibsnarkReduction>::process_vk(&vk).expect("can process verifying key");
     let public_inputs = wrong_point.to_field_elements().unwrap();
     let proof_result =
@@ -462,7 +461,7 @@ proptest! {
 #[test]
 fn groth16_public_input(point in element_strategy()) {
     let test_circuit = PublicElementInput {
-        point: decaf377::basepoint(),
+        point: Element::GENERATOR,
     };
     let (pk, vk) = Groth16::<Bls12_377, LibsnarkReduction>::circuit_specific_setup(test_circuit, &mut OsRng)
         .expect("can perform circuit specific setup");
@@ -517,7 +516,7 @@ proptest! {
 #[test]
 fn groth16_negation(point in element_strategy()) {
     let test_circuit = NegationCircuit {
-        pos: decaf377::basepoint(),
+        pos: Element::GENERATOR,
         public_neg: point.negate(),
     };
     let (pk, vk) = Groth16::<Bls12_377, LibsnarkReduction>::circuit_specific_setup(test_circuit, &mut OsRng)
@@ -586,8 +585,8 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(10))]
 #[test]
 fn groth16_add_addassign(a in element_strategy(), b in element_strategy()) {
-    let test_a = decaf377::basepoint();
-    let test_b = decaf377::basepoint() * Fr::from(2u64);
+    let test_a = Element::GENERATOR;
+    let test_b = Element::GENERATOR * Fr::from(2u64);
     let test_circuit = AddAssignAddCircuit {
         a: test_a,
         b: test_b,

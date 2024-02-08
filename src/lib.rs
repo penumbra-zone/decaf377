@@ -17,8 +17,6 @@ cfg_if! {
 
         pub use ark_curve::{Element, Encoding, ZETA};
 
-        pub use ark_curve::basepoint;
-
         pub use ark_curve::bls12_377::Bls12_377;
 
         #[cfg(feature = "r1cs")]
