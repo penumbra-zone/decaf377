@@ -383,6 +383,85 @@ mod test {
     }
 }
 
+impl From<&Element> for Encoding {
+    fn from(point: &Element) -> Self {
+        point.vartime_compress()
+    }
+}
+
+impl From<Element> for Encoding {
+    fn from(point: Element) -> Self {
+        point.vartime_compress()
+    }
+}
+
+impl TryFrom<&[u8]> for Encoding {
+    type Error = EncodingError;
+
+    fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
+        if bytes.len() == 32 {
+            let mut arr = [0u8; 32];
+            arr.copy_from_slice(&bytes[0..32]);
+            Ok(Encoding(arr))
+        } else {
+            Err(EncodingError::InvalidSliceLength)
+        }
+    }
+}
+
+impl From<[u8; 32]> for Encoding {
+    fn from(bytes: [u8; 32]) -> Encoding {
+        Encoding(bytes)
+    }
+}
+
+impl From<Encoding> for [u8; 32] {
+    fn from(enc: Encoding) -> [u8; 32] {
+        enc.0
+    }
+}
+
+impl TryFrom<&Encoding> for Element {
+    type Error = EncodingError;
+    fn try_from(bytes: &Encoding) -> Result<Self, Self::Error> {
+        bytes.vartime_decompress()
+    }
+}
+
+impl TryFrom<Encoding> for Element {
+    type Error = EncodingError;
+    fn try_from(bytes: Encoding) -> Result<Self, Self::Error> {
+        bytes.vartime_decompress()
+    }
+}
+
+impl TryFrom<&[u8]> for Element {
+    type Error = EncodingError;
+
+    fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
+        let b: [u8; 32] = bytes
+            .try_into()
+            .map_err(|_| EncodingError::InvalidSliceLength)?;
+
+        Encoding(b).try_into()
+    }
+}
+
+impl TryFrom<[u8; 32]> for Element {
+    type Error = EncodingError;
+
+    fn try_from(bytes: [u8; 32]) -> Result<Self, Self::Error> {
+        let encoding = Encoding(bytes);
+        encoding.try_into()
+    }
+}
+
+impl From<Element> for [u8; 32] {
+    fn from(enc: Element) -> [u8; 32] {
+        enc.vartime_compress().0
+    }
+}
+
 #[cfg(all(test, feature = "arkworks"))]
 mod proptests {
     use super::*;
