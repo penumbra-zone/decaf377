@@ -6,7 +6,7 @@ authors = [
     "redshiftzero <jen@penumbralabs.xyz>",
 ]
 description = "A prime-order group designed for use in SNARKs over BLS12-377"
-edition = "2018"
+edition = "2021"
 license = "MIT OR Apache-2.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
