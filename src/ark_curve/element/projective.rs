@@ -20,6 +20,10 @@ impl Element {
     pub const GENERATOR: Self = Self {
         inner: EdwardsProjective::new_unchecked(B_X, B_Y, B_T, B_Z),
     };
+
+    pub const IDENTITY: Self = Self {
+        inner: EdwardsProjective::new_unchecked(Fq::ZERO, Fq::ONE, Fq::ZERO, Fq::ONE),
+    };
 }
 
 impl Hash for Element {
