@@ -108,6 +108,13 @@ impl Element {
             Element { x, y, z, t }
         }
     }
+    ///
+    /// Convenience method to make identity checks more readable.
+    pub fn is_identity(&self) -> bool {
+        // Section 4.5 of Decaf paper states for cofactor 4 curves we can
+        // just check X = 0 to check equality with identity
+        self.x == Fq::ZERO
+    }
 
     pub fn double(self) -> Self {
         // https://eprint.iacr.org/2008/522 Section 3.3
