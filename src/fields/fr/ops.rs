@@ -307,7 +307,7 @@ impl Default for Fr {
 impl core::fmt::Debug for Fr {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         let bytes = {
-            let mut out = self.to_bytes_le();
+            let out = self.to_bytes_le();
             out
         };
         

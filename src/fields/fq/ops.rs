@@ -307,8 +307,7 @@ impl Default for Fq {
 impl core::fmt::Debug for Fq {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         let bytes = {
-            let mut out = self.to_bytes_le();
-            out.reverse();
+            let out = self.to_bytes_le();
             out
         };
         
