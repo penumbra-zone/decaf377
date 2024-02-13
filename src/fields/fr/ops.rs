@@ -310,8 +310,10 @@ impl core::fmt::Debug for Fr {
             let out = self.to_bytes_le();
             out
         };
+
+        let t = Fr::from_bytes_checked(&bytes).unwrap().into_bigint();
         
         println!("{:?}", Fr::from_bytes_checked(&bytes).unwrap().into_bigint());
-        write!(f, "{}", Fr::from_bytes_checked(&bytes).unwrap().into_bigint())
+        write!(f, "{:?}", Fr::from_bytes_checked(&bytes).unwrap().into_bigint())
     }
 }
