@@ -4,6 +4,8 @@ use core::{
     iter::{Product, Sum},
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
+use ark_ff::PrimeField;
+use ark_std::println;
 
 use crate::Fp;
 
@@ -309,12 +311,8 @@ impl core::fmt::Debug for Fp {
             out.reverse();
             out
         };
-        let mut hex_chars = [0u8; 96];
-        hex::encode_to_slice(&bytes, &mut hex_chars)
-            .expect("not enough space to write hex characters");
-        // Safety: hex characters will be valid UTF8.
-        write!(f, "Fp(0x{})", unsafe {
-            core::str::from_utf8_unchecked(&hex_chars)
-        })
+        
+        println!("{:?}", Fp::from_bytes_checked(&bytes).unwrap().into_bigint());
+        Ok(())
     }
 }
