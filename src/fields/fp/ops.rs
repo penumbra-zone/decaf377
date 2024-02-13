@@ -312,6 +312,6 @@ impl core::fmt::Debug for Fp {
         };
         
         println!("{:?}", Fp::from_bytes_checked(&bytes).unwrap().into_bigint());
-        Ok(())
+        write!(f, "{}", Fp::from_bytes_checked(&bytes).unwrap().into_bigint())
     }
 }
