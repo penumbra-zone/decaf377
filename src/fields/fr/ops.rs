@@ -314,6 +314,6 @@ impl core::fmt::Debug for Fr {
         let t = Fr::from_bytes_checked(&bytes).unwrap().into_bigint();
         
         println!("{:?}", Fr::from_bytes_checked(&bytes).unwrap().into_bigint());
-        write!(f, "{:?}", Fr::from_bytes_checked(&bytes).unwrap().into_bigint())
+        write!(f, "{}", Fr::from_bytes_checked(&bytes).unwrap().into_bigint())
     }
 }
