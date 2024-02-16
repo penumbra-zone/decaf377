@@ -1,7 +1,5 @@
-// Fiat-crypto generates some unused type aliases, but we don't want to edit the generated code at all.
-#![allow(dead_code)]
-
 use cfg_if::cfg_if;
+use rand_core::CryptoRngCore;
 
 use crate::EncodingError;
 
@@ -115,7 +113,6 @@ impl Fp {
             }) // let acc =
     }
 
-    ///
     /// Convert bytes into an Fp element, returning None if these bytes are not already reduced.
     ///
     /// This means that values that cannot be produced by encoding a field element will return
@@ -131,6 +128,17 @@ impl Fp {
 
     pub fn to_bytes(&self) -> [u8; N_8] {
         self.to_bytes_le()
+    }
+
+    /// Sample a random field element uniformly.
+    pub fn rand<R: CryptoRngCore>(rng: &mut R) -> Self {
+        // Sample wide, reduce
+        let bytes = {
+            let mut out = [0u8; N_8 + 16];
+            rng.fill_bytes(&mut out);
+            out
+        };
+        Self::from_le_bytes_mod_order(&bytes)
     }
 }
 
