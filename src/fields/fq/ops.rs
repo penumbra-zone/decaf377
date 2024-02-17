@@ -294,8 +294,8 @@ impl PartialOrd for Fq {
 
 impl Hash for Fq {
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
-        state.write(&self.to_bytes_le());
-        println!("fq hash is {:x}!", state.finish());
+        // state.write(&self.to_bytes_le());
+        // println!("fq hash is {:x}!", state.finish());
         state.write(&self.to_bytes_le())
     }
 }
