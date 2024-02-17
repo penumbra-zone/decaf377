@@ -294,6 +294,7 @@ impl PartialOrd for Fr {
 
 impl Hash for Fr {
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        println!("fr hash: {:?}", state.write(&self.to_bytes_le()));
         state.write(&self.to_bytes_le())
     }
 }
@@ -313,7 +314,7 @@ impl core::fmt::Debug for Fr {
 
         let t = Fr::from_bytes_checked(&bytes).unwrap().into_bigint();
         
-        println!("{:?}", Fr::from_bytes_checked(&bytes).unwrap().into_bigint());
+        println!("fr: {:?}", Fr::from_bytes_checked(&bytes).unwrap().into_bigint());
         write!(f, "{}", Fr::from_bytes_checked(&bytes).unwrap().into_bigint())
     }
 }

@@ -294,6 +294,7 @@ impl PartialOrd for Fq {
 
 impl Hash for Fq {
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        println!("fq hash: {:?}", state.write(&self.to_bytes_le()));
         state.write(&self.to_bytes_le())
     }
 }
@@ -311,7 +312,7 @@ impl core::fmt::Debug for Fq {
             out
         };
         
-        println!("{:?}", Fq::from_bytes_checked(&bytes).unwrap().into_bigint());
+        println!("fq: {:?}", Fq::from_bytes_checked(&bytes).unwrap().into_bigint());
         write!(f, "{:?}", Fq::from_bytes_checked(&bytes).unwrap().into_bigint())
     }
 }
