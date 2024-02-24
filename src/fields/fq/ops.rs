@@ -11,18 +11,28 @@ use crate::Fq;
 
 impl From<u128> for Fq {
     fn from(other: u128) -> Self {
+        println!("entered from u128!");
+        println!("from u128: {:?}",  Self::from_le_limbs([other as u64, (other >> 64) as u64, 0, 0]));
         Self::from_le_limbs([other as u64, (other >> 64) as u64, 0, 0])
     }
 }
 
 impl From<u64> for Fq {
     fn from(other: u64) -> Self {
+        println!("entered from u64!");
+        let t: Self = u128::from(other).into();
+        println!("from u64: {:?}", t);
+
         u128::from(other).into()
     }
 }
 
 impl From<u32> for Fq {
     fn from(other: u32) -> Self {
+        println!("entered from u32!");
+        let t: Self = u128::from(other).into();
+        println!("from u32: {:?}", t);
+
         u128::from(other).into()
     }
 }
@@ -294,6 +304,8 @@ impl PartialOrd for Fq {
 
 impl Hash for Fq {
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        println!("entered hash in decaf!");
+        println!("hash in decaf: {:?}", self.to_bytes_le());
         // state.write(&self.to_bytes_le());
         // println!("fq hash is {:x}!", state.finish());
         state.write(&self.to_bytes_le())
