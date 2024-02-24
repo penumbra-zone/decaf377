@@ -12,6 +12,7 @@ use core::{
     fmt::{Display, Formatter},
     iter,
 };
+use ark_std::println;
 
 impl PrimeField for Fq {
     /// A `BigInteger` type that can represent elements of this field.
@@ -301,7 +302,10 @@ impl ark_std::rand::distributions::Distribution<Fq> for ark_std::rand::distribut
 
 impl Display for Fq {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        println!("entered fmt decaf377!");
         let string = self.into_bigint().to_string();
+        println!("fmt decaf377: {:?}", string);
+
         write!(f, "{}", string.trim_start_matches('0'))
     }
 }
@@ -309,6 +313,8 @@ impl FromStr for Fq {
     type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        println!("entered from_str decaf377!");
+
         // CANDO: a more efficient method accumulating into 64 bits first.
         let mut acc = Self::zero();
 
@@ -331,6 +337,9 @@ impl FromStr for Fq {
 impl From<num_bigint::BigUint> for Fq {
     #[inline]
     fn from(val: num_bigint::BigUint) -> Fq {
+        println!("entered from From<num_bigint::BigUint> decaf377!");
+        println!("from BigUint decaf377: {:?}", Fq::from_le_bytes_mod_order(&val.to_bytes_le()));
+        
         Fq::from_le_bytes_mod_order(&val.to_bytes_le())
     }
 }
@@ -338,6 +347,10 @@ impl From<num_bigint::BigUint> for Fq {
 impl From<Fq> for num_bigint::BigUint {
     #[inline(always)]
     fn from(other: Fq) -> Self {
+        println!("entered from From<Fq> for num_bigint::BigUint decaf377!");
+        let t: Self = other.into_bigint().into();
+        println!("rom<Fq> for num_bigint::BigUint decaf377: {:?}", t);
+
         other.into_bigint().into()
     }
 }
@@ -345,6 +358,9 @@ impl From<Fq> for num_bigint::BigUint {
 impl From<Fq> for BigInt<4> {
     #[inline(always)]
     fn from(fp: Fq) -> Self {
+        let t: Self =  fp.into_bigint();
+        println!("From<Fq> for BigInt<4> decaf377: {:?}", t);
+
         fp.into_bigint()
     }
 }
@@ -353,6 +369,9 @@ impl From<BigInt<4>> for Fq {
     /// Converts `Self::BigInteger` into `Self`
     #[inline(always)]
     fn from(int: BigInt<4>) -> Self {
+        let t: Self = Fq::from_le_bytes_mod_order(&int.to_bytes_le());
+        println!("rom<BigInt<4>> for Fq decaf377: {:?}", t);
+
         Fq::from_le_bytes_mod_order(&int.to_bytes_le())
     }
 }
