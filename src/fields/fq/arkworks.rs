@@ -191,6 +191,7 @@ impl CanonicalDeserializeWithFlags for Fq {
     fn deserialize_with_flags<R: ark_std::io::Read, F: Flags>(
         mut reader: R,
     ) -> Result<(Self, F), SerializationError> {
+        println!("entered fq deserialize_with_flags!");
         // Enough for the field element + 8 bits of flags. The last byte may or may not contain flags.
         let mut bytes = [0u8; (Self::MODULUS_BIT_SIZE as usize + 7) / 8];
 
@@ -221,6 +222,7 @@ impl CanonicalDeserialize for Fq {
         _compress: Compress,
         validate: Validate,
     ) -> Result<Self, SerializationError> {
+        println!("entered fq deserialize_with_mode!");
         let (out, _) = Self::deserialize_with_flags::<R, EmptyFlags>(reader)?;
         match validate {
             Validate::Yes => out.check(),
@@ -237,6 +239,8 @@ impl CanonicalSerialize for Fq {
         writer: W,
         _compress: Compress,
     ) -> Result<(), SerializationError> {
+        println!("entered fq serialize_with_mode!");
+
         self.serialize_with_flags(writer, EmptyFlags)
     }
 
@@ -252,6 +256,8 @@ impl CanonicalSerializeWithFlags for Fq {
         mut writer: W,
         flags: F,
     ) -> Result<(), SerializationError> {
+        println!("entered fq serialize_with_flags!");
+
         // Arkworks imposes this constraint
         if F::BIT_SIZE > 8 {
             return Err(SerializationError::NotEnoughSpace);
