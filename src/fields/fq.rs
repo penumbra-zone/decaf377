@@ -1,6 +1,8 @@
 // Fiat-crypto generates some unused type aliases, but we don't want to edit the generated code at all.
 #![allow(dead_code)]
 
+use ark_std::println;
+
 use cfg_if::cfg_if;
 
 use crate::EncodingError;
@@ -87,6 +89,8 @@ impl Fq {
     ]);
 
     pub fn from_le_bytes_mod_order(bytes: &[u8]) -> Self {
+        println!("!entered fq from_le_bytes_mod_order!");
+
         bytes
             .chunks(N_8)
             .map(|x| {
@@ -105,6 +109,8 @@ impl Fq {
     /// This means that values that cannot be produced by encoding a field element will return
     /// None, enforcing canonical serialization.
     pub fn from_bytes_checked(bytes: &[u8; N_8]) -> Result<Self, EncodingError> {
+        println!("!entered fq from_bytes_checked!");
+
         let reduced = Self::from_raw_bytes(bytes);
         if reduced.to_bytes_le() == *bytes {
             Ok(reduced)
@@ -114,6 +120,8 @@ impl Fq {
     }
 
     pub fn to_bytes(&self) -> [u8; N_8] {
+        println!("!entered fq to_bytes!");
+        println!("!entered fq to_bytes: {:?}", self.to_bytes_le());
         self.to_bytes_le()
     }
 }

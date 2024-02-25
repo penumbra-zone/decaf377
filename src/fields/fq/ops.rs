@@ -39,12 +39,20 @@ impl From<u32> for Fq {
 
 impl From<u16> for Fq {
     fn from(other: u16) -> Self {
+        println!("entered from u16!");
+        let t: Self = u128::from(other).into();
+        println!("from u16: {:?}", t);
+
         u128::from(other).into()
     }
 }
 
 impl From<u8> for Fq {
     fn from(other: u8) -> Self {
+        println!("entered from u8!");
+        let t: Self = u128::from(other).into();
+        println!("from u8: {:?}", t);
+
         u128::from(other).into()
     }
 }
