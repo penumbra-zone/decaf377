@@ -8,7 +8,7 @@ use super::{
 const N: usize = N_32;
 
 #[derive(Copy, Clone)]
-pub struct Fq(pub fiat::FqMontgomeryDomainFieldElement);
+pub struct Fq(fiat::FqMontgomeryDomainFieldElement);
 
 impl PartialEq for Fq {
     fn eq(&self, other: &Self) -> bool {
