@@ -2,7 +2,7 @@ use core::convert::TryFrom;
 
 use proptest::prelude::*;
 
-use decaf377::{basepoint, Element, Encoding, Fq, Fr};
+use decaf377::{Element, Encoding, Fq, Fr};
 
 /*
 #[test]
@@ -45,7 +45,10 @@ fn check_generator() {
         .vartime_compress();
     assert_eq!(bytes, enc2.0);
 
-    assert_eq!(Encoding(bytes).vartime_decompress().unwrap(), basepoint());
+    assert_eq!(
+        Encoding(bytes).vartime_decompress().unwrap(),
+        Element::GENERATOR
+    );
 }
 
 #[test]
@@ -53,7 +56,7 @@ fn test_encoding_matches_sage_encoding() {
     use hex;
 
     let mut accumulator = Element::default();
-    let basepoint = basepoint();
+    let basepoint = Element::GENERATOR;
 
     let expected_points = [
         "0000000000000000000000000000000000000000000000000000000000000000",

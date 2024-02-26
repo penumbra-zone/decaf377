@@ -46,7 +46,7 @@ impl Group for Element {
     }
 
     fn generator() -> Self {
-        crate::basepoint()
+        Self::GENERATOR
     }
 
     fn mul_bigint(&self, other: impl AsRef<[u64]>) -> Self {
@@ -111,7 +111,7 @@ impl AffineRepr for AffinePoint {
     }
 
     fn generator() -> Self {
-        crate::basepoint().into()
+        Element::GENERATOR.into()
     }
 
     fn from_random_bytes(bytes: &[u8]) -> Option<Self> {
