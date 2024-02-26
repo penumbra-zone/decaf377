@@ -6,7 +6,7 @@ use super::{
 const N: usize = N_64;
 
 #[derive(Copy, Clone)]
-pub struct Fp(pub fiat::FpMontgomeryDomainFieldElement);
+pub struct Fp(fiat::FpMontgomeryDomainFieldElement);
 
 impl PartialEq for Fp {
     fn eq(&self, other: &Self) -> bool {
