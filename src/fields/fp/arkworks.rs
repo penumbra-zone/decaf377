@@ -37,7 +37,7 @@ impl PrimeField for Fp {
             None
         } else {
             // Assuming BigInt is little endian
-            Some(Self::from_le_limbs(repr.0))
+            Some(Self::from_le_limbs_mod_order(repr.0))
         }
     }
 

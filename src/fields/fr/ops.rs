@@ -9,7 +9,7 @@ use crate::Fr;
 
 impl From<u128> for Fr {
     fn from(other: u128) -> Self {
-        Self::from_le_limbs([other as u64, (other >> 64) as u64, 0, 0])
+        Self::from_le_limbs_mod_order([other as u64, (other >> 64) as u64, 0, 0])
     }
 }
 
