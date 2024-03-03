@@ -26,7 +26,7 @@ impl zeroize::Zeroize for Fp {
 }
 
 impl Fp {
-    pub(crate) fn from_le_limbs(limbs: [u64; N_64]) -> Fp {
+    pub fn from_le_limbs(limbs: [u64; N_64]) -> Fp {
         let x_non_monty = fiat::FpNonMontgomeryDomainFieldElement(limbs);
         let mut x = fiat::FpMontgomeryDomainFieldElement([0; N]);
         fiat::fp_to_montgomery(&mut x, &x_non_monty);
