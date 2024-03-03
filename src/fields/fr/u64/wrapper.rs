@@ -26,7 +26,7 @@ impl zeroize::Zeroize for Fr {
 }
 
 impl Fr {
-    pub(crate) fn from_le_limbs_mod_order(limbs: [u64; N_64]) -> Fr {
+    pub(crate) fn from_le_limbs(limbs: [u64; N_64]) -> Fr {
         let x_non_monty = fiat::FrNonMontgomeryDomainFieldElement(limbs);
         let mut x = fiat::FrMontgomeryDomainFieldElement([0; N]);
         fiat::fr_to_montgomery(&mut x, &x_non_monty);

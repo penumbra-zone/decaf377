@@ -26,7 +26,7 @@ impl zeroize::Zeroize for Fr {
 }
 
 impl Fr {
-    pub(crate) fn from_le_limbs_mod_order(limbs: [u64; N_64]) -> Fr {
+    pub(crate) fn from_le_limbs(limbs: [u64; N_64]) -> Fr {
         let limbs = {
             let mut out = [0u32; N];
             for i in 0..N_64 {
