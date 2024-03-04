@@ -17,7 +17,7 @@ impl PrimeField for Fq {
     /// A `BigInteger` type that can represent elements of this field.
     type BigInt = BigInt<4>;
 
-    /// The BLS12-377 base field modulus `p` = 0x12ab655e9a2ca55660b44d1e5c37b00159aa76fed00000010a11800000000001
+    /// The BLS12-377 scalar field modulus `q` = 0x12ab655e9a2ca55660b44d1e5c37b00159aa76fed00000010a11800000000001
     const MODULUS: Self::BigInt = ark_ff::BigInt(Self::MODULUS_LIMBS);
 
     /// The value `(p - 1)/ 2`.
