@@ -11,6 +11,7 @@ license = "MIT OR Apache-2.0"
 [dependencies]
 # no-alloc, no-std
 cfg-if = "1.0"
+rand_core = "0.6"
 hex = { version ="=0.4.3", default-features = false }
 subtle = { version="2.4.1", default-features = false }
 tracing-subscriber = { version = "0.3", default-features = false }
