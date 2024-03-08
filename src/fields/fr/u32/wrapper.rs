@@ -51,7 +51,7 @@ impl Fr {
         Self(x)
     }
 
-    pub(crate) fn to_le_limbs(&self) -> [u64; N_64] {
+    pub fn to_le_limbs(&self) -> [u64; N_64] {
         let mut x_non_montgomery = fiat::FrNonMontgomeryDomainFieldElement([0; N]);
         fiat::fr_from_montgomery(&mut x_non_montgomery, &self.0);
         let limbs = x_non_montgomery.0;

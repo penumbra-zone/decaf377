@@ -60,7 +60,7 @@ impl Fq {
         Self(x)
     }
 
-    pub(crate) fn to_le_limbs(&self) -> [u64; N_64] {
+    pub fn to_le_limbs(&self) -> [u64; N_64] {
         debug_assert!(!self.is_sentinel());
 
         let mut x_non_montgomery = fiat::FqNonMontgomeryDomainFieldElement([0; N]);
@@ -87,7 +87,7 @@ impl Fq {
         Self(fiat::FqMontgomeryDomainFieldElement(limbs))
     }
 
-    pub const fn from_montgomery_limbs(limbs: [u64; N_64]) -> Fq {
+    pub(crate) const fn from_montgomery_limbs(limbs: [u64; N_64]) -> Fq {
         Self(fiat::FqMontgomeryDomainFieldElement([
             limbs[0] as u32,
             (limbs[0] >> 32) as u32,

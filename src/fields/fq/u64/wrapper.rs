@@ -52,7 +52,7 @@ impl Fq {
         Self(x)
     }
 
-    pub(crate) fn to_le_limbs(&self) -> [u64; N_64] {
+    pub fn to_le_limbs(&self) -> [u64; N_64] {
         debug_assert!(!self.is_sentinel());
 
         let mut x_non_montgomery = fiat::FqNonMontgomeryDomainFieldElement([0; N]);
