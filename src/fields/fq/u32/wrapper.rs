@@ -35,7 +35,7 @@ impl zeroize::Zeroize for Fq {
 }
 
 impl Fq {
-    pub fn from_le_limbs(limbs: [u64; N_64]) -> Fq {
+    pub(crate) fn from_le_limbs(limbs: [u64; N_64]) -> Fq {
         let limbs = {
             let mut out = [0u32; N];
             for i in 0..N_64 {
