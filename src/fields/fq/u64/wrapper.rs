@@ -70,7 +70,10 @@ impl Fq {
         bytes
     }
 
-    pub(crate) const fn from_montgomery_limbs(limbs: [u64; N]) -> Fq {
+    /// Instantiate a constant field element from its montgomery limbs.
+    ///
+    /// This should only be used if you are familiar with the internals of the library.
+    pub const fn from_montgomery_limbs(limbs: [u64; N]) -> Fq {
         Self(fiat::FqMontgomeryDomainFieldElement(limbs))
     }
 
