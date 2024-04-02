@@ -125,6 +125,18 @@ impl Fq {
         };
         Self::from_le_bytes_mod_order(&bytes)
     }
+
+    /// Raise this element to a given power.
+    ///
+    /// Note: Arkworks provides another method for this, called `pow`.
+    pub fn power<S: AsRef<[u64]>>(&self, exp: S) -> Self {
+        let mut res = Fq::from(1u64);
+        let exp_u64 = exp.as_ref();
+        for _ in 0..exp_u64[0] {
+            res *= self;
+        }
+        res
+    }
 }
 
 #[cfg(test)]
