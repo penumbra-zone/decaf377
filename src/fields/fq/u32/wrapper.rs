@@ -87,6 +87,9 @@ impl Fq {
         Self(fiat::FqMontgomeryDomainFieldElement(limbs))
     }
 
+    /// Instantiate a constant field element from its montgomery limbs.
+    ///
+    /// This should only be used if you are familiar with the internals of the library.
     pub const fn from_montgomery_limbs(limbs: [u64; N_64]) -> Fq {
         Self(fiat::FqMontgomeryDomainFieldElement([
             limbs[0] as u32,
