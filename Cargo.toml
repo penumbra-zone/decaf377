@@ -1,6 +1,6 @@
 [package]
 name = "decaf377"
-version = "0.9.0"
+version = "0.10.0"
 authors = [
     "Henry de Valence <hdevalence@hdevalence.ca>",
     "redshiftzero <jen@penumbralabs.xyz>",
@@ -16,7 +16,7 @@ license = "MIT OR Apache-2.0"
 cfg-if = "1.0"
 hex = { version = "=0.4.3", default-features = false }
 subtle = { version = "2.5", default-features = false }
-rand_core = { version = "0.6", default-features = false }
+rand_core = { version = "0.6", default-features = false, optional=true }
 zeroize = { version = "1.7", default-features = false }
 # no-std
 num-bigint = { version = "0.4.4", optional = true, default-features = false }

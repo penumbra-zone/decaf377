@@ -60,3 +60,6 @@
 * add power impl and expose `Fq::from_montgomery_limbs` by @redshiftzero in #98
 * Add missing conversion trait implementations by @neithanmo in #97
 
+# 0.10.0
+
+* Move random sampling methods under `std` feature by @redshiftzero in #100
