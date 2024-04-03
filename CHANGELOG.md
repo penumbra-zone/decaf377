@@ -58,3 +58,5 @@
 * fix: field modulus by @TalDerei in #92
 * adjust anyhow scope and remove unused dependencies by @neithanmo in #96
 * add power impl and expose `Fq::from_montgomery_limbs` by @redshiftzero in #98
+* Add missing conversion trait implementations by @neithanmo in #97
+
