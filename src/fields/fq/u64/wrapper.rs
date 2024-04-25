@@ -1,14 +1,13 @@
+use ark_ed_on_bls12_377::Fq as ArkworksFq;
+use ark_ff::{Field, One, Zero};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
 
-use super::{
-    super::{B, N_64, N_8},
-    fiat,
-};
+use super::super::{B, N_64, N_8};
 
 const N: usize = N_64;
 
 #[derive(Copy, Clone)]
-pub struct Fq(fiat::FqMontgomeryDomainFieldElement);
+pub struct Fq(ArkworksFq);
 
 impl PartialEq for Fq {
     fn eq(&self, other: &Self) -> bool {
@@ -16,12 +15,7 @@ impl PartialEq for Fq {
             (true, true) => true,
             (true, false) => false,
             (false, true) => false,
-            (false, false) => {
-                let sub = self.sub(other);
-                let mut check_word = 0;
-                fiat::fq_nonzero(&mut check_word, &sub.0 .0);
-                check_word == 0
-            }
+            (false, false) => self.0 == other.0,
         }
     }
 }
@@ -77,14 +71,9 @@ impl Fq {
         Self(fiat::FqMontgomeryDomainFieldElement(limbs))
     }
 
-    pub const ZERO: Self = Self(fiat::FqMontgomeryDomainFieldElement([0; N]));
+    pub const ZERO: Self = Self(ArkworksFq::zero());
 
-    pub const ONE: Self = Self(fiat::FqMontgomeryDomainFieldElement([
-        9015221291577245683,
-        8239323489949974514,
-        1646089257421115374,
-        958099254763297437,
-    ]));
+    pub const ONE: Self = Self(ArkworksFq::one());
 
     /// A sentinel value which exists only to not be equal to any other field element.
     ///
@@ -97,10 +86,7 @@ impl Fq {
 
     pub fn square(&self) -> Fq {
         debug_assert!(!self.is_sentinel());
-
-        let mut result = fiat::FqMontgomeryDomainFieldElement([0; N]);
-        fiat::fq_square(&mut result, &self.0);
-        Self(result)
+        Fq(self.0.square())
     }
 
     pub fn inverse(&self) -> Option<Fq> {
@@ -185,34 +171,22 @@ impl Fq {
 
     pub fn add(self, other: &Fq) -> Fq {
         debug_assert!(!self.is_sentinel() && !other.is_sentinel());
-
-        let mut result = fiat::FqMontgomeryDomainFieldElement([0; N]);
-        fiat::fq_add(&mut result, &self.0, &other.0);
-        Fq(result)
+        Fq(self.0 + other.0)
     }
 
     pub fn sub(self, other: &Fq) -> Fq {
         debug_assert!(!self.is_sentinel() && !other.is_sentinel());
-
-        let mut result = fiat::FqMontgomeryDomainFieldElement([0; N]);
-        fiat::fq_sub(&mut result, &self.0, &other.0);
-        Fq(result)
+        Fq(self.0 - other.0)
     }
 
     pub fn mul(self, other: &Fq) -> Fq {
         debug_assert!(!self.is_sentinel() && !other.is_sentinel());
-
-        let mut result = fiat::FqMontgomeryDomainFieldElement([0; N]);
-        fiat::fq_mul(&mut result, &self.0, &other.0);
-        Fq(result)
+        Fq(self.0 * other.0)
     }
 
     pub fn neg(self) -> Fq {
         debug_assert!(!self.is_sentinel());
-
-        let mut result = fiat::FqMontgomeryDomainFieldElement([0; N]);
-        fiat::fq_opp(&mut result, &self.0);
-        Fq(result)
+        Fq(-self.0)
     }
 }
 
