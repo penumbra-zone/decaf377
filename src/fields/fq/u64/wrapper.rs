@@ -96,77 +96,7 @@ impl Fq {
             return None;
         }
 
-        const I: usize = (49 * B + 57) / 17;
-
-        let mut a = fiat::FqNonMontgomeryDomainFieldElement([0; N]);
-        fiat::fq_from_montgomery(&mut a, &self.0);
-        let mut d = 1;
-        let mut f: [u64; N + 1] = [0u64; N + 1];
-        fiat::fq_msat(&mut f);
-        let mut g: [u64; N + 1] = [0u64; N + 1];
-        let mut v: [u64; N] = [0u64; N];
-        let mut r: [u64; N] = Fq::ONE.0 .0;
-        let mut i = 0;
-        let mut j = 0;
-
-        while j < N {
-            g[j] = a[j];
-            j += 1;
-        }
-
-        let mut out1: u64 = 0;
-        let mut out2: [u64; N + 1] = [0; N + 1];
-        let mut out3: [u64; N + 1] = [0; N + 1];
-        let mut out4: [u64; N] = [0; N];
-        let mut out5: [u64; N] = [0; N];
-        let mut out6: u64 = 0;
-        let mut out7: [u64; N + 1] = [0; N + 1];
-        let mut out8: [u64; N + 1] = [0; N + 1];
-        let mut out9: [u64; N] = [0; N];
-        let mut out10: [u64; N] = [0; N];
-
-        while i < I - I % 2 {
-            fiat::fq_divstep(
-                &mut out1, &mut out2, &mut out3, &mut out4, &mut out5, d, &f, &g, &v, &r,
-            );
-            fiat::fq_divstep(
-                &mut out6, &mut out7, &mut out8, &mut out9, &mut out10, out1, &out2, &out3, &out4,
-                &out5,
-            );
-            d = out6;
-            f = out7;
-            g = out8;
-            v = out9;
-            r = out10;
-            i += 2;
-        }
-
-        if I % 2 != 0 {
-            fiat::fq_divstep(
-                &mut out1, &mut out2, &mut out3, &mut out4, &mut out5, d, &f, &g, &v, &r,
-            );
-            v = out4;
-            f = out2;
-        }
-
-        let s = ((f[f.len() - 1] >> (64 - 1)) & 1) as u8;
-        let mut neg = fiat::FqMontgomeryDomainFieldElement([0; N]);
-        fiat::fq_opp(&mut neg, &fiat::FqMontgomeryDomainFieldElement(v));
-
-        let mut v_prime: [u64; N] = [0u64; N];
-        fiat::fq_selectznz(&mut v_prime, s, &v, &neg.0);
-
-        let mut pre_comp: [u64; N] = [0u64; N];
-        fiat::fq_divstep_precomp(&mut pre_comp);
-
-        let mut result = fiat::FqMontgomeryDomainFieldElement([0; N]);
-        fiat::fq_mul(
-            &mut result,
-            &fiat::FqMontgomeryDomainFieldElement(v_prime),
-            &fiat::FqMontgomeryDomainFieldElement(pre_comp),
-        );
-
-        Some(Fq(result))
+        Some(Fq(self.0.inverse()?))
     }
 
     pub fn add(self, other: &Fq) -> Fq {
@@ -202,6 +132,6 @@ impl ConditionallySelectable for Fq {
 
 impl ConstantTimeEq for Fq {
     fn ct_eq(&self, other: &Fq) -> Choice {
-        self.0 .0.ct_eq(&other.0 .0)
+        self.0.ct_eq(&other.0)
     }
 }
