@@ -1,5 +1,5 @@
 use ark_ed_on_bls12_377::Fq as ArkworksFq;
-use ark_ff::{Field, One, Zero};
+use ark_ff::{biginteger::BigInt, Field, One, Zero};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
 
 use super::super::{B, N_64, N_8};
@@ -123,15 +123,24 @@ impl Fq {
 impl ConditionallySelectable for Fq {
     fn conditional_select(a: &Self, b: &Self, choice: subtle::Choice) -> Self {
         let mut out = [0u64; 4];
+        let a_limbs = a.0 .0 .0;
+        let b_limbs = b.0 .0 .0;
         for i in 0..4 {
-            out[i] = u64::conditional_select(&a.0 .0[i], &b.0 .0[i], choice);
+            out[i] = u64::conditional_select(&a_limbs[i], &b_limbs[i], choice);
         }
-        Self(fiat::FqMontgomeryDomainFieldElement(out))
+        let bigint = BigInt::new(out);
+        Self(ArkworksFq::new(bigint))
     }
 }
 
 impl ConstantTimeEq for Fq {
     fn ct_eq(&self, other: &Fq) -> Choice {
-        self.0.ct_eq(&other.0)
+        let self_limbs = self.0 .0 .0;
+        let other_limbs = other.0 .0 .0;
+        let mut is_equal = true;
+        for i in 0..4 {
+            is_equal &= self_limbs[i] == other_limbs[i];
+        }
+        Choice::from(is_equal as u8)
     }
 }
