@@ -1,8 +1,11 @@
 use ark_ed_on_bls12_377::Fq as ArkworksFq;
-use ark_ff::{biginteger::BigInt, Field, One, Zero};
+use ark_ff::{biginteger::BigInt, Field, PrimeField};
+use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
 
-use super::super::{B, N_64, N_8};
+use crate::EncodingError;
+
+use super::super::{N_64, N_8};
 
 const N: usize = N_64;
 
@@ -30,37 +33,48 @@ impl zeroize::Zeroize for Fq {
 
 impl Fq {
     pub(crate) fn from_le_limbs(limbs: [u64; N_64]) -> Fq {
-        let x_non_monty = fiat::FqNonMontgomeryDomainFieldElement(limbs);
-        let mut x = fiat::FqMontgomeryDomainFieldElement([0; N]);
-        fiat::fq_to_montgomery(&mut x, &x_non_monty);
-        Self(x)
+        let mut bytes = [0u8; N_8];
+        for i in 0..N_64 {
+            let this_byte = limbs[i].to_le_bytes();
+            for j in 0..8 {
+                bytes[8 * i + j] = this_byte[j];
+            }
+        }
+
+        Self::from_raw_bytes(&bytes)
     }
 
     pub(crate) fn from_raw_bytes(bytes: &[u8; N_8]) -> Fq {
-        let mut x_non_montgomery = fiat::FqNonMontgomeryDomainFieldElement([0; N]);
-        let mut x = fiat::FqMontgomeryDomainFieldElement([0; N]);
-
-        fiat::fq_from_bytes(&mut x_non_montgomery.0, &bytes);
-        fiat::fq_to_montgomery(&mut x, &x_non_montgomery);
-
-        Self(x)
+        Self(ArkworksFq::from_le_bytes_mod_order(bytes))
     }
 
     pub(crate) fn to_le_limbs(&self) -> [u64; N_64] {
         debug_assert!(!self.is_sentinel());
 
-        let mut x_non_montgomery = fiat::FqNonMontgomeryDomainFieldElement([0; N]);
-        fiat::fq_from_montgomery(&mut x_non_montgomery, &self.0);
-        x_non_montgomery.0
+        let le_bytes = self.to_bytes_le();
+        let mut out = [0u64; N_64];
+        for i in 0..N_64 {
+            out[i] = u64::from_le_bytes([
+                le_bytes[8 * i],
+                le_bytes[8 * i + 1],
+                le_bytes[8 * i + 2],
+                le_bytes[8 * i + 3],
+                le_bytes[8 * i + 4],
+                le_bytes[8 * i + 5],
+                le_bytes[8 * i + 6],
+                le_bytes[8 * i + 7],
+            ]);
+        }
+        out
     }
 
     pub fn to_bytes_le(&self) -> [u8; N_8] {
         debug_assert!(!self.is_sentinel());
 
-        let mut bytes = [0u8; N_8];
-        let mut x_non_montgomery = fiat::FqNonMontgomeryDomainFieldElement([0; N]);
-        fiat::fq_from_montgomery(&mut x_non_montgomery, &self.0);
-        fiat::fq_to_bytes(&mut bytes, &x_non_montgomery.0);
+        let mut bytes = [0u8; 32];
+        self.0
+            .serialize_compressed(&mut bytes[..])
+            .expect("serialization into array should be infallible");
         bytes
     }
 
@@ -68,12 +82,12 @@ impl Fq {
     ///
     /// This should only be used if you are familiar with the internals of the library.
     pub const fn from_montgomery_limbs(limbs: [u64; N]) -> Fq {
-        Self(fiat::FqMontgomeryDomainFieldElement(limbs))
+        // The Arkworks `Fp::new_unchecked` method does not perform montgomery reduction.
+        Self(ArkworksFq::new_unchecked(BigInt::new(limbs)))
     }
 
-    pub const ZERO: Self = Self(ArkworksFq::zero());
-
-    pub const ONE: Self = Self(ArkworksFq::one());
+    pub const ZERO: Self = Self(ArkworksFq::new(BigInt::new([0; N])));
+    pub const ONE: Self = Self(ArkworksFq::new(BigInt::one()));
 
     /// A sentinel value which exists only to not be equal to any other field element.
     ///
