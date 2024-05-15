@@ -1,9 +1,7 @@
 use ark_ed_on_bls12_377::Fq as ArkworksFq;
 use ark_ff::{biginteger::BigInt, Field, PrimeField};
-use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
+use ark_serialize::CanonicalSerialize;
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
-
-use crate::EncodingError;
 
 use super::super::{N_64, N_8};
 
