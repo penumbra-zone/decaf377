@@ -7,13 +7,16 @@ use crate::EncodingError;
 pub mod arkworks;
 mod ops;
 mod u32;
+
+// The u64 backend requires arkworks
+#[cfg(feature = "arkworks")]
 mod u64;
 
 cfg_if! {
-    if #[cfg(feature = "u32_backend")] {
-        pub type Fq = u32::Fq;
-    } else {
+    if #[cfg(feature = "arkworks")] {
         pub type Fq = u64::Fq;
+    } else {
+        pub type Fq = u32::Fq;
     }
 }
 
