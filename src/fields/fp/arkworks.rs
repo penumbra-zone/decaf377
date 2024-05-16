@@ -658,9 +658,7 @@ mod tests {
     #[test]
     fn test_minus_one_squared() {
         let minus_one = Fp::zero() - Fp::one();
-        assert_eq!(Fp::one(), Fp::ONE);
-
-        //assert_eq!(minus_one.square(), Fp::ONE);
+        assert_eq!(minus_one.square(), Fp::ONE);
     }
 
     #[test]
