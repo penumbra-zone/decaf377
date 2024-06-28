@@ -84,6 +84,13 @@ impl Fq {
         Self(ArkworksFq::new_unchecked(BigInt::new(limbs)))
     }
 
+    /// Retrieve the montgomery limbs from a field element.
+    ///
+    /// This should only be used if you are familiar with the internals of the library.
+    pub const fn to_montgomery_limbs(element: Fq) -> [u64; N] {
+        element.0 .0 .0
+    }
+
     pub const ZERO: Self = Self(ArkworksFq::new(BigInt::new([0; N])));
     pub const ONE: Self = Self(ArkworksFq::new(BigInt::one()));
 
