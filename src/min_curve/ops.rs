@@ -110,7 +110,7 @@ impl<'a, 'b> Mul<&'b Fr> for &'a Element {
     type Output = Element;
 
     fn mul(self, scalar: &'b Fr) -> Element {
-        scalar * self
+        *scalar * *self
     }
 }
 
@@ -118,7 +118,7 @@ impl<'a, 'b> Mul<&'b Element> for &'a Fr {
     type Output = Element;
 
     fn mul(self, point: &'b Element) -> Element {
-        point * self
+        *point * *self
     }
 }
 
@@ -142,7 +142,7 @@ impl<'b> Mul<&'b Element> for Fr {
     type Output = Element;
 
     fn mul(self, other: &'b Element) -> Element {
-        other * self
+        *other * self
     }
 }
 
