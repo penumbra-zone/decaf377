@@ -63,3 +63,7 @@
 # 0.10.0
 
 * Use Arkworks field arithmetic for the 64-bit backend by @redshiftzero in #102
+
+# 0.10.1
+
+* Fix recursion causing infinite loop in 32-bit backend * operator for Element
