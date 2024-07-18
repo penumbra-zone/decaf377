@@ -8,15 +8,14 @@ pub mod arkworks;
 mod ops;
 mod u32;
 
-// The u64 backend requires arkworks
-#[cfg(feature = "arkworks")]
+#[cfg(not(feature = "u32_backend"))]
 mod u64;
 
 cfg_if! {
-    if #[cfg(feature = "arkworks")] {
-        pub type Fp = u64::Fp;
-    } else {
+    if #[cfg(feature = "u32_backend")] {
         pub type Fp = u32::Fp;
+    } else {
+        pub type Fp = u64::Fp;
     }
 }
 
