@@ -8,14 +8,14 @@ pub mod arkworks;
 mod ops;
 mod u32;
 
-#[cfg(not(feature = "u32_backend"))]
+#[cfg(feature = "u64_backend")]
 mod u64;
 
 cfg_if! {
-    if #[cfg(feature = "u32_backend")] {
-        pub type Fq = u32::Fq;
-    } else {
+    if #[cfg(feature = "u64_backend")] {
         pub type Fq = u64::Fq;
+    } else {
+        pub type Fq = u32::Fq;
     }
 }
 

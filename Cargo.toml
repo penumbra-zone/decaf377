@@ -68,7 +68,7 @@ arkworks = [
     "hashbrown",
 ]
 r1cs = ["arkworks", "ark-groth16", "ark-r1cs-std", "ark-relations", "ark-snark"]
-u32_backend = []
+u64_backend = ["arkworks"]
 
 [dev-dependencies]
 proptest = "1"
