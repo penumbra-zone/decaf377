@@ -67,3 +67,7 @@
 # 0.10.1
 
 * Fix recursion causing infinite loop in 32-bit backend * operator for Element
+
+# 1.0.0
+
+* Make 32-bit backend the default, add `u64_backend` feature
