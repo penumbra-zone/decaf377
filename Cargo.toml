@@ -99,6 +99,3 @@ required-features = ["arkworks"]
 [profile.ci]
 inherits = "release"
 debug-assertions = true
-
-[profile.release]
-opt-level = "s"
