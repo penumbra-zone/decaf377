@@ -101,5 +101,4 @@ inherits = "release"
 debug-assertions = true
 
 [profile.release]
-opt-level = "s"
 lto = true
