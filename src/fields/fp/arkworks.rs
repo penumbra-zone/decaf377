@@ -167,35 +167,6 @@ impl Field for Fp {
         sum
     }
 
-    fn frobenius_map(&self, power: usize) -> Self {
-        let mut this = *self;
-        this.frobenius_map_in_place(power);
-        this
-    }
-
-    fn pow<S: AsRef<[u64]>>(&self, exp: S) -> Self {
-        let mut res = Self::one();
-
-        for i in ark_ff::BitIteratorBE::without_leading_zeros(exp) {
-            res.square_in_place();
-
-            if i {
-                res *= self;
-            }
-        }
-        res
-    }
-
-    fn pow_with_table<S: AsRef<[u64]>>(powers_of_2: &[Self], exp: S) -> Option<Self> {
-        let mut res = Self::one();
-        for (pow, bit) in ark_ff::BitIteratorLE::without_trailing_zeros(exp).enumerate() {
-            if bit {
-                res *= powers_of_2.get(pow)?;
-            }
-        }
-        Some(res)
-    }
-
     fn mul_by_base_prime_field(&self, _elem: &Self::BasePrimeField) -> Self {
         unimplemented!()
     }
