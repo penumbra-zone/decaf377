@@ -1,6 +1,5 @@
-use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
-
 use crate::{ark_curve::element::projective::Element, ark_curve::AffinePoint, Fr};
+use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 impl<'a, 'b> Add<&'b Element> for &'a Element {
     type Output = Element;
@@ -272,5 +271,59 @@ impl Sub<AffinePoint> for Element {
 
     fn sub(self, other: AffinePoint) -> Element {
         &self - &other.into()
+    }
+}
+
+impl<'a> Add<&'a mut Element> for Element {
+    type Output = Element;
+
+    fn add(self, other: &'a mut Self) -> Element {
+        Element {
+            inner: self.inner + other.inner,
+        }
+    }
+}
+
+impl<'a> Sub<&'a mut Element> for Element {
+    type Output = Element;
+
+    fn sub(self, other: &'a mut Element) -> Element {
+        Element {
+            inner: self.inner - other.inner,
+        }
+    }
+}
+
+impl<'a> AddAssign<&'a mut Element> for Element {
+    fn add_assign(&mut self, other: &'a mut Element) {
+        *self = Element {
+            inner: self.inner + other.inner,
+        }
+    }
+}
+
+impl<'a> SubAssign<&'a mut Element> for Element {
+    fn sub_assign(&mut self, other: &'a mut Element) {
+        *self = Element {
+            inner: self.inner - other.inner,
+        }
+    }
+}
+
+impl<'a> Mul<&'a mut Fr> for Element {
+    type Output = Element;
+
+    fn mul(self, point: &'a mut Fr) -> Self::Output {
+        let mut p = self.inner;
+        p *= *point;
+        Element { inner: p }
+    }
+}
+
+impl<'a> MulAssign<&'a mut Fr> for Element {
+    fn mul_assign(&mut self, point: &'a mut Fr) {
+        let mut p = self.inner;
+        p *= *point;
+        *self = Element { inner: p }
     }
 }
