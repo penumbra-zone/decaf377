@@ -1,6 +1,6 @@
 use ark_ec::{
-    models::{twisted_edwards::Projective, twisted_edwards::TECurveConfig},
-    Group,
+    models::twisted_edwards::{Projective, TECurveConfig},
+    PrimeGroup,
 };
 use ark_ff::{BigInteger, Field, PrimeField, Zero};
 use ark_serialize::CanonicalSerialize;

@@ -1,14 +1,10 @@
-use core::borrow::Borrow;
-use core::hash::Hash;
-
+use super::super::constants::{B_T, B_X, B_Y, B_Z};
+use crate::{ark_curve::EdwardsProjective, Fq, Fr};
 use ark_ff::Zero;
 use ark_std::fmt::{Display, Formatter, Result as FmtResult};
-
+use core::borrow::Borrow;
+use core::hash::Hash;
 use zeroize::Zeroize;
-
-use crate::{ark_curve::EdwardsProjective, Fq, Fr};
-
-use super::super::constants::{B_T, B_X, B_Y, B_Z};
 
 #[derive(Copy, Clone)]
 pub struct Element {
@@ -23,6 +19,10 @@ impl Element {
 
     pub const IDENTITY: Self = Self {
         inner: EdwardsProjective::new_unchecked(Fq::ZERO, Fq::ONE, Fq::ZERO, Fq::ONE),
+    };
+
+    pub const ZERO: Self = Self {
+        inner: EdwardsProjective::new_unchecked(Fq::ZERO, Fq::ZERO, Fq::ZERO, Fq::ZERO),
     };
 }
 

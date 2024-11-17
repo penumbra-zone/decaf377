@@ -1,6 +1,8 @@
-use ark_ec::{AffineRepr, CurveGroup, Group, ScalarMul, VariableBaseMSM};
+use ark_ec::{AffineRepr, CurveGroup, PrimeGroup, ScalarMul, VariableBaseMSM};
+use ark_ff::AdditiveGroup;
 use ark_serialize::Valid;
 use ark_std::vec::Vec;
+use core::ops::AddAssign;
 
 use crate::{
     ark_curve::{edwards::EdwardsAffine, Decaf377EdwardsConfig, EdwardsProjective},
@@ -35,25 +37,6 @@ impl ScalarMul for Element {
 }
 
 impl VariableBaseMSM for Element {}
-
-impl Group for Element {
-    type ScalarField = Fr;
-
-    fn double_in_place(&mut self) -> &mut Self {
-        let inner = *self.inner.double_in_place();
-        *self = Element { inner };
-        self
-    }
-
-    fn generator() -> Self {
-        Self::GENERATOR
-    }
-
-    fn mul_bigint(&self, other: impl AsRef<[u64]>) -> Self {
-        let inner = self.inner.mul_bigint(other);
-        Element { inner }
-    }
-}
 
 impl CurveGroup for Element {
     // We implement `CurveGroup` as it is required by the `CurveVar`
@@ -100,7 +83,7 @@ impl AffineRepr for AffinePoint {
 
     type Group = Element;
 
-    fn xy(&self) -> Option<(&Self::BaseField, &Self::BaseField)> {
+    fn xy(&self) -> Option<(Self::BaseField, Self::BaseField)> {
         self.inner.xy()
     }
 
@@ -163,5 +146,40 @@ impl From<&AffinePoint> for Element {
         Self {
             inner: point.inner.into(),
         }
+    }
+}
+
+impl PrimeGroup for Element {
+    type ScalarField = Fr;
+
+    fn generator() -> Self {
+        Self::GENERATOR
+    }
+
+    fn mul_bigint(&self, other: impl AsRef<[u64]>) -> Self {
+        let inner = self.inner.mul_bigint(other);
+        Element { inner }
+    }
+}
+
+impl AdditiveGroup for Element {
+    type Scalar = Fr;
+
+    const ZERO: Self = Self::ZERO;
+
+    fn double(&self) -> Self {
+        let mut copy = *self;
+        copy.double_in_place();
+        copy
+    }
+
+    fn double_in_place(&mut self) -> &mut Self {
+        self.add_assign(*self);
+        self
+    }
+
+    fn neg_in_place(&mut self) -> &mut Self {
+        *self = -(*self);
+        self
     }
 }

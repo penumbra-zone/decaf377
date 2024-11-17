@@ -56,10 +56,10 @@ impl<'a, 'b> Sub<&'b AffinePoint> for &'a AffinePoint {
 }
 
 impl<'b> Sub<&'b AffinePoint> for AffinePoint {
-    type Output = AffinePoint;
+    type Output = Element;
 
-    fn sub(self, other: &'b AffinePoint) -> AffinePoint {
-        &self - other
+    fn sub(self, other: &'b AffinePoint) -> Element {
+        (&self - other).into()
     }
 }
 
@@ -72,9 +72,43 @@ impl<'a> Sub<AffinePoint> for &'a AffinePoint {
 }
 
 impl Sub<AffinePoint> for AffinePoint {
-    type Output = AffinePoint;
+    type Output = Element;
 
-    fn sub(self, other: AffinePoint) -> AffinePoint {
+    fn sub(self, other: AffinePoint) -> Element {
+        (&self - &other).into()
+    }
+}
+
+impl<'a, 'b> Sub<&'b Element> for &'a AffinePoint {
+    type Output = Element;
+
+    fn sub(self, other: &'b Element) -> Element {
+        Element {
+            inner: self.inner - other.inner,
+        }
+    }
+}
+
+impl<'b> Sub<&'b Element> for AffinePoint {
+    type Output = Element;
+
+    fn sub(self, other: &'b Element) -> Element {
+        &self - other
+    }
+}
+
+impl<'a> Sub<Element> for &'a AffinePoint {
+    type Output = Element;
+
+    fn sub(self, other: Element) -> Element {
+        self - &other
+    }
+}
+
+impl Sub<Element> for AffinePoint {
+    type Output = Element;
+
+    fn sub(self, other: Element) -> Element {
         &self - &other
     }
 }

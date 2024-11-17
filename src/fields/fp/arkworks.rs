@@ -1,12 +1,15 @@
 use super::Fp;
-use ark_ff::{BigInt, Field, PrimeField, SqrtPrecomputation};
+use ark_ff::{AdditiveGroup, BigInt, Field, PrimeField, SqrtPrecomputation};
 use ark_ff::{BigInteger, FftField};
 use ark_serialize::{
     CanonicalDeserialize, CanonicalDeserializeWithFlags, CanonicalSerialize,
-    CanonicalSerializeWithFlags, Compress, EmptyFlags, Flags, SerializationError, Valid, Validate,
+    CanonicalSerializeWithFlags, Compress, EmptyFlags, Flags, Read, SerializationError, Valid,
+    Validate, Write,
 };
+use ark_std::vec::Vec;
 use ark_std::{rand, str::FromStr, string::ToString, One, Zero};
 use core::convert::TryInto;
+use core::ops::AddAssign;
 use core::{
     fmt::{Display, Formatter},
     iter,
@@ -58,7 +61,6 @@ impl PrimeField for Fp {
 
 impl Field for Fp {
     type BasePrimeField = Self;
-    type BasePrimeFieldIter = iter::Once<Self::BasePrimeField>;
 
     const SQRT_PRECOMP: Option<SqrtPrecomputation<Self>> =
         Some(SqrtPrecomputation::TonelliShanks {
@@ -67,8 +69,6 @@ impl Field for Fp {
             trace_of_modulus_minus_one_div_two: &Self::TRACE_MINUS_ONE_DIV_TWO_LIMBS,
         });
 
-    const ZERO: Self = Self::ZERO;
-
     // Montomgery representation of one
     const ONE: Self = Self::ONE;
 
@@ -76,11 +76,14 @@ impl Field for Fp {
         1
     }
 
-    fn to_base_prime_field_elements(&self) -> Self::BasePrimeFieldIter {
+    fn to_base_prime_field_elements(&self) -> impl Iterator<Item = Self::BasePrimeField> {
         iter::once(*self)
     }
 
-    fn from_base_prime_field_elems(elems: &[Self::BasePrimeField]) -> Option<Self> {
+    fn from_base_prime_field_elems(
+        elems: impl IntoIterator<Item = Self::BasePrimeField>,
+    ) -> Option<Self> {
+        let elems: Vec<_> = elems.into_iter().collect();
         if elems.len() != (Self::extension_degree() as usize) {
             return None;
         }
@@ -91,21 +94,7 @@ impl Field for Fp {
         elem
     }
 
-    fn double(&self) -> Self {
-        self.add(self)
-    }
-
-    fn double_in_place(&mut self) -> &mut Self {
-        *self = self.add(self);
-        self
-    }
-
-    fn neg_in_place(&mut self) -> &mut Self {
-        *self = Self::ZERO.sub(self);
-        self
-    }
-
-    fn from_random_bytes_with_flags<F: ark_serialize::Flags>(bytes: &[u8]) -> Option<(Self, F)> {
+    fn from_random_bytes_with_flags<F: Flags>(bytes: &[u8]) -> Option<(Self, F)> {
         Some((Self::from_le_bytes_mod_order(bytes), F::default()))
     }
 
@@ -151,6 +140,65 @@ impl Field for Fp {
     fn characteristic() -> &'static [u64] {
         &Self::MODULUS_LIMBS
     }
+
+    fn from_random_bytes(bytes: &[u8]) -> Option<Self> {
+        Self::from_random_bytes_with_flags::<EmptyFlags>(bytes).map(|f| f.0)
+    }
+
+    fn sqrt(&self) -> Option<Self> {
+        match Self::SQRT_PRECOMP {
+            Some(tv) => tv.sqrt(self),
+            None => core::unimplemented!(),
+        }
+    }
+
+    fn sqrt_in_place(&mut self) -> Option<&mut Self> {
+        (*self).sqrt().map(|sqrt| {
+            *self = sqrt;
+            self
+        })
+    }
+
+    fn sum_of_products<const T: usize>(a: &[Self; T], b: &[Self; T]) -> Self {
+        let mut sum = Self::zero();
+        for i in 0..a.len() {
+            sum += a[i] * b[i];
+        }
+        sum
+    }
+
+    fn frobenius_map(&self, power: usize) -> Self {
+        let mut this = *self;
+        this.frobenius_map_in_place(power);
+        this
+    }
+
+    fn pow<S: AsRef<[u64]>>(&self, exp: S) -> Self {
+        let mut res = Self::one();
+
+        for i in ark_ff::BitIteratorBE::without_leading_zeros(exp) {
+            res.square_in_place();
+
+            if i {
+                res *= self;
+            }
+        }
+        res
+    }
+
+    fn pow_with_table<S: AsRef<[u64]>>(powers_of_2: &[Self], exp: S) -> Option<Self> {
+        let mut res = Self::one();
+        for (pow, bit) in ark_ff::BitIteratorLE::without_trailing_zeros(exp).enumerate() {
+            if bit {
+                res *= powers_of_2.get(pow)?;
+            }
+        }
+        Some(res)
+    }
+
+    fn mul_by_base_prime_field(&self, _elem: &Self::BasePrimeField) -> Self {
+        unimplemented!()
+    }
 }
 
 impl FftField for Fp {
@@ -160,6 +208,28 @@ impl FftField for Fp {
     const SMALL_SUBGROUP_BASE: Option<u32> = None;
     const SMALL_SUBGROUP_BASE_ADICITY: Option<u32> = None;
     const LARGE_SUBGROUP_ROOT_OF_UNITY: Option<Self> = None;
+}
+
+impl AdditiveGroup for Fp {
+    type Scalar = Self;
+
+    const ZERO: Self = Self::ZERO;
+
+    fn double(&self) -> Self {
+        let mut copy = *self;
+        copy.double_in_place();
+        copy
+    }
+
+    fn double_in_place(&mut self) -> &mut Self {
+        self.add_assign(*self);
+        self
+    }
+
+    fn neg_in_place(&mut self) -> &mut Self {
+        *self = -(*self);
+        self
+    }
 }
 
 impl Zero for Fp {
@@ -187,7 +257,7 @@ impl One for Fp {
 }
 
 impl CanonicalDeserializeWithFlags for Fp {
-    fn deserialize_with_flags<R: ark_std::io::Read, F: Flags>(
+    fn deserialize_with_flags<R: Read, F: Flags>(
         mut reader: R,
     ) -> Result<(Self, F), SerializationError> {
         // Enough for the field element + 8 bits of flags. The last byte may or may not contain flags.
@@ -214,7 +284,7 @@ impl Valid for Fp {
 }
 
 impl CanonicalDeserialize for Fp {
-    fn deserialize_with_mode<R: ark_std::io::Read>(
+    fn deserialize_with_mode<R: Read>(
         reader: R,
         _compress: Compress,
         validate: Validate,
@@ -230,7 +300,7 @@ impl CanonicalDeserialize for Fp {
 
 impl CanonicalSerialize for Fp {
     #[inline]
-    fn serialize_with_mode<W: ark_std::io::Write>(
+    fn serialize_with_mode<W: Write>(
         &self,
         writer: W,
         _compress: Compress,
@@ -245,7 +315,8 @@ impl CanonicalSerialize for Fp {
 }
 
 impl CanonicalSerializeWithFlags for Fp {
-    fn serialize_with_flags<W: ark_std::io::Write, F: Flags>(
+    #[inline]
+    fn serialize_with_flags<W: Write, F: Flags>(
         &self,
         mut writer: W,
         flags: F,
@@ -270,6 +341,7 @@ impl CanonicalSerializeWithFlags for Fp {
         Ok(())
     }
 
+    #[inline]
     fn serialized_size_with_flags<F: Flags>(&self) -> usize {
         (Self::MODULUS_BIT_SIZE as usize + F::BIT_SIZE + 7) / 8
     }

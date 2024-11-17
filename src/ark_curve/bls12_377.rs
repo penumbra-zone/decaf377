@@ -5,7 +5,9 @@ use ark_ec::{
     models::CurveConfig,
     short_weierstrass::Affine,
 };
-use ark_ff::{fields::models::fp2::Fp2Config, Field, Fp12Config, Fp2, Fp6, Fp6Config};
+use ark_ff::{
+    fields::models::fp2::Fp2Config, AdditiveGroup, Field, Fp12Config, Fp2, Fp6, Fp6Config,
+};
 
 pub struct F2Config;
 

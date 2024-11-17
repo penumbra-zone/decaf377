@@ -1,13 +1,15 @@
 use super::Fq;
-use ark_ff::{BigInt, Field, PrimeField, SqrtPrecomputation};
+use ark_ff::{AdditiveGroup, BigInt, Field, PrimeField, SqrtPrecomputation};
 use ark_ff::{BigInteger, FftField};
 use ark_serialize::{
     CanonicalDeserialize, CanonicalDeserializeWithFlags, CanonicalSerialize,
     CanonicalSerializeWithFlags, Compress, EmptyFlags, Flags, SerializationError, Valid, Validate,
 };
 use ark_std::iterable::Iterable;
+use ark_std::vec::Vec;
 use ark_std::{rand, str::FromStr, string::ToString, One, Zero};
 use core::convert::TryInto;
+use core::ops::AddAssign;
 use core::{
     fmt::{Display, Formatter},
     iter,
@@ -59,7 +61,6 @@ impl PrimeField for Fq {
 
 impl Field for Fq {
     type BasePrimeField = Self;
-    type BasePrimeFieldIter = iter::Once<Self::BasePrimeField>;
 
     const SQRT_PRECOMP: Option<SqrtPrecomputation<Self>> =
         Some(SqrtPrecomputation::TonelliShanks {
@@ -68,8 +69,6 @@ impl Field for Fq {
             trace_of_modulus_minus_one_div_two: &Self::TRACE_MINUS_ONE_DIV_TWO_LIMBS,
         });
 
-    const ZERO: Self = Self::ZERO;
-
     // Montomgery representation of one
     const ONE: Self = Self::ONE;
 
@@ -77,11 +76,14 @@ impl Field for Fq {
         1
     }
 
-    fn to_base_prime_field_elements(&self) -> Self::BasePrimeFieldIter {
+    fn to_base_prime_field_elements(&self) -> impl Iterator<Item = Self::BasePrimeField> {
         iter::once(*self)
     }
 
-    fn from_base_prime_field_elems(elems: &[Self::BasePrimeField]) -> Option<Self> {
+    fn from_base_prime_field_elems(
+        elems: impl IntoIterator<Item = Self::BasePrimeField>,
+    ) -> Option<Self> {
+        let elems: Vec<_> = elems.into_iter().collect();
         if elems.len() != (Self::extension_degree() as usize) {
             return None;
         }
@@ -90,20 +92,6 @@ impl Field for Fq {
 
     fn from_base_prime_field(elem: Self::BasePrimeField) -> Self {
         elem
-    }
-
-    fn double(&self) -> Self {
-        self.add(self)
-    }
-
-    fn double_in_place(&mut self) -> &mut Self {
-        *self = self.add(self);
-        self
-    }
-
-    fn neg_in_place(&mut self) -> &mut Self {
-        *self = Self::ZERO.sub(self);
-        self
     }
 
     fn from_random_bytes_with_flags<F: ark_serialize::Flags>(bytes: &[u8]) -> Option<(Self, F)> {
@@ -152,6 +140,10 @@ impl Field for Fq {
     fn characteristic() -> &'static [u64] {
         &Self::MODULUS_LIMBS
     }
+
+    fn mul_by_base_prime_field(&self, _elem: &Self::BasePrimeField) -> Self {
+        unimplemented!()
+    }
 }
 
 impl FftField for Fq {
@@ -161,6 +153,28 @@ impl FftField for Fq {
     const SMALL_SUBGROUP_BASE: Option<u32> = None;
     const SMALL_SUBGROUP_BASE_ADICITY: Option<u32> = None;
     const LARGE_SUBGROUP_ROOT_OF_UNITY: Option<Self> = None;
+}
+
+impl AdditiveGroup for Fq {
+    type Scalar = Self;
+
+    const ZERO: Self = Self::ZERO;
+
+    fn double(&self) -> Self {
+        let mut copy = *self;
+        copy.double_in_place();
+        copy
+    }
+
+    fn double_in_place(&mut self) -> &mut Self {
+        self.add_assign(*self);
+        self
+    }
+
+    fn neg_in_place(&mut self) -> &mut Self {
+        *self = -(*self);
+        self
+    }
 }
 
 impl Zero for Fq {

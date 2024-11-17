@@ -43,6 +43,36 @@ impl From<bool> for Fp {
     }
 }
 
+impl From<i8> for Fp {
+    fn from(other: i8) -> Self {
+        i128::from(other).into()
+    }
+}
+
+impl From<i16> for Fp {
+    fn from(other: i16) -> Self {
+        i128::from(other).into()
+    }
+}
+
+impl From<i32> for Fp {
+    fn from(other: i32) -> Self {
+        i128::from(other).into()
+    }
+}
+
+impl From<i64> for Fp {
+    fn from(other: i64) -> Self {
+        i128::from(other).into()
+    }
+}
+
+impl From<i128> for Fp {
+    fn from(other: i128) -> Self {
+        i128::from(other).into()
+    }
+}
+
 impl Neg for Fp {
     type Output = Self;
 
