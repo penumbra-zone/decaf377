@@ -1,4 +1,3 @@
-use ark_ff::Field;
 use ark_r1cs_std::eq::EqGadget;
 use ark_r1cs_std::prelude::ToBitsGadget;
 use ark_r1cs_std::prelude::{AllocVar, Boolean, FieldVar};
@@ -18,43 +17,9 @@ pub trait FqVarExtension: Sized {
     fn is_negative(&self) -> Result<Boolean<Fq>, SynthesisError>;
     fn is_nonnegative(&self) -> Result<Boolean<Fq>, SynthesisError>;
     fn abs(self) -> Result<Self, SynthesisError>;
-}
-
-// The methods for logical operations (and, or, not) were moved from the Boolean
-// enum to helper functions in AllocatedBool. Consequently, we need to do some
-// cursed redirection for the the Boolean enum to delegate these operations to the
-// underlying AllocatedBool when applicable.
-pub fn not<F: Field>(boolean: &Boolean<F>) -> Result<Boolean<F>, SynthesisError> {
-    match boolean {
-        Boolean::Var(allocated) => Ok(Boolean::Var(allocated.not()?)),
-        Boolean::Constant(value) => Ok(Boolean::Constant(!value)),
-    }
-}
-
-pub fn and<F: Field>(a: &Boolean<F>, b: &Boolean<F>) -> Result<Boolean<F>, SynthesisError> {
-    match (a, b) {
-        // Both are AllocatedBool
-        (Boolean::Var(alloc_a), Boolean::Var(alloc_b)) => Ok(Boolean::Var(alloc_a.and(alloc_b)?)),
-        // Both are constant
-        (Boolean::Constant(val_a), Boolean::Constant(val_b)) => {
-            Ok(Boolean::Constant(*val_a & *val_b))
-        }
-        // One is constant, one is variable
-        (Boolean::Constant(true), other) | (other, Boolean::Constant(true)) => Ok(other.clone()),
-        (Boolean::Constant(false), _) | (_, Boolean::Constant(false)) => {
-            Ok(Boolean::Constant(false))
-        }
-    }
-}
-
-pub fn or<F: Field>(a: &Boolean<F>, b: &Boolean<F>) -> Result<Boolean<F>, SynthesisError> {
-    match (a, b) {
-        (Boolean::Var(alloc_a), Boolean::Var(alloc_b)) => Ok(Boolean::Var(alloc_a.or(alloc_b)?)),
-        (Boolean::Constant(val_a), Boolean::Constant(val_b)) => {
-            Ok(Boolean::Constant(*val_a | *val_b))
-        }
-        _ => Err(SynthesisError::Unsatisfiable),
-    }
+    fn not(boolean: &Boolean<Fq>) -> Result<Boolean<Fq>, SynthesisError>;
+    fn and(a: &Boolean<Fq>, b: &Boolean<Fq>) -> Result<Boolean<Fq>, SynthesisError>;
+    fn or(a: &Boolean<Fq>, b: &Boolean<Fq>) -> Result<Boolean<Fq>, SynthesisError>;
 }
 
 impl FqVarExtension for FqVar {
@@ -95,28 +60,28 @@ impl FqVarExtension for FqVar {
 
         // Case 3: `(false, 0)` if `den` is zero
 
-        let was_not_square_var = not(&was_square_var)?;
-        let in_case_3 = and(&was_not_square_var, &den_var_is_zero)?;
+        let was_not_square_var = Self::not(&was_square_var)?;
+        let in_case_3 = Self::and(&was_not_square_var, &den_var_is_zero)?;
         // Certify the return value y is 0 when we're in case 3.
         y_squared_var.conditional_enforce_equal(&FqVar::zero(), &in_case_3)?;
 
         // Case 4: `(false, sqrt(zeta*num/den))` if `num` and `den` are both nonzero and `num/den` is nonsquare;
         let zeta_var = FqVar::new_constant(cs, ZETA)?;
         let zeta_times_one_over_den_var = zeta_var * den_var_inv;
-        let is_den_var_is_zero = not(&den_var_is_zero)?;
-        let in_case_4 = and(&was_not_square_var, &is_den_var_is_zero)?;
+        let is_den_var_is_zero = Self::not(&den_var_is_zero)?;
+        let in_case_4 = Self::and(&was_not_square_var, &is_den_var_is_zero)?;
         // Certify the return value y is sqrt(zeta * 1/den)
         y_squared_var.conditional_enforce_equal(&zeta_times_one_over_den_var, &in_case_4)?;
 
         // Ensure that we are in case 1, 3, or 4.
-        let in_case = or(&in_case_1, &or(&in_case_3, &in_case_4)?)?;
+        let in_case = Self::or(&in_case_1, &Self::or(&in_case_3, &in_case_4)?)?;
         in_case.enforce_equal(&Boolean::TRUE)?;
 
         Ok((was_square_var, y_var))
     }
 
     fn is_negative(&self) -> Result<Boolean<Fq>, SynthesisError> {
-        Ok(not(&self.is_nonnegative()?)?)
+        Ok(Self::not(&self.is_nonnegative()?)?)
     }
 
     fn is_nonnegative(&self) -> Result<Boolean<Fq>, SynthesisError> {
@@ -127,7 +92,7 @@ impl FqVarExtension for FqVar {
         let false_var = Boolean::<Fq>::FALSE;
 
         // Check least significant bit
-        let lhs = and(&bitvars[0], &true_var)?;
+        let lhs = Self::and(&bitvars[0], &true_var)?;
         let is_nonnegative_var = lhs.is_eq(&false_var)?;
 
         Ok(is_nonnegative_var)
@@ -137,5 +102,48 @@ impl FqVarExtension for FqVar {
         let absolute_value =
             FqVar::conditionally_select(&self.is_nonnegative()?, &self, &self.negate()?)?;
         Ok(absolute_value)
+    }
+
+    // The methods for logical operations (and, or, not) were moved from the Boolean
+    // enum to helper functions in AllocatedBool. Consequently, we need to do some
+    // cursed redirection for the the Boolean enum to delegate these operations to the
+    // underlying AllocatedBool when applicable.
+    fn not(boolean: &Boolean<Fq>) -> Result<Boolean<Fq>, SynthesisError> {
+        match boolean {
+            Boolean::Var(allocated) => Ok(Boolean::Var(allocated.not()?)),
+            Boolean::Constant(value) => Ok(Boolean::Constant(!value)),
+        }
+    }
+
+    fn and(a: &Boolean<Fq>, b: &Boolean<Fq>) -> Result<Boolean<Fq>, SynthesisError> {
+        match (a, b) {
+            // Both are AllocatedBool
+            (Boolean::Var(alloc_a), Boolean::Var(alloc_b)) => {
+                Ok(Boolean::Var(alloc_a.and(alloc_b)?))
+            }
+            // Both are constant
+            (Boolean::Constant(val_a), Boolean::Constant(val_b)) => {
+                Ok(Boolean::Constant(*val_a & *val_b))
+            }
+            // One is constant, one is variable
+            (Boolean::Constant(true), other) | (other, Boolean::Constant(true)) => {
+                Ok(other.clone())
+            }
+            (Boolean::Constant(false), _) | (_, Boolean::Constant(false)) => {
+                Ok(Boolean::Constant(false))
+            }
+        }
+    }
+
+    fn or(a: &Boolean<Fq>, b: &Boolean<Fq>) -> Result<Boolean<Fq>, SynthesisError> {
+        match (a, b) {
+            (Boolean::Var(alloc_a), Boolean::Var(alloc_b)) => {
+                Ok(Boolean::Var(alloc_a.or(alloc_b)?))
+            }
+            (Boolean::Constant(val_a), Boolean::Constant(val_b)) => {
+                Ok(Boolean::Constant(*val_a | *val_b))
+            }
+            _ => Err(SynthesisError::Unsatisfiable),
+        }
     }
 }
