@@ -6,9 +6,8 @@ use once_cell::sync::Lazy;
 use proptest::prelude::*;
 
 use ark_r1cs_std::{
-    prelude::{AllocVar, CurveVar, EqGadget},
+    prelude::{AllocVar, CurveVar, EqGadget, ToBitsGadget},
     uint8::UInt8,
-    ToBitsGadget,
 };
 use ark_relations::r1cs::{ConstraintSynthesizer, ToConstraintField};
 use ark_snark::SNARK;
