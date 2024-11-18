@@ -16,6 +16,7 @@ use ark_std::vec::Vec;
 use core::borrow::Borrow;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign};
 pub(crate) type Decaf377EdwardsVar = AffineVar<Decaf377EdwardsConfig, FqVar>;
+use ark_r1cs_std::prelude::ToBitsGadget;
 
 #[derive(Clone, Debug)]
 /// Represents the R1CS equivalent of a `decaf377::Element`

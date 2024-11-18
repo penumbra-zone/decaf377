@@ -24,14 +24,14 @@ pub trait FqVarExtension: Sized {
 // enum to helper functions in AllocatedBool. Consequently, we need to do some
 // cursed redirection for the the Boolean enum to delegate these operations to the
 // underlying AllocatedBool when applicable.
-fn not<F: Field>(boolean: &Boolean<F>) -> Result<Boolean<F>, SynthesisError> {
+pub fn not<F: Field>(boolean: &Boolean<F>) -> Result<Boolean<F>, SynthesisError> {
     match boolean {
         Boolean::Var(allocated) => Ok(Boolean::Var(allocated.not()?)),
         Boolean::Constant(value) => Ok(Boolean::Constant(!value)),
     }
 }
 
-fn and<F: Field>(a: &Boolean<F>, b: &Boolean<F>) -> Result<Boolean<F>, SynthesisError> {
+pub fn and<F: Field>(a: &Boolean<F>, b: &Boolean<F>) -> Result<Boolean<F>, SynthesisError> {
     match (a, b) {
         // Both are AllocatedBool
         (Boolean::Var(alloc_a), Boolean::Var(alloc_b)) => Ok(Boolean::Var(alloc_a.and(alloc_b)?)),
@@ -47,7 +47,7 @@ fn and<F: Field>(a: &Boolean<F>, b: &Boolean<F>) -> Result<Boolean<F>, Synthesis
     }
 }
 
-fn or<F: Field>(a: &Boolean<F>, b: &Boolean<F>) -> Result<Boolean<F>, SynthesisError> {
+pub fn or<F: Field>(a: &Boolean<F>, b: &Boolean<F>) -> Result<Boolean<F>, SynthesisError> {
     match (a, b) {
         (Boolean::Var(alloc_a), Boolean::Var(alloc_b)) => Ok(Boolean::Var(alloc_a.or(alloc_b)?)),
         (Boolean::Constant(val_a), Boolean::Constant(val_b)) => {
