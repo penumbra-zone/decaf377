@@ -9,12 +9,12 @@ use ark_r1cs_std::{alloc::AllocVar, eq::EqGadget, prelude::*, R1CSVar};
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 use ark_std::vec::Vec;
 
+use super::inner::{Decaf377EdwardsVar, ScalarMultiply, ScalarMultiplyAssign};
 use crate::ark_curve::r1cs::{lazy::LazyElementVar, FqVar};
 use crate::ark_curve::{edwards::EdwardsAffine, r1cs::inner::ElementVar as InnerElementVar};
 use crate::ark_curve::{AffinePoint, Element};
 use crate::{Fq, Fr};
-
-use super::inner::{Decaf377EdwardsVar, ScalarMultiply, ScalarMultiplyAssign};
+use ark_r1cs_std::prelude::ToBitsGadget;
 
 #[derive(Clone, Debug)]
 /// Represents the R1CS equivalent of a `decaf377::Element`
