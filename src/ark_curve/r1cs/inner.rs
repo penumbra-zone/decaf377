@@ -1,21 +1,20 @@
 #![allow(non_snake_case)]
-use core::borrow::Borrow;
-use core::ops::{Add, AddAssign, Sub, SubAssign};
-
+use crate::ark_curve::{
+    constants::ZETA, edwards::EdwardsAffine, r1cs::fqvar_ext::FqVarExtension, r1cs::FqVar,
+    AffinePoint, Decaf377EdwardsConfig, Element,
+};
+use crate::{Fq, Fr};
 use ark_ec::{twisted_edwards::TECurveConfig, AffineRepr};
+use ark_r1cs_std::convert::ToConstraintFieldGadget;
+use ark_r1cs_std::fields::emulated_fp::EmulatedFpVar;
 use ark_r1cs_std::{
     alloc::AllocVar, eq::EqGadget, groups::curves::twisted_edwards::AffineVar, prelude::*, R1CSVar,
 };
 use ark_relations::ns;
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 use ark_std::vec::Vec;
-
-use crate::ark_curve::{
-    constants::ZETA, edwards::EdwardsAffine, r1cs::fqvar_ext::FqVarExtension, r1cs::FqVar,
-    AffinePoint, Decaf377EdwardsConfig, Element,
-};
-use crate::Fq;
-
+use core::borrow::Borrow;
+use core::ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign};
 pub(crate) type Decaf377EdwardsVar = AffineVar<Decaf377EdwardsConfig, FqVar>;
 
 #[derive(Clone, Debug)]
@@ -306,9 +305,9 @@ impl ToBitsGadget<Fq> for ElementVar {
 }
 
 impl ToBytesGadget<Fq> for ElementVar {
-    fn to_bytes(&self) -> Result<Vec<UInt8<Fq>>, SynthesisError> {
-        let compressed_fq = self.inner.to_bytes()?;
-        let encoded_bytes = compressed_fq.to_bytes()?;
+    fn to_bytes_le(&self) -> Result<Vec<UInt8<Fq>>, SynthesisError> {
+        let compressed_fq = self.inner.to_bytes_le()?;
+        let encoded_bytes = compressed_fq.to_bytes_le()?;
         Ok(encoded_bytes)
     }
 }
@@ -406,6 +405,62 @@ impl Add<Element> for ElementVar {
 impl AddAssign<Element> for ElementVar {
     fn add_assign(&mut self, rhs: Element) {
         self.inner.add_assign(rhs.inner)
+    }
+}
+
+impl MulAssign<EmulatedFpVar<Fr, Fq>> for ElementVar {
+    fn mul_assign(&mut self, rhs: EmulatedFpVar<Fr, Fq>) {
+        *self = ElementVar {
+            inner: self.inner.clone() * rhs,
+        };
+    }
+}
+
+// Scalar multiplication
+pub trait ScalarMultiplyAssign<Scalar, Output> {
+    fn mul_assign_scalar(&mut self, scalar: Scalar);
+}
+
+impl ScalarMultiplyAssign<EmulatedFpVar<Fr, Fq>, Decaf377EdwardsVar> for Decaf377EdwardsVar {
+    fn mul_assign_scalar(&mut self, scalar: EmulatedFpVar<Fr, Fq>) {
+        let result = self.clone() * scalar;
+        *self = result;
+    }
+}
+
+pub trait ScalarMultiply<Scalar, Output> {
+    fn mul_with_scalar(&self, scalar: &Scalar) -> Output;
+}
+
+impl ScalarMultiply<EmulatedFpVar<Fr, Fq>, Decaf377EdwardsVar> for Decaf377EdwardsVar {
+    fn mul_with_scalar(&self, scalar: &EmulatedFpVar<Fr, Fq>) -> Decaf377EdwardsVar {
+        self.clone() * scalar.clone()
+    }
+}
+
+impl<'a> Mul<&'a EmulatedFpVar<Fr, Fq>> for ElementVar {
+    type Output = ElementVar;
+
+    fn mul(self, scalar: &'a EmulatedFpVar<Fr, Fq>) -> Self::Output {
+        ElementVar {
+            inner: self.inner.mul_with_scalar(scalar),
+        }
+    }
+}
+
+impl Mul<EmulatedFpVar<Fr, Fq>> for ElementVar {
+    type Output = ElementVar;
+
+    fn mul(self, scalar: EmulatedFpVar<Fr, Fq>) -> Self::Output {
+        self * &scalar
+    }
+}
+
+impl ToConstraintFieldGadget<Fq> for ElementVar {
+    fn to_constraint_field(
+        &self,
+    ) -> Result<Vec<ark_r1cs_std::fields::fp::FpVar<Fq>>, ark_relations::r1cs::SynthesisError> {
+        unimplemented!()
     }
 }
 

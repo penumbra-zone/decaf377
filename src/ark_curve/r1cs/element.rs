@@ -1,7 +1,10 @@
 #![allow(non_snake_case)]
 use core::borrow::Borrow;
+use core::ops::{Mul, MulAssign};
 
 use ark_ec::AffineRepr;
+use ark_r1cs_std::convert::ToConstraintFieldGadget;
+use ark_r1cs_std::fields::emulated_fp::EmulatedFpVar;
 use ark_r1cs_std::{alloc::AllocVar, eq::EqGadget, prelude::*, R1CSVar};
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 use ark_std::vec::Vec;
@@ -9,9 +12,9 @@ use ark_std::vec::Vec;
 use crate::ark_curve::r1cs::{lazy::LazyElementVar, FqVar};
 use crate::ark_curve::{edwards::EdwardsAffine, r1cs::inner::ElementVar as InnerElementVar};
 use crate::ark_curve::{AffinePoint, Element};
-use crate::Fq;
+use crate::{Fq, Fr};
 
-use super::inner::Decaf377EdwardsVar;
+use super::inner::{Decaf377EdwardsVar, ScalarMultiply, ScalarMultiplyAssign};
 
 #[derive(Clone, Debug)]
 /// Represents the R1CS equivalent of a `decaf377::Element`
@@ -187,13 +190,13 @@ impl ToBitsGadget<Fq> for ElementVar {
 }
 
 impl ToBytesGadget<Fq> for ElementVar {
-    fn to_bytes(&self) -> Result<Vec<UInt8<Fq>>, SynthesisError> {
+    fn to_bytes_le(&self) -> Result<Vec<UInt8<Fq>>, SynthesisError> {
         let compressed_fq = self
             .inner
             .element()
             .expect("element will exist")
-            .to_bytes()?;
-        let encoded_bytes = compressed_fq.to_bytes()?;
+            .to_bytes_le()?;
+        let encoded_bytes = compressed_fq.to_bytes_le()?;
         Ok(encoded_bytes)
     }
 }
@@ -254,5 +257,50 @@ impl CurveVar<Element, Fq> for ElementVar {
         Ok(Self {
             inner: LazyElementVar::new_from_element(negated),
         })
+    }
+}
+
+// Scalar multiplication
+impl ScalarMultiplyAssign<EmulatedFpVar<Fr, Fq>, LazyElementVar> for LazyElementVar {
+    fn mul_assign_scalar(&mut self, scalar: EmulatedFpVar<Fr, Fq>) {
+        *self = LazyElementVar::new_from_element(self.element().unwrap() * scalar);
+    }
+}
+
+impl ScalarMultiply<EmulatedFpVar<Fr, Fq>, LazyElementVar> for LazyElementVar {
+    fn mul_with_scalar(&self, scalar: &EmulatedFpVar<Fr, Fq>) -> LazyElementVar {
+        LazyElementVar::new_from_element(self.element().unwrap() * scalar.clone())
+    }
+}
+
+impl MulAssign<EmulatedFpVar<Fr, Fq>> for ElementVar {
+    fn mul_assign(&mut self, scalar: EmulatedFpVar<Fr, Fq>) {
+        self.inner.mul_assign_scalar(scalar);
+    }
+}
+
+impl<'a> Mul<&'a EmulatedFpVar<Fr, Fq>> for ElementVar {
+    type Output = ElementVar;
+
+    fn mul(self, scalar: &'a EmulatedFpVar<Fr, Fq>) -> Self::Output {
+        ElementVar {
+            inner: self.inner.mul_with_scalar(scalar),
+        }
+    }
+}
+
+impl Mul<EmulatedFpVar<Fr, Fq>> for ElementVar {
+    type Output = ElementVar;
+
+    fn mul(self, scalar: EmulatedFpVar<Fr, Fq>) -> Self::Output {
+        self * &scalar
+    }
+}
+
+impl ToConstraintFieldGadget<Fq> for ElementVar {
+    fn to_constraint_field(
+        &self,
+    ) -> Result<Vec<ark_r1cs_std::fields::fp::FpVar<Fq>>, ark_relations::r1cs::SynthesisError> {
+        unimplemented!()
     }
 }

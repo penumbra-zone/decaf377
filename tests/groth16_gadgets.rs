@@ -1,11 +1,9 @@
-use ark_ff::UniformRand;
 use ark_groth16::{r1cs_to_qap::LibsnarkReduction, Groth16, Proof, ProvingKey, VerifyingKey};
 use proptest::prelude::*;
 
 use ark_r1cs_std::{
-    prelude::{AllocVar, CurveVar, EqGadget},
+    prelude::{AllocVar, CurveVar, EqGadget, ToBitsGadget},
     uint8::UInt8,
-    ToBitsGadget,
 };
 use ark_relations::r1cs::{ConstraintSynthesizer, ToConstraintField};
 use ark_snark::SNARK;
