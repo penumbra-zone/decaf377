@@ -43,3 +43,13 @@ cargo bench
 ```
 
 This will generate a report at `target/criterion/report/index.html`.
+
+## Generate Test Vectors
+
+There is a test utility that will generate the proving and verifying keys for
+the R1CS tests. These keys are pre-generated to guard against breaking changes
+to the circuits (e.g. when upgrading Arkworks dependencies).
+
+```
+cargo test generate_test_vectors -- --ignored
+```
