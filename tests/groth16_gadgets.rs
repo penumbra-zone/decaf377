@@ -1,5 +1,9 @@
+use std::{fs, io::BufWriter, path::PathBuf};
+
 use ark_ff::UniformRand;
 use ark_groth16::{r1cs_to_qap::LibsnarkReduction, Groth16, Proof, ProvingKey, VerifyingKey};
+use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
+use once_cell::sync::Lazy;
 use proptest::prelude::*;
 
 use ark_r1cs_std::{
@@ -23,7 +27,7 @@ fn element_strategy() -> BoxedStrategy<Element> {
 }
 
 #[derive(Clone)]
-struct DiscreteLogCircuit {
+pub struct DiscreteLogCircuit {
     // Witness
     scalar: [u8; 32],
 
@@ -67,11 +71,24 @@ fn scalar_strategy_random() -> BoxedStrategy<[u8; 32]> {
     any::<[u8; 32]>().prop_map(|x| x).boxed()
 }
 
+static DISCRETE_LOG_PK: Lazy<ProvingKey<Bls12_377>> = Lazy::new(|| {
+    let pk_bytes = include_bytes!("test_vectors/discrete_log_pk.bin");
+    ProvingKey::deserialize_uncompressed(&pk_bytes[..]).expect("can parse discrete log proving key")
+});
+
+static DISCRETE_LOG_VK: Lazy<VerifyingKey<Bls12_377>> = Lazy::new(|| {
+    let vk_bytes = include_bytes!("test_vectors/discrete_log_vk.param");
+    VerifyingKey::deserialize_uncompressed(&vk_bytes[..])
+        .expect("can parse discrete log verifying key")
+});
+
 proptest! {
 #![proptest_config(ProptestConfig::with_cases(5))]
 #[test]
 fn groth16_dl_proof_happy_path(scalar_arr in scalar_strategy_random()) {
-        let (pk, vk) = DiscreteLogCircuit::generate_test_parameters();
+        let pk = DISCRETE_LOG_PK.clone();
+        let vk = DISCRETE_LOG_VK.clone();
+
         let mut rng = OsRng;
 
         let scalar = scalar_arr;
@@ -618,4 +635,38 @@ fn groth16_add_addassign(a in element_strategy(), b in element_strategy()) {
 
     assert!(proof_result);
 }
+}
+
+fn write_params(
+    target_dir: &PathBuf,
+    name: &str,
+    pk: &ProvingKey<Bls12_377>,
+    vk: &VerifyingKey<Bls12_377>,
+) -> anyhow::Result<()> {
+    let pk_location = target_dir.join(format!("{}_pk.bin", name));
+    let vk_location = target_dir.join(format!("{}_vk.param", name));
+
+    let pk_file = fs::File::create(&pk_location)?;
+    let vk_file = fs::File::create(&vk_location)?;
+
+    let pk_writer = BufWriter::new(pk_file);
+    let vk_writer = BufWriter::new(vk_file);
+
+    ProvingKey::serialize_uncompressed(pk, pk_writer).expect("can serialize ProvingKey");
+    VerifyingKey::serialize_uncompressed(vk, vk_writer).expect("can serialize VerifyingKey");
+
+    Ok(())
+}
+
+#[ignore]
+#[test]
+fn generate_test_vectors() {
+    let (pk, vk) = DiscreteLogCircuit::generate_test_parameters();
+    write_params(
+        &PathBuf::from("tests/test_vectors"),
+        "discrete_log",
+        &pk,
+        &vk,
+    )
+    .expect("can write test vectors");
 }
