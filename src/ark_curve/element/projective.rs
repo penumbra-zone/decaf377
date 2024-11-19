@@ -22,7 +22,7 @@ impl Element {
     };
 
     pub const ZERO: Self = Self {
-        inner: EdwardsProjective::new_unchecked(Fq::ZERO, Fq::ZERO, Fq::ZERO, Fq::ZERO),
+        inner: EdwardsProjective::new_unchecked(Fq::ZERO, Fq::ONE, Fq::ZERO, Fq::ONE),
     };
 }
 
