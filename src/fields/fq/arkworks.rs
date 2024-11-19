@@ -159,22 +159,6 @@ impl AdditiveGroup for Fq {
     type Scalar = Self;
 
     const ZERO: Self = Self::ZERO;
-
-    fn double(&self) -> Self {
-        let mut copy = *self;
-        copy.double_in_place();
-        copy
-    }
-
-    fn double_in_place(&mut self) -> &mut Self {
-        self.add_assign(*self);
-        self
-    }
-
-    fn neg_in_place(&mut self) -> &mut Self {
-        *self = -(*self);
-        self
-    }
 }
 
 impl Zero for Fq {
