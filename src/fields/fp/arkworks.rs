@@ -145,28 +145,7 @@ impl Field for Fp {
         Self::from_random_bytes_with_flags::<EmptyFlags>(bytes).map(|f| f.0)
     }
 
-    fn sqrt(&self) -> Option<Self> {
-        match Self::SQRT_PRECOMP {
-            Some(tv) => tv.sqrt(self),
-            None => core::unimplemented!(),
-        }
-    }
-
-    fn sqrt_in_place(&mut self) -> Option<&mut Self> {
-        (*self).sqrt().map(|sqrt| {
-            *self = sqrt;
-            self
-        })
-    }
-
-    fn sum_of_products<const T: usize>(a: &[Self; T], b: &[Self; T]) -> Self {
-        let mut sum = Self::zero();
-        for i in 0..a.len() {
-            sum += a[i] * b[i];
-        }
-        sum
-    }
-
+    // Stub
     fn mul_by_base_prime_field(&self, _elem: &Self::BasePrimeField) -> Self {
         unimplemented!()
     }
