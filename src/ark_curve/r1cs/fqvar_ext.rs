@@ -1,12 +1,13 @@
+use crate::ark_curve::{constants::ZETA, r1cs::FqVar};
+use crate::Fq;
 use ark_r1cs_std::eq::EqGadget;
 use ark_r1cs_std::prelude::ToBitsGadget;
 use ark_r1cs_std::prelude::{AllocVar, Boolean, FieldVar};
 use ark_r1cs_std::select::CondSelectGadget;
 use ark_r1cs_std::R1CSVar;
 use ark_relations::r1cs::SynthesisError;
-
-use crate::ark_curve::{constants::ZETA, r1cs::FqVar};
-use crate::Fq;
+use ark_std::println;
+use Boolean::*;
 
 pub trait FqVarExtension: Sized {
     fn isqrt(&self) -> Result<(Boolean<Fq>, FqVar), SynthesisError>;
@@ -18,6 +19,7 @@ pub trait FqVarExtension: Sized {
     fn is_nonnegative(&self) -> Result<Boolean<Fq>, SynthesisError>;
     fn abs(self) -> Result<Self, SynthesisError>;
     fn not(boolean: &Boolean<Fq>) -> Result<Boolean<Fq>, SynthesisError>;
+    fn not_in_place(boolean: Boolean<Fq>) -> Result<Boolean<Fq>, SynthesisError>;
     fn and(a: &Boolean<Fq>, b: &Boolean<Fq>) -> Result<Boolean<Fq>, SynthesisError>;
     fn or(a: &Boolean<Fq>, b: &Boolean<Fq>) -> Result<Boolean<Fq>, SynthesisError>;
 }
@@ -31,6 +33,8 @@ impl FqVarExtension for FqVar {
     /// - Case 3: `(false, 0)` if `den` is zero;
     /// - Case 4: `(false, sqrt(zeta*num/den))` if `num` and `den` are both nonzero and `num/den` is nonsquare;
     fn isqrt(&self) -> Result<(Boolean<Fq>, FqVar), SynthesisError> {
+        println!("isSqrt!");
+
         // During mode `SynthesisMode::Setup`, value() will not provide a field element.
         let den = self.value().unwrap_or(Fq::ONE);
 
@@ -109,41 +113,32 @@ impl FqVarExtension for FqVar {
     // cursed redirection for the the Boolean enum to delegate these operations to the
     // underlying AllocatedBool when applicable.
     fn not(boolean: &Boolean<Fq>) -> Result<Boolean<Fq>, SynthesisError> {
-        match boolean {
-            Boolean::Var(allocated) => Ok(Boolean::Var(allocated.not()?)),
-            Boolean::Constant(value) => Ok(Boolean::Constant(!value)),
+        Ok(Self::not_in_place(boolean.clone())?)
+    }
+
+    fn not_in_place(mut boolean: Boolean<Fq>) -> Result<Boolean<Fq>, SynthesisError> {
+        match &mut boolean {
+            Boolean::Constant(c) => *c = !*c,
+            Boolean::Var(v) => *v = v.not()?,
         }
+        Ok(boolean)
     }
 
     fn and(a: &Boolean<Fq>, b: &Boolean<Fq>) -> Result<Boolean<Fq>, SynthesisError> {
         match (a, b) {
-            // Both are AllocatedBool
-            (Boolean::Var(alloc_a), Boolean::Var(alloc_b)) => {
-                Ok(Boolean::Var(alloc_a.and(alloc_b)?))
-            }
-            // Both are constant
-            (Boolean::Constant(val_a), Boolean::Constant(val_b)) => {
-                Ok(Boolean::Constant(*val_a & *val_b))
-            }
-            // One is constant, one is variable
-            (Boolean::Constant(true), other) | (other, Boolean::Constant(true)) => {
-                Ok(other.clone())
-            }
-            (Boolean::Constant(false), _) | (_, Boolean::Constant(false)) => {
-                Ok(Boolean::Constant(false))
-            }
+            // false AND x is always false
+            (&Constant(false), _) | (_, &Constant(false)) => Ok(Constant(false)),
+            // true AND x is always x
+            (&Constant(true), x) | (x, &Constant(true)) => Ok(x.clone()),
+            (Var(ref x), Var(ref y)) => Ok(Var(x.and(y)?)),
         }
     }
 
     fn or(a: &Boolean<Fq>, b: &Boolean<Fq>) -> Result<Boolean<Fq>, SynthesisError> {
         match (a, b) {
-            (Boolean::Var(alloc_a), Boolean::Var(alloc_b)) => {
-                Ok(Boolean::Var(alloc_a.or(alloc_b)?))
-            }
-            (Boolean::Constant(val_a), Boolean::Constant(val_b)) => {
-                Ok(Boolean::Constant(*val_a | *val_b))
-            }
-            _ => Err(SynthesisError::Unsatisfiable),
+            (&Constant(false), x) | (x, &Constant(false)) => Ok(x.clone()),
+            (&Constant(true), _) | (_, &Constant(true)) => Ok(Constant(true)),
+            (Var(ref x), Var(ref y)) => Ok(Var(x.or(y)?)),
         }
     }
 }
