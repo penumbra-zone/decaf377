@@ -22,11 +22,11 @@ jobs:
     name: Test Suite
     runs-on: buildjet-16vcpu-ubuntu-2204
     # We want to run the tests twice, once with the
-    # default backend (u64) and one with the u32_backend,
+    # default backend (u32) and one with the u64_backend,
     # in both cases with the r1cs feature enabled.
     strategy:
       matrix:
-        backend: ["r1cs", "r1cs,u32_backend"]
+        backend: ["r1cs", "r1cs,u64_backend"]
     steps:
       - uses: actions/checkout@v4
       - name: Install rust toolchain

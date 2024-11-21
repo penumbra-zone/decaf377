@@ -1,6 +1,6 @@
 [package]
 name = "decaf377"
-version = "0.10.1"
+version = "1.0.0"
 authors = [
     "Henry de Valence <hdevalence@hdevalence.ca>",
     "redshiftzero <jen@penumbralabs.xyz>",
@@ -68,7 +68,7 @@ arkworks = [
     "hashbrown",
 ]
 r1cs = ["arkworks", "ark-groth16", "ark-r1cs-std", "ark-relations", "ark-snark"]
-u32_backend = []
+u64_backend = ["arkworks"]
 
 [dev-dependencies]
 proptest = "1"
