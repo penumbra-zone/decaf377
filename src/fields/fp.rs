@@ -1,28 +1,14 @@
-use cfg_if::cfg_if;
 use rand_core::CryptoRngCore;
 
 use crate::EncodingError;
 
-#[cfg(feature = "arkworks")]
 pub mod arkworks;
 mod ops;
-mod u32;
-
-// The u64 backend requires arkworks
-#[cfg(feature = "arkworks")]
 mod u64;
-
-cfg_if! {
-    if #[cfg(feature = "arkworks")] {
-        pub type Fp = u64::Fp;
-    } else {
-        pub type Fp = u32::Fp;
-    }
-}
+pub type Fp = u64::Fp;
 
 const B: usize = 377;
 const N_8: usize = (B + 7) / 8;
-const N_32: usize = (B + 31) / 32;
 const N_64: usize = (B + 63) / 64;
 
 impl Fp {
