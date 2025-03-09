@@ -29,7 +29,7 @@ impl Fr {
     pub fn rand<R: CryptoRngCore + Rng>(rng: &mut R) -> Self {
         Self(UniformRand::rand(rng))
     }
-    
+
     pub fn from_le_bytes_mod_order(bytes: &[u8]) -> Self {
         Self(ArkworksFr::from_le_bytes_mod_order(bytes))
     }

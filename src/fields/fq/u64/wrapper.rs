@@ -35,7 +35,7 @@ impl Fq {
     pub fn rand<R: CryptoRngCore + Rng>(rng: &mut R) -> Self {
         Self(UniformRand::rand(rng))
     }
-    
+
     pub fn from_le_bytes_mod_order(bytes: &[u8]) -> Self {
         Self(ArkworksFq::from_le_bytes_mod_order(bytes))
     }
@@ -114,6 +114,13 @@ impl Fq {
     pub fn neg(self) -> Fq {
         debug_assert!(!self.is_sentinel());
         Fq(-self.0)
+    }
+
+    /// Raise this element to a given power.
+    ///
+    /// Note: Arkworks provides another method for this, called `pow`.
+    pub fn power<S: AsRef<[u64]>>(&self, exp: S) -> Self {
+        self.pow(exp)
     }
 }
 

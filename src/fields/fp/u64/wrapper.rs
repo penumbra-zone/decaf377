@@ -29,14 +29,16 @@ impl Fp {
     pub fn rand<R: CryptoRngCore + Rng>(rng: &mut R) -> Self {
         Self(UniformRand::rand(rng))
     }
-    
+
     pub fn from_le_bytes_mod_order(bytes: &[u8]) -> Self {
         Self(ArkworksFp::from_le_bytes_mod_order(bytes))
     }
 
     pub(crate) fn from_le_limbs(limbs: [u64; N_64]) -> Fp {
-        Self(ArkworksFp::from_bigint(ark_ff::BigInt(limbs))
-            .expect("Invalid field element: out of range"))
+        Self(
+            ArkworksFp::from_bigint(ark_ff::BigInt(limbs))
+                .expect("Invalid field element: out of range"),
+        )
     }
 
     pub(crate) fn to_le_limbs(&self) -> [u64; N_64] {
