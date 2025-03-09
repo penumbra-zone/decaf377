@@ -1,3 +1,4 @@
+use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use rand_core::CryptoRngCore;
 
 use crate::EncodingError;
@@ -65,35 +66,28 @@ impl Fr {
         322810149704226881,
     ]);
 
-    pub fn from_le_bytes_mod_order(bytes: &[u8]) -> Self {
-        bytes
-            .chunks(N_8)
-            .map(|x| {
-                let mut padded = [0u8; N_8];
-                padded[..x.len()].copy_from_slice(x);
-                Self::from_raw_bytes(&padded)
-            }) // [X, 2^(256) * X, ...]
-            .rev()
-            .fold(Self::ZERO, |acc, x| {
-                acc * (Self::FIELD_SIZE_POWER_OF_TWO) + x
-            }) // let acc =
-    }
-
     /// Convert bytes into an Fr element, returning None if these bytes are not already reduced.
     ///
     /// This means that values that cannot be produced by encoding a field element will return
     /// None, enforcing canonical serialization.
     pub fn from_bytes_checked(bytes: &[u8; N_8]) -> Result<Self, EncodingError> {
-        let reduced = Self::from_raw_bytes(bytes);
-        if reduced.to_bytes_le() == *bytes {
-            Ok(reduced)
-        } else {
-            Err(EncodingError::InvalidEncoding)
+        // Check the top three bits of the last byte as Arkworks
+        // doesn't check them when deciding if an encoding is canonical.
+        if bytes[31] >> 5 != 0u8 {
+            return Err(EncodingError::InvalidEncoding);
         }
+
+        Fr::deserialize_compressed(&bytes[..]).map_err(|_| EncodingError::InvalidEncoding)
     }
 
     pub fn to_bytes(&self) -> [u8; N_8] {
-        self.to_bytes_le()
+        let mut bytes = [0u8; 32];
+        debug_assert_eq!(self.serialized_size(ark_serialize::Compress::Yes), 32);
+        self.serialize_compressed(&mut bytes[..])
+            .expect("serialization into array should be infallible");
+        debug_assert!(bytes[31] >> 5 == 0u8);
+
+        bytes
     }
 
     /// Sample a random field element uniformly.

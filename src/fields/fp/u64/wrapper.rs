@@ -24,38 +24,19 @@ impl zeroize::Zeroize for Fp {
 }
 
 impl Fp {
-    pub(crate) fn from_le_limbs(limbs: [u64; N_64]) -> Fp {
-        let mut bytes = [0u8; N_8];
-        for i in 0..N_64 {
-            let this_byte = limbs[i].to_le_bytes();
-            for j in 0..8 {
-                bytes[8 * i + j] = this_byte[j];
-            }
-        }
-
-        Self::from_raw_bytes(&bytes)
-    }
-
-    pub(crate) fn from_raw_bytes(bytes: &[u8; N_8]) -> Fp {
+    pub fn from_le_bytes_mod_order(bytes: &[u8]) -> Self {
         Self(ArkworksFp::from_le_bytes_mod_order(bytes))
     }
 
+    pub(crate) fn from_le_limbs(limbs: [u64; N_64]) -> Fp {
+        Self(
+            ArkworksFp::from_bigint(ark_ff::BigInt(limbs))
+                .expect("Invalid field element: out of range"),
+        )
+    }
+
     pub(crate) fn to_le_limbs(&self) -> [u64; N_64] {
-        let le_bytes = self.to_bytes_le();
-        let mut out = [0u64; N_64];
-        for i in 0..N_64 {
-            out[i] = u64::from_le_bytes([
-                le_bytes[8 * i],
-                le_bytes[8 * i + 1],
-                le_bytes[8 * i + 2],
-                le_bytes[8 * i + 3],
-                le_bytes[8 * i + 4],
-                le_bytes[8 * i + 5],
-                le_bytes[8 * i + 6],
-                le_bytes[8 * i + 7],
-            ]);
-        }
-        out
+        self.0.into_bigint().0
     }
 
     pub fn to_bytes_le(&self) -> [u8; N_8] {
