@@ -26,6 +26,15 @@ impl zeroize::Zeroize for Fp {
 }
 
 impl Fp {
+    /// Converts `Fp` to `ArkworksFp`
+    pub fn as_inner(&self) -> &ArkworksFp {
+        &self.0
+    }
+
+    pub fn into_inner(self) -> ArkworksFp {
+        self.0
+    }
+
     pub fn rand<R: CryptoRngCore + Rng>(rng: &mut R) -> Self {
         Self(UniformRand::rand(rng))
     }
