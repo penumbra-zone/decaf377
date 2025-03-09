@@ -1,5 +1,4 @@
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
-use rand_core::CryptoRngCore;
 
 use crate::EncodingError;
 
@@ -111,17 +110,6 @@ impl Fp {
         debug_assert!(bytes[31] >> 5 == 0u8);
 
         bytes
-    }
-
-    /// Sample a random field element uniformly.
-    pub fn rand<R: CryptoRngCore>(rng: &mut R) -> Self {
-        // Sample wide, reduce
-        let bytes = {
-            let mut out = [0u8; N_8 + 16];
-            rng.fill_bytes(&mut out);
-            out
-        };
-        Self::from_le_bytes_mod_order(&bytes)
     }
 }
 

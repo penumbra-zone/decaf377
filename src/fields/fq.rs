@@ -1,5 +1,4 @@
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
-use rand_core::CryptoRngCore;
 
 use crate::EncodingError;
 
@@ -96,29 +95,6 @@ impl Fq {
         debug_assert!(bytes[31] >> 5 == 0u8);
 
         bytes
-    }
-
-    /// Sample a random field element uniformly.
-    pub fn rand<R: CryptoRngCore>(rng: &mut R) -> Self {
-        // Sample wide, reduce
-        let bytes = {
-            let mut out = [0u8; N_8 + 16];
-            rng.fill_bytes(&mut out);
-            out
-        };
-        Self::from_le_bytes_mod_order(&bytes)
-    }
-
-    /// Raise this element to a given power.
-    ///
-    /// Note: Arkworks provides another method for this, called `pow`.
-    pub fn power<S: AsRef<[u64]>>(&self, exp: S) -> Self {
-        let mut res = Fq::from(1u64);
-        let exp_u64 = exp.as_ref();
-        for _ in 0..exp_u64[0] {
-            res *= self;
-        }
-        res
     }
 }
 

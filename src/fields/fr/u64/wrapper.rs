@@ -1,6 +1,8 @@
 use ark_ed_on_bls12_377::Fr as ArkworksFr;
-use ark_ff::{biginteger::BigInt, Field, PrimeField};
+use ark_ff::{biginteger::BigInt, Field, PrimeField, UniformRand};
 use ark_serialize::CanonicalSerialize;
+use ark_std::rand::Rng;
+use rand_core::CryptoRngCore;
 
 use super::super::{N_64, N_8};
 
@@ -24,6 +26,10 @@ impl zeroize::Zeroize for Fr {
 }
 
 impl Fr {
+    pub fn rand<R: CryptoRngCore + Rng>(rng: &mut R) -> Self {
+        Self(UniformRand::rand(rng))
+    }
+    
     pub fn from_le_bytes_mod_order(bytes: &[u8]) -> Self {
         Self(ArkworksFr::from_le_bytes_mod_order(bytes))
     }
